@@ -189,6 +189,10 @@ public strictfp class RobotGlobal {
 
     public static MapLocation[] getMyArchonLocations() throws GameActionException {
         int numArchons = rc.readBroadcast(CHANNEL_ARCHON_COUNTER);
+        if (numArchons > 3) {
+            System.out.println("More than 3 archons detected!!!");
+            numArchons = 3;
+        }
         MapLocation[] archonLocations = new MapLocation[numArchons];
         for (int i = 0; i < numArchons; i++) {
             float x = Float.intBitsToFloat(rc.readBroadcast(CHANNEL_ARCHON_LOCATION_ARRAY_START + (2*i)));

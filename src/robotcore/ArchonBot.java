@@ -44,8 +44,12 @@ public class ArchonBot extends RobotGlobal {
 
         // Broadcast location
         int locChannel = CHANNEL_ARCHON_LOCATION_ARRAY_START + (archonOrder*2);
-        rc.broadcast(locChannel, Float.floatToIntBits(myLoc.x));
-        rc.broadcast(locChannel + 1, Float.floatToIntBits(myLoc.y));
+        if (archonOrder >= 3) {
+            System.out.println("More than 3 archons detected!!!");
+        } else {
+            rc.broadcast(locChannel, Float.floatToIntBits(myLoc.x));
+            rc.broadcast(locChannel + 1, Float.floatToIntBits(myLoc.y));
+        }
 
         Direction gardenerDir = randomDirection();
 
