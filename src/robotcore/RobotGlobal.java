@@ -18,6 +18,12 @@ public strictfp class RobotGlobal {
     public static final int FARM_TABLE_COUNT_CHANNEL = FARM_TABLE_CHANNEL + FARM_TABLE_LENGTH;
     public static final int BOUNDS_TABLE_CHANNEL = FARM_TABLE_COUNT_CHANNEL + 1; // IN_W, IN_E, IN_S, IN_N, OUT_W, OUT_E, OUT_S, OUT_N
     public static final int BOUNDS_TABLE_LENGTH = 8;
+    public static final int LJ_JOBS_TABLE_CHANNEL = BOUNDS_TABLE_CHANNEL + BOUNDS_TABLE_LENGTH;
+    public static final int LJ_JOBS_TABLE_ENTRY_SIZE = 3;
+    public static final int LJ_JOBS_TABLE_NUM_ENTRIES = 30;
+    public static final int LJ_JOBS_TABLE_LENGTH = LJ_JOBS_TABLE_ENTRY_SIZE * LJ_JOBS_TABLE_NUM_ENTRIES;
+    public static final int LJ_JOBS_TABLE_BEGIN_CHANNEL = LJ_JOBS_TABLE_CHANNEL + LJ_JOBS_TABLE_LENGTH;
+    public static final int LJ_JOBS_TABLE_COUNT_CHANNEL = LJ_JOBS_TABLE_BEGIN_CHANNEL + 1;
 
     // Performance constants
     public static final int DESIRED_ROBOTS = 20;
@@ -497,7 +503,8 @@ public strictfp class RobotGlobal {
 
     public static int createFarmTableEntry() throws GameActionException{
         int farmTableCount = rc.readBroadcast(FARM_TABLE_COUNT_CHANNEL);
-        int farmNum = farmTableCount + 1;
+        int farmNum = farmTableCount;
+        rc.broadcast(FARM_TABLE_COUNT_CHANNEL, farmTableCount + 1);
         if (farmNum >= FARM_TABLE_NUM_ENTRIES) {
             System.out.println("Farm table overflow!");
             return -1;
@@ -545,6 +552,61 @@ public strictfp class RobotGlobal {
         int farmTableEntryChannel = FARM_TABLE_CHANNEL + (farmNum * FARM_TABLE_ENTRY_SIZE);
         int flagsChannel = farmTableEntryChannel + 2;
         rc.broadcast(flagsChannel, FARM_TABLE_ENTRY_EXISTS_MASK);
+    }
+
+    public static int getFarmTableEntryCount() throws GameActionException {
+        return rc.readBroadcast(FARM_TABLE_COUNT_CHANNEL);
+    }
+
+    public static void addLumberjackJob(MapLocation loc) throws GameActionException {
+        addLumberjackJob(loc, -1);
+    }
+
+    public static void addLumberjackJob(MapLocation loc, int farmNum) throws GameActionException {
+        int begin = rc.readBroadcast(LJ_JOBS_TABLE_BEGIN_CHANNEL);
+        int count = rc.readBroadcast(LJ_JOBS_TABLE_COUNT_CHANNEL);
+        if (count >= LJ_JOBS_TABLE_NUM_ENTRIES) {
+            System.out.println("Lumberjack job table overflow!");
+            return;
+        }
+        int entryIndex = (begin + count) % LJ_JOBS_TABLE_NUM_ENTRIES;
+        int entryChannel = LJ_JOBS_TABLE_CHANNEL + (entryIndex * LJ_JOBS_TABLE_ENTRY_SIZE);
+        int xChannel = entryChannel;
+        int yChannel = entryChannel + 1;
+        int farmNumChannel = entryChannel + 2;
+        rc.broadcast(xChannel, Float.floatToIntBits(loc.x));
+        rc.broadcast(yChannel, Float.floatToIntBits(loc.y));
+        rc.broadcast(farmNumChannel, farmNum);
+        count++;
+        rc.broadcast(LJ_JOBS_TABLE_COUNT_CHANNEL, count);
+    }
+
+    public static int popLumberjackJobFarmNum() throws GameActionException {
+        int begin = rc.readBroadcast(LJ_JOBS_TABLE_BEGIN_CHANNEL);
+        int count = rc.readBroadcast(LJ_JOBS_TABLE_COUNT_CHANNEL);
+        int entryChannel = LJ_JOBS_TABLE_CHANNEL + (begin * LJ_JOBS_TABLE_ENTRY_SIZE);
+        //int xChannel = begin;
+        //int yChannel = begin + 1;
+        int farmNumChannel = entryChannel + 2;
+        int farmNum = rc.readBroadcast(farmNumChannel);
+        begin = (begin + 1) % LJ_JOBS_TABLE_NUM_ENTRIES;
+        rc.broadcast(LJ_JOBS_TABLE_BEGIN_CHANNEL, begin + 1);
+        return farmNum;
+    }
+
+    public static boolean[] getFarmTableHasLumberjackJob() throws GameActionException {
+        int farmTableCount = rc.readBroadcast(FARM_TABLE_COUNT_CHANNEL);
+        boolean[] farmTableHasLumberjackJob = new boolean[farmTableCount];
+        int begin = rc.readBroadcast(LJ_JOBS_TABLE_BEGIN_CHANNEL);
+        int count = rc.readBroadcast(LJ_JOBS_TABLE_COUNT_CHANNEL);
+        for (int i = 0; i < count; i++) {
+            int ljIndex = (begin + i) % LJ_JOBS_TABLE_NUM_ENTRIES;
+            int entryChannel = LJ_JOBS_TABLE_CHANNEL + (ljIndex * LJ_JOBS_TABLE_ENTRY_SIZE);
+            int farmNumChannel = entryChannel + 2;
+            int farmNum = rc.readBroadcast(farmNumChannel);
+            farmTableHasLumberjackJob[farmNum] = true;
+        }
+        return farmTableHasLumberjackJob;
     }
 
     /*

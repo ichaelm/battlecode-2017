@@ -60,8 +60,29 @@ public class ArchonBot extends RobotGlobal {
             }
         }
 
+        maintainFarmAndLumberjackTables();
+
         // Clock.yield() makes the robot wait until the next turn, then it will perform this loop again
         Clock.yield();
+    }
+
+    private static void maintainFarmAndLumberjackTables() throws GameActionException {
+        boolean[] farmTableHasLumberjackJob = getFarmTableHasLumberjackJob();
+        int farmTableEntryCount = getFarmTableEntryCount();
+        for (int farmNum = 0; farmNum < farmTableEntryCount; farmNum++) {
+            int farmFlags = readFarmTableEntryFlags(farmNum);
+            if ((farmFlags & FARM_TABLE_ENTRY_GARDENER_MASK) != 0) {
+                if ((farmFlags & FARM_TABLE_ENTRY_LUMBERJACK_MASK) == 0) {
+                    // Needs lumberjack
+                    if (!farmTableHasLumberjackJob[farmNum]) {
+                        // Has no job entry
+                        MapLocation farmLoc = readFarmTableEntryLocation(farmNum);
+                        addLumberjackJob(farmLoc, farmNum);
+                    }
+                }
+            }
+            resetFarmTableEntryFlags(farmNum);
+        }
     }
 
     private static boolean isLeader() {
