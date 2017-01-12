@@ -5,6 +5,13 @@ import battlecode.common.*;
 public strictfp class RobotGlobal {
     public static RobotController rc;
 
+    // Channel constants
+    public static final int CHANNEL_ARCHON_COUNTER = 0;
+    public static final int CHANNEL_ARCHON_LOCATION_ARRAY_START = CHANNEL_ARCHON_COUNTER + 1;
+    public static final int CHANNEL_ARCHON_LOCATION_ARRAY_LENGTH = 6;
+    public static final int CHANNEL_FARM_LOCATION_ARRAY_START = CHANNEL_ARCHON_LOCATION_ARRAY_START + CHANNEL_ARCHON_LOCATION_ARRAY_LENGTH;
+    public static final int CHANNEL_FARM_LOCATION_ARRAY_LENGTH = 100;
+
     // Performance constants
     public static final int DESIRED_ROBOTS = 20;
     public static final int DESIRED_TREES = 20;
@@ -39,6 +46,8 @@ public strictfp class RobotGlobal {
     // Results of further processing
     private static RobotInfo nearestEnemy = null;
     private static TreeInfo nearestTree = null;
+    private static TreeInfo nearestFriendlyTree = null;
+    private static TreeInfo lowestFriendlyTree = null;
     private static BulletInfo[] bulletsToAvoid = new BulletInfo[0];
     private static int numBulletsToAvoid = 0;
     private static RobotType buildOrder;
@@ -126,8 +135,12 @@ public strictfp class RobotGlobal {
     }
 
     public static void processNearbyTrees() throws GameActionException {
-        float minDist = 99999999;
+        float minDist = Float.POSITIVE_INFINITY;
+        float minFriendlyDist = Float.POSITIVE_INFINITY;
+        float minFriendlyHealth = Float.POSITIVE_INFINITY;
         nearestTree = null;
+        nearestFriendlyTree = null;
+        lowestFriendlyTree = null;
         int numIters = Math.min(nearbyTrees.length, DESIRED_TREES);
         for (int i = 0; i < numIters; i++) {
             TreeInfo tree = nearbyTrees[i];
@@ -135,6 +148,16 @@ public strictfp class RobotGlobal {
             if (dist < minDist) {
                 nearestTree = tree;
                 minDist = dist;
+            }
+            if (tree.team == myTeam) {
+                if (dist < minFriendlyDist) {
+                    nearestFriendlyTree = tree;
+                    minFriendlyDist = dist;
+                }
+                if (tree.health < minFriendlyHealth && tree.location.distanceTo(myLoc) <= 3) {
+                    lowestFriendlyTree = tree;
+                    minFriendlyHealth = tree.health;
+                }
             }
         }
     }
@@ -152,12 +175,42 @@ public strictfp class RobotGlobal {
         }
     }
 
+    public static MapLocation[] getMyArchonLocations() throws GameActionException {
+        int numArchons = rc.readBroadcast(CHANNEL_ARCHON_COUNTER);
+        MapLocation[] archonLocations = new MapLocation[numArchons];
+        for (int i = 0; i < numArchons; i++) {
+            float x = Float.intBitsToFloat(rc.readBroadcast(CHANNEL_ARCHON_LOCATION_ARRAY_START + (2*i)));
+            float y = Float.intBitsToFloat(rc.readBroadcast(CHANNEL_ARCHON_LOCATION_ARRAY_START + (2*i) + 1));
+            archonLocations[i] = new MapLocation(x, y);
+        }
+        return archonLocations;
+    }
+
+    public static float minDistBetween(MapLocation a, MapLocation[] bs) {
+        float minDist = Float.POSITIVE_INFINITY;
+        for (MapLocation b : bs) {
+            float dist = a.distanceTo(b);
+            if (dist < minDist) {
+                minDist = dist;
+            }
+        }
+        return minDist;
+    }
+
     public static RobotInfo getNearestEnemy() {
         return nearestEnemy;
     }
 
     public static TreeInfo getNearestTree() {
         return nearestTree;
+    }
+
+    public static TreeInfo getNearestFriendlyTree() {
+        return nearestFriendlyTree;
+    }
+
+    public static TreeInfo getLowestFriendlyTree() {
+        return lowestFriendlyTree;
     }
 
     public static BulletInfo[] getBulletsToAvoid() {
@@ -221,7 +274,7 @@ public strictfp class RobotGlobal {
 
     public static boolean tryMoveElseBack(Direction dir) throws GameActionException {
         float currentStride = myType.strideRadius;
-        while (currentStride > 0) {
+        while (currentStride > 0.1) {
             MapLocation newLoc = myLoc.add(dir, currentStride);
             if (!willCollideWith(bulletsToAvoid, newLoc, myType.bodyRadius)) {
                 if (rc.canMove(newLoc)) {

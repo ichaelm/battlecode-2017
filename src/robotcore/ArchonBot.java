@@ -1,13 +1,10 @@
 package robotcore;
 
 import battlecode.common.*;
-import robotcore.*;
 
 public class ArchonBot extends RobotGlobal {
-
-    static boolean hasBuiltGardner = false;
-    static boolean shouldBuild = false;
-    static boolean plenty = true;
+    static int archonOrder = -1;
+    static int gardenersBuilt = 0;
 
     public static void loop() {
         while (true) {
@@ -29,41 +26,35 @@ public class ArchonBot extends RobotGlobal {
     public static void turn() throws GameActionException {
         RobotType currentBuildOrder = getBuildOrder();
         float currentBuildOrderCost = currentBuildOrder.bulletCost;
-        boolean newShouldBuild = false;
 
-        if (teamBullets < currentBuildOrderCost) {
-            plenty = false;
-        }
-
-        // Generate a random direction
-        Direction dir = randomDirection();
-
-        if (!hasBuiltGardner) {
-            // Build a gardener in this direction
-            if (rc.canHireGardener(dir)) {
-                rc.hireGardener(dir);
-                hasBuiltGardner = true;
-            }
+        // Archon count and leader selection
+        if (isLeader()) {
+            // Since I'm the leader and it's not turn 0, I reset the counter (by broadcasting 1 below)
         } else {
-            // Check if build has been missed
-            if (teamBullets >= currentBuildOrderCost && !plenty) {
-                if (shouldBuild) {
-                    // Build has been missed!
-                    // Build a gardner
-                    if (rc.canHireGardener(dir)) {
-                        rc.hireGardener(dir);
-                        hasBuiltGardner = true;
-                    }
-                } else {
-                    // Build should happen this turn
-                    newShouldBuild = true;
-                }
+            // Either it's turn 0, or I'm not the leader. So count.
+            archonOrder = rc.readBroadcast(CHANNEL_ARCHON_COUNTER);
+        }
+        rc.broadcast(CHANNEL_ARCHON_COUNTER, archonOrder + 1);
+
+        // Broadcast location
+        int locChannel = CHANNEL_ARCHON_LOCATION_ARRAY_START + (archonOrder*2);
+        rc.broadcast(locChannel, Float.floatToIntBits(myLoc.x));
+        rc.broadcast(locChannel + 1, Float.floatToIntBits(myLoc.y));
+
+        Direction gardenerDir = randomDirection();
+
+        if (gardenersBuilt < 3) {
+            if (rc.canHireGardener(gardenerDir)) {
+                rc.hireGardener(gardenerDir);
+                gardenersBuilt++;
             }
         }
-
-        shouldBuild = newShouldBuild;
 
         // Clock.yield() makes the robot wait until the next turn, then it will perform this loop again
         Clock.yield();
+    }
+
+    private static boolean isLeader() {
+        return archonOrder == 0;
     }
 }
