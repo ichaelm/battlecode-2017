@@ -6,19 +6,17 @@ public strictfp class RobotGlobal {
     public static RobotController rc;
 
     // Channel constants
-    public static final int CHANNEL_ARCHON_COUNTER = 0;
-    public static final int CHANNEL_ARCHON_LOCATION_ARRAY_START = CHANNEL_ARCHON_COUNTER + 1;
-    public static final int CHANNEL_ARCHON_LOCATION_ARRAY_LENGTH = 6;
-    public static final int CHANNEL_FARM_LOCATION_ARRAY_START = CHANNEL_ARCHON_LOCATION_ARRAY_START + CHANNEL_ARCHON_LOCATION_ARRAY_LENGTH;
-    public static final int CHANNEL_FARM_LOCATION_ARRAY_LENGTH = 100;
-    public static final int CHANNEL_BOUND_INNER_WEST = CHANNEL_FARM_LOCATION_ARRAY_START + CHANNEL_FARM_LOCATION_ARRAY_LENGTH;
-    public static final int CHANNEL_BOUND_INNER_EAST = CHANNEL_BOUND_INNER_WEST + 1;
-    public static final int CHANNEL_BOUND_INNER_SOUTH = CHANNEL_BOUND_INNER_EAST + 1;
-    public static final int CHANNEL_BOUND_INNER_NORTH = CHANNEL_BOUND_INNER_SOUTH + 1;
-    public static final int CHANNEL_BOUND_OUTER_WEST = CHANNEL_BOUND_INNER_NORTH + 1;
-    public static final int CHANNEL_BOUND_OUTER_EAST = CHANNEL_BOUND_OUTER_WEST + 1;
-    public static final int CHANNEL_BOUND_OUTER_SOUTH = CHANNEL_BOUND_OUTER_EAST + 1;
-    public static final int CHANNEL_BOUND_OUTER_NORTH = CHANNEL_BOUND_OUTER_SOUTH + 1;
+    public static final int ARCHON_COUNTER_CHANNEL = 0;
+    public static final int ARCHON_LOCATION_TABLE_CHANNEL = ARCHON_COUNTER_CHANNEL + 1;
+    public static final int ARCHON_LOCATION_TABLE_ENTRY_SIZE = 2;
+    public static final int ARCHON_LOCATION_TABLE_NUM_ENTRIES = 3;
+    public static final int ARCHON_LOCATION_TABLE_LENGTH = ARCHON_LOCATION_TABLE_ENTRY_SIZE * ARCHON_LOCATION_TABLE_NUM_ENTRIES;
+    public static final int FARM_LOCATION_TABLE_CHANNEL = ARCHON_LOCATION_TABLE_CHANNEL + ARCHON_LOCATION_TABLE_LENGTH;
+    public static final int FARM_LOCATION_TABLE_ENTRY_SIZE = 3;
+    public static final int FARM_LOCATION_TABLE_NUM_ENTRIES = 30;
+    public static final int FARM_LOCATION_TABLE_LENGTH = FARM_LOCATION_TABLE_ENTRY_SIZE + FARM_LOCATION_TABLE_NUM_ENTRIES;
+    public static final int BOUNDS_TABLE_CHANNEL = FARM_LOCATION_TABLE_CHANNEL + FARM_LOCATION_TABLE_LENGTH; // IN_W, IN_E, IN_S, IN_N, OUT_W, OUT_E, OUT_S, OUT_N
+    public static final int BOUNDS_TABLE_LENGTH = 8;
 
     // Performance constants
     public static final int DESIRED_ROBOTS = 20;
@@ -188,15 +186,15 @@ public strictfp class RobotGlobal {
     }
 
     public static MapLocation[] getMyArchonLocations() throws GameActionException {
-        int numArchons = rc.readBroadcast(CHANNEL_ARCHON_COUNTER);
-        if (numArchons > 3) {
+        int numArchons = rc.readBroadcast(ARCHON_COUNTER_CHANNEL);
+        if (numArchons > ARCHON_LOCATION_TABLE_NUM_ENTRIES) {
             System.out.println("More than 3 archons detected!!!");
-            numArchons = 3;
+            numArchons = ARCHON_LOCATION_TABLE_NUM_ENTRIES;
         }
         MapLocation[] archonLocations = new MapLocation[numArchons];
         for (int i = 0; i < numArchons; i++) {
-            float x = Float.intBitsToFloat(rc.readBroadcast(CHANNEL_ARCHON_LOCATION_ARRAY_START + (2*i)));
-            float y = Float.intBitsToFloat(rc.readBroadcast(CHANNEL_ARCHON_LOCATION_ARRAY_START + (2*i) + 1));
+            float x = Float.intBitsToFloat(rc.readBroadcast(ARCHON_LOCATION_TABLE_CHANNEL + (ARCHON_LOCATION_TABLE_ENTRY_SIZE*i)));
+            float y = Float.intBitsToFloat(rc.readBroadcast(ARCHON_LOCATION_TABLE_CHANNEL + (ARCHON_LOCATION_TABLE_ENTRY_SIZE*i) + 1));
             archonLocations[i] = new MapLocation(x, y);
         }
         return archonLocations;
@@ -409,8 +407,8 @@ public strictfp class RobotGlobal {
     }
 
     public static MapBounds getMapBounds() throws GameActionException {
-        //CHANNEL_BOUND_INNER_WEST=4, maxXc=5, CHANNEL_BOUND_INNER_SOUTH=6, CHANNEL_BOUND_INNER_NORTH=7;
-        MapBounds bounds = MapBounds.deserialize(readBroadcastArray(CHANNEL_BOUND_INNER_WEST, 8));
+        //BOUNDS_TABLE_CHANNEL=4, maxXc=5, CHANNEL_BOUND_INNER_SOUTH=6, CHANNEL_BOUND_INNER_NORTH=7;
+        MapBounds bounds = MapBounds.deserialize(readBroadcastArray(BOUNDS_TABLE_CHANNEL, 8));
 
         if (bounds.getOuterBound(MapBounds.WEST) == 0 && bounds.getOuterBound(MapBounds.EAST) == 0) {
             bounds = new MapBounds();
@@ -489,7 +487,7 @@ public strictfp class RobotGlobal {
             }
         }
 
-        writeBroadcastArray(CHANNEL_BOUND_INNER_WEST, bounds.serialize());
+        writeBroadcastArray(BOUNDS_TABLE_CHANNEL, bounds.serialize());
     }
 
     /*
