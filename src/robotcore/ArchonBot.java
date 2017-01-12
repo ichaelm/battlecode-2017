@@ -24,7 +24,8 @@ public class ArchonBot extends RobotGlobal {
     }
 
     public static void turn() throws GameActionException {
-        RobotType currentBuildOrder = getBuildOrder();
+        if(teamBullets >= 10000) rc.donate(10000);
+    	RobotType currentBuildOrder = getBuildOrder();
         float currentBuildOrderCost = currentBuildOrder.bulletCost;
 
         // Archon count and leader selection
