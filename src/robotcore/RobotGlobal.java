@@ -11,6 +11,14 @@ public strictfp class RobotGlobal {
     public static final int CHANNEL_ARCHON_LOCATION_ARRAY_LENGTH = 6;
     public static final int CHANNEL_FARM_LOCATION_ARRAY_START = CHANNEL_ARCHON_LOCATION_ARRAY_START + CHANNEL_ARCHON_LOCATION_ARRAY_LENGTH;
     public static final int CHANNEL_FARM_LOCATION_ARRAY_LENGTH = 100;
+    public static final int CHANNEL_BOUND_INNER_WEST = CHANNEL_FARM_LOCATION_ARRAY_START + CHANNEL_FARM_LOCATION_ARRAY_LENGTH;
+    public static final int CHANNEL_BOUND_INNER_EAST = CHANNEL_BOUND_INNER_WEST + 1;
+    public static final int CHANNEL_BOUND_INNER_SOUTH = CHANNEL_BOUND_INNER_EAST + 1;
+    public static final int CHANNEL_BOUND_INNER_NORTH = CHANNEL_BOUND_INNER_SOUTH + 1;
+    public static final int CHANNEL_BOUND_OUTER_WEST = CHANNEL_BOUND_INNER_NORTH + 1;
+    public static final int CHANNEL_BOUND_OUTER_EAST = CHANNEL_BOUND_OUTER_WEST + 1;
+    public static final int CHANNEL_BOUND_OUTER_SOUTH = CHANNEL_BOUND_OUTER_EAST + 1;
+    public static final int CHANNEL_BOUND_OUTER_NORTH = CHANNEL_BOUND_OUTER_SOUTH + 1;
 
     // Performance constants
     public static final int DESIRED_ROBOTS = 20;
@@ -42,6 +50,7 @@ public strictfp class RobotGlobal {
     public static BulletInfo[] nearbyBullets;
     public static float nearbyBulletRadius;
     public static boolean neverUpdated;
+    public static MapBounds knownMapBounds;
 
     // Results of further processing
     private static RobotInfo nearestEnemy = null;
@@ -84,6 +93,9 @@ public strictfp class RobotGlobal {
         updateNearbyRobots();
         updateNearbyTrees();
         updateNearbyBullets();
+
+        knownMapBounds = getMapBounds();
+        updateMapBounds(knownMapBounds);
 
         neverUpdated = false;
     }
@@ -376,6 +388,104 @@ public strictfp class RobotGlobal {
             }
         }
         return false;
+    }
+
+    public static int[] readBroadcastArray(int channelStart, int length) throws GameActionException {
+        int[] retval = new int[length];
+        for (int i = 0; i < length; i++) {
+            retval[i] = rc.readBroadcast(channelStart + i);
+        }
+        return retval;
+    }
+
+    public static void writeBroadcastArray(int channelStart, int[] arr) throws GameActionException {
+        for (int i = 0; i < arr.length; i++) {
+            rc.broadcast(channelStart + i, arr[i]);
+        }
+    }
+
+    public static MapBounds getMapBounds() throws GameActionException {
+        //CHANNEL_BOUND_INNER_WEST=4, maxXc=5, CHANNEL_BOUND_INNER_SOUTH=6, CHANNEL_BOUND_INNER_NORTH=7;
+        MapBounds bounds = MapBounds.deserialize(readBroadcastArray(CHANNEL_BOUND_INNER_WEST, 8));
+
+        if (bounds.getOuterBound(MapBounds.WEST) == 0 && bounds.getOuterBound(MapBounds.EAST) == 0) {
+            bounds = new MapBounds();
+            bounds.updateInnerBound(MapBounds.WEST, myLoc.x - myType.bodyRadius);
+            bounds.updateInnerBound(MapBounds.EAST, myLoc.x + myType.bodyRadius);
+            bounds.updateInnerBound(MapBounds.SOUTH, myLoc.y - myType.bodyRadius);
+            bounds.updateInnerBound(MapBounds.NORTH, myLoc.y + myType.bodyRadius);
+        }
+
+        //Debug
+        /*
+        MapLocation knownNE = new MapLocation(bounds.getInnerBound(MapBounds.EAST), bounds.getInnerBound(MapBounds.NORTH));
+        MapLocation knownSE = new MapLocation(bounds.getInnerBound(MapBounds.EAST), bounds.getInnerBound(MapBounds.SOUTH));
+        MapLocation knownNW = new MapLocation(bounds.getInnerBound(MapBounds.WEST), bounds.getInnerBound(MapBounds.NORTH));
+        MapLocation knownSW = new MapLocation(bounds.getInnerBound(MapBounds.WEST), bounds.getInnerBound(MapBounds.SOUTH));
+
+        int r = 0; int g = 255; int b = 100;
+        rc.setIndicatorLine(knownNE, knownNW, r, g, b);
+        rc.setIndicatorLine(knownNE, knownSE, r, g, b);
+        rc.setIndicatorLine(knownSW, knownSE, r, g, b);
+        rc.setIndicatorLine(knownSW, knownNW, r, g, b);
+        */
+
+        return bounds;
+
+    }
+
+    public static MapLocation[] narrowBounds (MapLocation inner, MapLocation outer) throws GameActionException {
+
+        float i = outer.distanceTo(inner) / 2;
+        Direction away = outer.directionTo(inner);
+        MapLocation mid = outer.add(away, i);
+
+        int c = 0;
+
+        while (i >= 0.0005) { // this is the precision I choose to get
+            c+=1;
+            if (rc.onTheMap(mid)) {
+                inner = mid;
+                i = inner.distanceTo(outer) / 2;
+                mid = mid.subtract(away, i);
+            }
+            else {
+                outer = mid;
+                i = inner.distanceTo(outer) / 2;
+                mid = mid.add(away, i);
+            }
+
+            if (c > 15) {
+                System.out.println("narrowBounds timed out");
+                break;
+            }
+
+        }
+
+        return new MapLocation[]{inner, outer};
+    }
+
+    public static void updateMapBounds(MapBounds bounds) throws GameActionException {
+        MapLocation[] senseLocs = new MapLocation[4];
+        senseLocs[MapBounds.NORTH] = myLoc.add(Direction.getNorth(), myType.sensorRadius - 0.001f); // maxY sensed
+        senseLocs[MapBounds.EAST] = myLoc.add(Direction.getEast(), myType.sensorRadius - 0.001f); // maxX sensed;
+        senseLocs[MapBounds.SOUTH] = myLoc.add(Direction.getSouth(), myType.sensorRadius - 0.001f); // minY sensed;
+        senseLocs[MapBounds.WEST] = myLoc.add(Direction.getWest(), myType.sensorRadius - 0.001f); // minX sensed;
+
+        for (int dirOrd = 0; dirOrd < 4; dirOrd++) {
+            MapLocation senseLoc = senseLocs[dirOrd];
+            if(!rc.onTheMap(senseLoc)) {
+                bounds.updateInnerBound(dirOrd, myLoc.add(MapBounds.dirFromOrd(dirOrd), myType.bodyRadius));
+                bounds.updateOuterBound(dirOrd, senseLoc);
+                MapLocation[] eastBounds = narrowBounds(bounds.getInnerBoundLoc(dirOrd, myLoc), bounds.getOuterBoundLoc(dirOrd, myLoc));
+                bounds.updateInnerBound(dirOrd, eastBounds[0]);
+                bounds.updateOuterBound(dirOrd, eastBounds[1]);
+            } else {
+                bounds.updateInnerBound(dirOrd, senseLoc);
+            }
+        }
+
+        writeBroadcastArray(CHANNEL_BOUND_INNER_WEST, bounds.serialize());
     }
 
     /*
