@@ -6,6 +6,7 @@ public class GardenerBot extends RobotGlobal {
 
     private enum FarmingMode {SEARCHING, PLANTING, WATERING};
 
+    static int farmTableEntryNum = -1;
     static Direction goDir = null;
     static int numPlanted = 0;
     static int birthTurn = -1;
@@ -120,6 +121,16 @@ public class GardenerBot extends RobotGlobal {
                 }
             }
         }
+
+        // Update farm table
+
+        if (farmTableEntryNum < 0) {
+            // Create farm table entry
+            farmTableEntryNum = createFarmTableEntry();
+        } else {
+            writeFarmTableEntry(farmTableEntryNum, myLoc, true, false);
+        }
+
 
         /*
         if (numPlanted >= 4) {

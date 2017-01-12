@@ -11,11 +11,12 @@ public strictfp class RobotGlobal {
     public static final int ARCHON_LOCATION_TABLE_ENTRY_SIZE = 2;
     public static final int ARCHON_LOCATION_TABLE_NUM_ENTRIES = 3;
     public static final int ARCHON_LOCATION_TABLE_LENGTH = ARCHON_LOCATION_TABLE_ENTRY_SIZE * ARCHON_LOCATION_TABLE_NUM_ENTRIES;
-    public static final int FARM_LOCATION_TABLE_CHANNEL = ARCHON_LOCATION_TABLE_CHANNEL + ARCHON_LOCATION_TABLE_LENGTH;
-    public static final int FARM_LOCATION_TABLE_ENTRY_SIZE = 3;
-    public static final int FARM_LOCATION_TABLE_NUM_ENTRIES = 30;
-    public static final int FARM_LOCATION_TABLE_LENGTH = FARM_LOCATION_TABLE_ENTRY_SIZE + FARM_LOCATION_TABLE_NUM_ENTRIES;
-    public static final int BOUNDS_TABLE_CHANNEL = FARM_LOCATION_TABLE_CHANNEL + FARM_LOCATION_TABLE_LENGTH; // IN_W, IN_E, IN_S, IN_N, OUT_W, OUT_E, OUT_S, OUT_N
+    public static final int FARM_TABLE_CHANNEL = ARCHON_LOCATION_TABLE_CHANNEL + ARCHON_LOCATION_TABLE_LENGTH;
+    public static final int FARM_TABLE_ENTRY_SIZE = 3;
+    public static final int FARM_TABLE_NUM_ENTRIES = 30;
+    public static final int FARM_TABLE_LENGTH = FARM_TABLE_ENTRY_SIZE + FARM_TABLE_NUM_ENTRIES;
+    public static final int FARM_TABLE_COUNT_CHANNEL = FARM_TABLE_CHANNEL + FARM_TABLE_LENGTH;
+    public static final int BOUNDS_TABLE_CHANNEL = FARM_TABLE_COUNT_CHANNEL + 1; // IN_W, IN_E, IN_S, IN_N, OUT_W, OUT_E, OUT_S, OUT_N
     public static final int BOUNDS_TABLE_LENGTH = 8;
 
     // Performance constants
@@ -488,6 +489,62 @@ public strictfp class RobotGlobal {
         }
 
         writeBroadcastArray(BOUNDS_TABLE_CHANNEL, bounds.serialize());
+    }
+
+    public static final int FARM_TABLE_ENTRY_EXISTS_MASK = 0x1;
+    public static final int FARM_TABLE_ENTRY_GARDENER_MASK = 0x2;
+    public static final int FARM_TABLE_ENTRY_LUMBERJACK_MASK = 0x4;
+
+    public static int createFarmTableEntry() throws GameActionException{
+        int farmTableCount = rc.readBroadcast(FARM_TABLE_COUNT_CHANNEL);
+        int farmNum = farmTableCount + 1;
+        if (farmNum >= FARM_TABLE_NUM_ENTRIES) {
+            System.out.println("Farm table overflow!");
+            return -1;
+        }
+        int farmTableEntryChannel = FARM_TABLE_CHANNEL + (farmNum * FARM_TABLE_ENTRY_SIZE);
+        writeFarmTableEntry(farmNum, myLoc, true, false);
+        return farmNum;
+    }
+
+    public static void writeFarmTableEntry(int farmNum, MapLocation loc, boolean gardenerAlive, boolean lumberjackAlive) throws GameActionException {
+        int farmTableEntryChannel = FARM_TABLE_CHANNEL + (farmNum * FARM_TABLE_ENTRY_SIZE);
+        int xChannel = farmTableEntryChannel;
+        int yChannel = farmTableEntryChannel + 1;
+        int flagsChannel = farmTableEntryChannel + 2;
+        rc.broadcast(xChannel, Float.floatToIntBits(loc.x));
+        rc.broadcast(yChannel, Float.floatToIntBits(loc.y));
+        int flags = rc.readBroadcast(flagsChannel);
+        flags = flags | FARM_TABLE_ENTRY_EXISTS_MASK;
+        if (gardenerAlive) {
+            flags = flags | FARM_TABLE_ENTRY_GARDENER_MASK;
+        }
+        if (lumberjackAlive) {
+            flags = flags | FARM_TABLE_ENTRY_LUMBERJACK_MASK;
+        }
+        rc.broadcast(flagsChannel, flags);
+    }
+
+    public static MapLocation readFarmTableEntryLocation(int farmNum) throws GameActionException {
+        int farmTableEntryChannel = FARM_TABLE_CHANNEL + (farmNum * FARM_TABLE_ENTRY_SIZE);
+        int xChannel = farmTableEntryChannel;
+        int yChannel = farmTableEntryChannel + 1;
+        float x = Float.intBitsToFloat(rc.readBroadcast(xChannel));
+        float y = Float.intBitsToFloat(rc.readBroadcast(yChannel));
+        return new MapLocation(x, y);
+    }
+
+    public static int readFarmTableEntryFlags(int farmNum) throws GameActionException {
+        int farmTableEntryChannel = FARM_TABLE_CHANNEL + (farmNum * FARM_TABLE_ENTRY_SIZE);
+        int flagsChannel = farmTableEntryChannel + 2;
+        int flags = rc.readBroadcast(flagsChannel);
+        return flags;
+    }
+
+    public static void resetFarmTableEntryFlags(int farmNum) throws GameActionException {
+        int farmTableEntryChannel = FARM_TABLE_CHANNEL + (farmNum * FARM_TABLE_ENTRY_SIZE);
+        int flagsChannel = farmTableEntryChannel + 2;
+        rc.broadcast(flagsChannel, FARM_TABLE_ENTRY_EXISTS_MASK);
     }
 
     /*
