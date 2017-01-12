@@ -11,6 +11,14 @@ public class GardenerBot extends RobotGlobal {
     static int birthTurn = -1;
     static MapLocation birthLocation = null;
     static FarmingMode mode = FarmingMode.SEARCHING;
+    static Direction[] farmDirections = new Direction[]{
+            Direction.getEast(),
+            Direction.getEast().rotateLeftDegrees(60),
+            Direction.getEast().rotateLeftDegrees(120),
+            Direction.getEast().rotateLeftDegrees(180),
+            Direction.getEast().rotateLeftDegrees(240),
+            Direction.getEast().rotateLeftDegrees(300),
+    };
 
     public static void loop() {
         while (true) {
@@ -73,13 +81,21 @@ public class GardenerBot extends RobotGlobal {
 
         if (mode == FarmingMode.PLANTING) {
             // Plant a plant if needed
-            if (rc.canPlantTree(buildDir)) {
-                rc.plantTree(buildDir);
-                numPlanted++;
-                if (numPlanted >= 3) {
-                    mode = FarmingMode.WATERING;
+            for (Direction farmDirection : farmDirections) {
+                if (rc.hasTreeBuildRequirements()) {
+                    if (rc.canPlantTree(buildDir)) {
+                        rc.plantTree(buildDir);
+                        numPlanted++;
+                        if (numPlanted >= 3) {
+                            mode = FarmingMode.WATERING;
+                            break;
+                        }
+                    }
+                } else {
+                    break;
                 }
             }
+
         }
 
         if (mode == FarmingMode.PLANTING || mode == FarmingMode.WATERING) {
@@ -92,9 +108,17 @@ public class GardenerBot extends RobotGlobal {
             }
         }
 
-        // Build a unit if possible
-        if (rc.canBuildRobot(currentBuildOrder, buildDir)) {
-            rc.buildRobot(currentBuildOrder, buildDir);
+        if (mode == FarmingMode.WATERING) {
+            // Build a unit if possible
+            for (Direction farmDirection : farmDirections) {
+                if (rc.hasRobotBuildRequirements(currentBuildOrder)) {
+                    if (rc.canBuildRobot(currentBuildOrder, buildDir)) {
+                        rc.buildRobot(currentBuildOrder, buildDir);
+                    }
+                } else {
+                    break;
+                }
+            }
         }
 
         /*

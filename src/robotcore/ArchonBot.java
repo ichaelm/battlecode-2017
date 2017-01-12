@@ -32,7 +32,12 @@ public class ArchonBot extends RobotGlobal {
             // Since I'm the leader and it's not turn 0, I reset the counter (by broadcasting 1 below)
         } else {
             // Either it's turn 0, or I'm not the leader. So count.
-            archonOrder = rc.readBroadcast(CHANNEL_ARCHON_COUNTER);
+            int newArchonOrder = rc.readBroadcast(CHANNEL_ARCHON_COUNTER);
+            if (newArchonOrder > archonOrder) {
+                // Leader died, so now I am the leader
+                newArchonOrder = 0;
+            }
+            archonOrder = newArchonOrder;
         }
         rc.broadcast(CHANNEL_ARCHON_COUNTER, archonOrder + 1);
 

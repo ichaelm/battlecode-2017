@@ -296,7 +296,7 @@ public strictfp class RobotGlobal {
      * @throws GameActionException
      */
     public static boolean tryMoveElseLeftRight(Direction dir) throws GameActionException {
-        return tryMoveElseLeftRight(dir,10,8);
+        return tryMoveElseLeftRight(dir,15,11);
     }
 
     /**
