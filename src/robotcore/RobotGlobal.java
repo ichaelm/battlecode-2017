@@ -6,11 +6,24 @@ public strictfp class RobotGlobal {
     public static RobotController rc;
 
     // Channel constants
-    public static final int CHANNEL_ARCHON_COUNTER = 0;
-    public static final int CHANNEL_ARCHON_LOCATION_ARRAY_START = CHANNEL_ARCHON_COUNTER + 1;
-    public static final int CHANNEL_ARCHON_LOCATION_ARRAY_LENGTH = 6;
-    public static final int CHANNEL_FARM_LOCATION_ARRAY_START = CHANNEL_ARCHON_LOCATION_ARRAY_START + CHANNEL_ARCHON_LOCATION_ARRAY_LENGTH;
-    public static final int CHANNEL_FARM_LOCATION_ARRAY_LENGTH = 100;
+    public static final int ARCHON_COUNTER_CHANNEL = 0;
+    public static final int ARCHON_LOCATION_TABLE_CHANNEL = ARCHON_COUNTER_CHANNEL + 1;
+    public static final int ARCHON_LOCATION_TABLE_ENTRY_SIZE = 2;
+    public static final int ARCHON_LOCATION_TABLE_NUM_ENTRIES = 3;
+    public static final int ARCHON_LOCATION_TABLE_LENGTH = ARCHON_LOCATION_TABLE_ENTRY_SIZE * ARCHON_LOCATION_TABLE_NUM_ENTRIES;
+    public static final int FARM_TABLE_CHANNEL = ARCHON_LOCATION_TABLE_CHANNEL + ARCHON_LOCATION_TABLE_LENGTH;
+    public static final int FARM_TABLE_ENTRY_SIZE = 3;
+    public static final int FARM_TABLE_NUM_ENTRIES = 30;
+    public static final int FARM_TABLE_LENGTH = FARM_TABLE_ENTRY_SIZE + FARM_TABLE_NUM_ENTRIES;
+    public static final int FARM_TABLE_COUNT_CHANNEL = FARM_TABLE_CHANNEL + FARM_TABLE_LENGTH;
+    public static final int BOUNDS_TABLE_CHANNEL = FARM_TABLE_COUNT_CHANNEL + 1; // IN_W, IN_E, IN_S, IN_N, OUT_W, OUT_E, OUT_S, OUT_N
+    public static final int BOUNDS_TABLE_LENGTH = 8;
+    public static final int LJ_JOBS_TABLE_CHANNEL = BOUNDS_TABLE_CHANNEL + BOUNDS_TABLE_LENGTH;
+    public static final int LJ_JOBS_TABLE_ENTRY_SIZE = 3;
+    public static final int LJ_JOBS_TABLE_NUM_ENTRIES = 30;
+    public static final int LJ_JOBS_TABLE_LENGTH = LJ_JOBS_TABLE_ENTRY_SIZE * LJ_JOBS_TABLE_NUM_ENTRIES;
+    public static final int LJ_JOBS_TABLE_BEGIN_CHANNEL = LJ_JOBS_TABLE_CHANNEL + LJ_JOBS_TABLE_LENGTH;
+    public static final int LJ_JOBS_TABLE_COUNT_CHANNEL = LJ_JOBS_TABLE_BEGIN_CHANNEL + 1;
 
     // Performance constants
     public static final int DESIRED_ROBOTS = 20;
@@ -42,15 +55,20 @@ public strictfp class RobotGlobal {
     public static BulletInfo[] nearbyBullets;
     public static float nearbyBulletRadius;
     public static boolean neverUpdated;
+    public static MapBounds knownMapBounds;
 
     // Results of further processing
     private static RobotInfo nearestEnemy = null;
     private static TreeInfo nearestTree = null;
     private static TreeInfo nearestFriendlyTree = null;
+    private static TreeInfo nearestUnfriendlyTree = null;
     private static TreeInfo lowestFriendlyTree = null;
     private static BulletInfo[] bulletsToAvoid = new BulletInfo[0];
     private static int numBulletsToAvoid = 0;
     private static RobotType buildOrder;
+
+    // Special stored values
+    private static boolean circleClockwise = true;
 
     public static void init(RobotController rc) throws GameActionException {
         RobotGlobal.rc = rc;
@@ -84,6 +102,9 @@ public strictfp class RobotGlobal {
         updateNearbyRobots();
         updateNearbyTrees();
         updateNearbyBullets();
+
+        knownMapBounds = getMapBounds();
+        updateMapBounds(knownMapBounds);
 
         neverUpdated = false;
     }
@@ -137,9 +158,11 @@ public strictfp class RobotGlobal {
     public static void processNearbyTrees() throws GameActionException {
         float minDist = Float.POSITIVE_INFINITY;
         float minFriendlyDist = Float.POSITIVE_INFINITY;
+        float minUnfriendlyDist = Float.POSITIVE_INFINITY;
         float minFriendlyHealth = Float.POSITIVE_INFINITY;
         nearestTree = null;
         nearestFriendlyTree = null;
+        nearestUnfriendlyTree = null;
         lowestFriendlyTree = null;
         int numIters = Math.min(nearbyTrees.length, DESIRED_TREES);
         for (int i = 0; i < numIters; i++) {
@@ -157,6 +180,11 @@ public strictfp class RobotGlobal {
                 if (tree.health < minFriendlyHealth && tree.location.distanceTo(myLoc) <= 3) {
                     lowestFriendlyTree = tree;
                     minFriendlyHealth = tree.health;
+                }
+            } else {
+                if (dist < minUnfriendlyDist) {
+                    nearestUnfriendlyTree = tree;
+                    minUnfriendlyDist = dist;
                 }
             }
         }
@@ -176,11 +204,15 @@ public strictfp class RobotGlobal {
     }
 
     public static MapLocation[] getMyArchonLocations() throws GameActionException {
-        int numArchons = rc.readBroadcast(CHANNEL_ARCHON_COUNTER);
+        int numArchons = rc.readBroadcast(ARCHON_COUNTER_CHANNEL);
+        if (numArchons > ARCHON_LOCATION_TABLE_NUM_ENTRIES) {
+            System.out.println("More than 3 archons detected!!!");
+            numArchons = ARCHON_LOCATION_TABLE_NUM_ENTRIES;
+        }
         MapLocation[] archonLocations = new MapLocation[numArchons];
         for (int i = 0; i < numArchons; i++) {
-            float x = Float.intBitsToFloat(rc.readBroadcast(CHANNEL_ARCHON_LOCATION_ARRAY_START + (2*i)));
-            float y = Float.intBitsToFloat(rc.readBroadcast(CHANNEL_ARCHON_LOCATION_ARRAY_START + (2*i) + 1));
+            float x = Float.intBitsToFloat(rc.readBroadcast(ARCHON_LOCATION_TABLE_CHANNEL + (ARCHON_LOCATION_TABLE_ENTRY_SIZE*i)));
+            float y = Float.intBitsToFloat(rc.readBroadcast(ARCHON_LOCATION_TABLE_CHANNEL + (ARCHON_LOCATION_TABLE_ENTRY_SIZE*i) + 1));
             archonLocations[i] = new MapLocation(x, y);
         }
         return archonLocations;
@@ -207,6 +239,10 @@ public strictfp class RobotGlobal {
 
     public static TreeInfo getNearestFriendlyTree() {
         return nearestFriendlyTree;
+    }
+
+    public static TreeInfo getNearestUnfriendlyTree() {
+        return nearestUnfriendlyTree;
     }
 
     public static TreeInfo getLowestFriendlyTree() {
@@ -353,6 +389,44 @@ public strictfp class RobotGlobal {
         return false;
     }
 
+    public static boolean tryMoveDistFrom(MapLocation loc, float r) throws GameActionException {
+        boolean success;
+        if (myLoc.distanceTo(loc) - myType.strideRadius >= r) {
+            // go towards
+            success = tryMoveElseLeftRight(myLoc.directionTo(loc));
+            if (success) {
+                return true;
+            }
+            success = tryMoveElseBack(myLoc.directionTo(loc));
+            if (success) {
+                return true;
+            }
+        } else if (myLoc.distanceTo(loc) + myType.strideRadius <= r) {
+            // go away
+            success = tryMoveElseLeftRight(loc.directionTo(myLoc));
+            if (success) {
+                return true;
+            }
+            success = tryMoveElseBack(loc.directionTo(myLoc));
+            if (success) {
+                return true;
+            }
+        } else {
+            // go to intersection
+            MapLocation[] intersections = Geometry.getCircleIntersections(myLoc, myType.strideRadius, loc, r);
+            if (intersections.length >= 1) {
+                MapLocation target = intersections[circleClockwise ? 1 : 0];
+                success = tryMoveElseBack(myLoc.directionTo(target));
+                if (success) {
+                    return true;
+                } else {
+                    circleClockwise = !circleClockwise;
+                }
+            }
+        }
+        return false;
+    }
+
     public static boolean willCollideWith(BulletInfo bullet, MapLocation loc, float r) {
 
         // Get relevant bullet information
@@ -376,6 +450,221 @@ public strictfp class RobotGlobal {
             }
         }
         return false;
+    }
+
+    public static int[] readBroadcastArray(int channelStart, int length) throws GameActionException {
+        int[] retval = new int[length];
+        for (int i = 0; i < length; i++) {
+            retval[i] = rc.readBroadcast(channelStart + i);
+        }
+        return retval;
+    }
+
+    public static void writeBroadcastArray(int channelStart, int[] arr) throws GameActionException {
+        for (int i = 0; i < arr.length; i++) {
+            rc.broadcast(channelStart + i, arr[i]);
+        }
+    }
+
+    public static MapBounds getMapBounds() throws GameActionException {
+        //BOUNDS_TABLE_CHANNEL=4, maxXc=5, CHANNEL_BOUND_INNER_SOUTH=6, CHANNEL_BOUND_INNER_NORTH=7;
+        MapBounds bounds = MapBounds.deserialize(readBroadcastArray(BOUNDS_TABLE_CHANNEL, 8));
+
+        if (bounds.getOuterBound(MapBounds.WEST) == 0 && bounds.getOuterBound(MapBounds.EAST) == 0) {
+            bounds = new MapBounds();
+            bounds.updateInnerBound(MapBounds.WEST, myLoc.x - myType.bodyRadius);
+            bounds.updateInnerBound(MapBounds.EAST, myLoc.x + myType.bodyRadius);
+            bounds.updateInnerBound(MapBounds.SOUTH, myLoc.y - myType.bodyRadius);
+            bounds.updateInnerBound(MapBounds.NORTH, myLoc.y + myType.bodyRadius);
+        }
+
+        //Debug
+        /*
+        MapLocation knownNE = new MapLocation(bounds.getInnerBound(MapBounds.EAST), bounds.getInnerBound(MapBounds.NORTH));
+        MapLocation knownSE = new MapLocation(bounds.getInnerBound(MapBounds.EAST), bounds.getInnerBound(MapBounds.SOUTH));
+        MapLocation knownNW = new MapLocation(bounds.getInnerBound(MapBounds.WEST), bounds.getInnerBound(MapBounds.NORTH));
+        MapLocation knownSW = new MapLocation(bounds.getInnerBound(MapBounds.WEST), bounds.getInnerBound(MapBounds.SOUTH));
+
+        int r = 0; int g = 255; int b = 100;
+        rc.setIndicatorLine(knownNE, knownNW, r, g, b);
+        rc.setIndicatorLine(knownNE, knownSE, r, g, b);
+        rc.setIndicatorLine(knownSW, knownSE, r, g, b);
+        rc.setIndicatorLine(knownSW, knownNW, r, g, b);
+        */
+
+        return bounds;
+
+    }
+
+    public static MapLocation[] narrowBounds (MapLocation inner, MapLocation outer) throws GameActionException {
+
+        float i = outer.distanceTo(inner) / 2;
+        Direction away = outer.directionTo(inner);
+        MapLocation mid = outer.add(away, i);
+
+        int c = 0;
+
+        while (i >= 0.0005) { // this is the precision I choose to get
+            c+=1;
+            if (rc.onTheMap(mid)) {
+                inner = mid;
+                i = inner.distanceTo(outer) / 2;
+                mid = mid.subtract(away, i);
+            }
+            else {
+                outer = mid;
+                i = inner.distanceTo(outer) / 2;
+                mid = mid.add(away, i);
+            }
+
+            if (c > 15) {
+                System.out.println("narrowBounds timed out");
+                break;
+            }
+
+        }
+
+        return new MapLocation[]{inner, outer};
+    }
+
+    public static void updateMapBounds(MapBounds bounds) throws GameActionException {
+        MapLocation[] senseLocs = new MapLocation[4];
+        senseLocs[MapBounds.NORTH] = myLoc.add(Direction.getNorth(), myType.sensorRadius - 0.001f); // maxY sensed
+        senseLocs[MapBounds.EAST] = myLoc.add(Direction.getEast(), myType.sensorRadius - 0.001f); // maxX sensed;
+        senseLocs[MapBounds.SOUTH] = myLoc.add(Direction.getSouth(), myType.sensorRadius - 0.001f); // minY sensed;
+        senseLocs[MapBounds.WEST] = myLoc.add(Direction.getWest(), myType.sensorRadius - 0.001f); // minX sensed;
+
+        for (int dirOrd = 0; dirOrd < 4; dirOrd++) {
+            MapLocation senseLoc = senseLocs[dirOrd];
+            if(!rc.onTheMap(senseLoc)) {
+                bounds.updateInnerBound(dirOrd, myLoc.add(MapBounds.dirFromOrd(dirOrd), myType.bodyRadius));
+                bounds.updateOuterBound(dirOrd, senseLoc);
+                MapLocation[] eastBounds = narrowBounds(bounds.getInnerBoundLoc(dirOrd, myLoc), bounds.getOuterBoundLoc(dirOrd, myLoc));
+                bounds.updateInnerBound(dirOrd, eastBounds[0]);
+                bounds.updateOuterBound(dirOrd, eastBounds[1]);
+            } else {
+                bounds.updateInnerBound(dirOrd, senseLoc);
+            }
+        }
+
+        writeBroadcastArray(BOUNDS_TABLE_CHANNEL, bounds.serialize());
+    }
+
+    public static final int FARM_TABLE_ENTRY_EXISTS_MASK = 0x1;
+    public static final int FARM_TABLE_ENTRY_GARDENER_MASK = 0x2;
+    public static final int FARM_TABLE_ENTRY_LUMBERJACK_MASK = 0x4;
+
+    public static int createFarmTableEntry() throws GameActionException{
+        int farmTableCount = rc.readBroadcast(FARM_TABLE_COUNT_CHANNEL);
+        int farmNum = farmTableCount;
+        rc.broadcast(FARM_TABLE_COUNT_CHANNEL, farmTableCount + 1);
+        if (farmNum >= FARM_TABLE_NUM_ENTRIES) {
+            System.out.println("Farm table overflow!");
+            return -1;
+        }
+        int farmTableEntryChannel = FARM_TABLE_CHANNEL + (farmNum * FARM_TABLE_ENTRY_SIZE);
+        writeFarmTableEntry(farmNum, myLoc, true, false);
+        return farmNum;
+    }
+
+    public static void writeFarmTableEntry(int farmNum, MapLocation loc, boolean gardenerAlive, boolean lumberjackAlive) throws GameActionException {
+        int farmTableEntryChannel = FARM_TABLE_CHANNEL + (farmNum * FARM_TABLE_ENTRY_SIZE);
+        int xChannel = farmTableEntryChannel;
+        int yChannel = farmTableEntryChannel + 1;
+        int flagsChannel = farmTableEntryChannel + 2;
+        rc.broadcast(xChannel, Float.floatToIntBits(loc.x));
+        rc.broadcast(yChannel, Float.floatToIntBits(loc.y));
+        int flags = rc.readBroadcast(flagsChannel);
+        flags = flags | FARM_TABLE_ENTRY_EXISTS_MASK;
+        if (gardenerAlive) {
+            flags = flags | FARM_TABLE_ENTRY_GARDENER_MASK;
+        }
+        if (lumberjackAlive) {
+            flags = flags | FARM_TABLE_ENTRY_LUMBERJACK_MASK;
+        }
+        rc.broadcast(flagsChannel, flags);
+    }
+
+    public static MapLocation readFarmTableEntryLocation(int farmNum) throws GameActionException {
+        int farmTableEntryChannel = FARM_TABLE_CHANNEL + (farmNum * FARM_TABLE_ENTRY_SIZE);
+        int xChannel = farmTableEntryChannel;
+        int yChannel = farmTableEntryChannel + 1;
+        float x = Float.intBitsToFloat(rc.readBroadcast(xChannel));
+        float y = Float.intBitsToFloat(rc.readBroadcast(yChannel));
+        return new MapLocation(x, y);
+    }
+
+    public static int readFarmTableEntryFlags(int farmNum) throws GameActionException {
+        int farmTableEntryChannel = FARM_TABLE_CHANNEL + (farmNum * FARM_TABLE_ENTRY_SIZE);
+        int flagsChannel = farmTableEntryChannel + 2;
+        int flags = rc.readBroadcast(flagsChannel);
+        return flags;
+    }
+
+    public static void resetFarmTableEntryFlags(int farmNum) throws GameActionException {
+        int farmTableEntryChannel = FARM_TABLE_CHANNEL + (farmNum * FARM_TABLE_ENTRY_SIZE);
+        int flagsChannel = farmTableEntryChannel + 2;
+        rc.broadcast(flagsChannel, FARM_TABLE_ENTRY_EXISTS_MASK);
+    }
+
+    public static int getFarmTableEntryCount() throws GameActionException {
+        return rc.readBroadcast(FARM_TABLE_COUNT_CHANNEL);
+    }
+
+    public static void addLumberjackJob(MapLocation loc) throws GameActionException {
+        addLumberjackJob(loc, -1);
+    }
+
+    public static void addLumberjackJob(MapLocation loc, int farmNum) throws GameActionException {
+        int begin = rc.readBroadcast(LJ_JOBS_TABLE_BEGIN_CHANNEL);
+        int count = rc.readBroadcast(LJ_JOBS_TABLE_COUNT_CHANNEL);
+        if (count >= LJ_JOBS_TABLE_NUM_ENTRIES) {
+            System.out.println("Lumberjack job table overflow!");
+            return;
+        }
+        int entryIndex = (begin + count) % LJ_JOBS_TABLE_NUM_ENTRIES;
+        int entryChannel = LJ_JOBS_TABLE_CHANNEL + (entryIndex * LJ_JOBS_TABLE_ENTRY_SIZE);
+        int xChannel = entryChannel;
+        int yChannel = entryChannel + 1;
+        int farmNumChannel = entryChannel + 2;
+        rc.broadcast(xChannel, Float.floatToIntBits(loc.x));
+        rc.broadcast(yChannel, Float.floatToIntBits(loc.y));
+        rc.broadcast(farmNumChannel, farmNum);
+        count++;
+        rc.broadcast(LJ_JOBS_TABLE_COUNT_CHANNEL, count);
+    }
+
+    public static int popLumberjackJobFarmNum() throws GameActionException {
+        int begin = rc.readBroadcast(LJ_JOBS_TABLE_BEGIN_CHANNEL);
+        int count = rc.readBroadcast(LJ_JOBS_TABLE_COUNT_CHANNEL);
+        if (count <= 0) {
+            return -1;
+        }
+        int entryChannel = LJ_JOBS_TABLE_CHANNEL + (begin * LJ_JOBS_TABLE_ENTRY_SIZE);
+        //int xChannel = begin;
+        //int yChannel = begin + 1;
+        int farmNumChannel = entryChannel + 2;
+        int farmNum = rc.readBroadcast(farmNumChannel);
+        begin = (begin + 1) % LJ_JOBS_TABLE_NUM_ENTRIES;
+        rc.broadcast(LJ_JOBS_TABLE_BEGIN_CHANNEL, begin);
+        count = count - 1;
+        rc.broadcast(LJ_JOBS_TABLE_COUNT_CHANNEL, count);
+        return farmNum;
+    }
+
+    public static boolean[] getFarmTableHasLumberjackJob() throws GameActionException {
+        int farmTableCount = rc.readBroadcast(FARM_TABLE_COUNT_CHANNEL);
+        boolean[] farmTableHasLumberjackJob = new boolean[farmTableCount];
+        int begin = rc.readBroadcast(LJ_JOBS_TABLE_BEGIN_CHANNEL);
+        int count = rc.readBroadcast(LJ_JOBS_TABLE_COUNT_CHANNEL);
+        for (int i = 0; i < count; i++) {
+            int ljIndex = (begin + i) % LJ_JOBS_TABLE_NUM_ENTRIES;
+            int entryChannel = LJ_JOBS_TABLE_CHANNEL + (ljIndex * LJ_JOBS_TABLE_ENTRY_SIZE);
+            int farmNumChannel = entryChannel + 2;
+            int farmNum = rc.readBroadcast(farmNumChannel);
+            farmTableHasLumberjackJob[farmNum] = true;
+        }
+        return farmTableHasLumberjackJob;
     }
 
     /*

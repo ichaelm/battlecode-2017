@@ -6,6 +6,7 @@ public class GardenerBot extends RobotGlobal {
 
     private enum FarmingMode {SEARCHING, PLANTING, WATERING};
 
+    static int farmTableEntryNum = -1;
     static Direction goDir = null;
     static int birthTurn = -1;
     static MapLocation birthLocation = null;
@@ -282,7 +283,47 @@ public class GardenerBot extends RobotGlobal {
         }
 
         if (mode == FarmingMode.WATERING) {
+<<<<<<< HEAD
         	// Build a unit if possible
+=======
+            // Build a unit if possible
+            for (Direction farmDirection : farmDirections) {
+                if (rc.hasRobotBuildRequirements(currentBuildOrder)) {
+                    if (rc.canBuildRobot(currentBuildOrder, buildDir)) {
+                        rc.buildRobot(currentBuildOrder, buildDir);
+                    }
+                } else {
+                    break;
+                }
+            }
+        }
+
+        // Update farm table
+
+        if (farmTableEntryNum < 0) {
+            // Create farm table entry
+            farmTableEntryNum = createFarmTableEntry();
+        } else {
+            writeFarmTableEntry(farmTableEntryNum, myLoc, true, false);
+        }
+
+
+        /*
+        if (numPlanted >= 4) {
+            if (rc.canBuildRobot(RobotType.LUMBERJACK, buildDir) && Math.random() < 0.02) {
+                rc.buildRobot(RobotType.LUMBERJACK, buildDir);
+            } else if (teamBullets > 400 && Math.random() < .02 &&
+                    rc.canBuildRobot(RobotType.LUMBERJACK, buildDir)) {
+                rc.buildRobot(RobotType.LUMBERJACK, buildDir);
+            }
+            numPlanted = Math.min(numPlanted, rc.senseNearbyTrees(10, rc.getTeam()).length);
+        } else {
+            if (rc.canPlantTree(toBirthLocation)) {
+                rc.plantTree(toBirthLocation);
+                numPlanted++;
+            }
+        }
+>>>>>>> origin/master
 
         	float so = GameConstants.GENERAL_SPAWN_OFFSET;
         	MapLocation constructionZone = farmCenter.add(buildDirection, octDiag + 2 + so);

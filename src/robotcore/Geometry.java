@@ -4,14 +4,14 @@ import battlecode.common.*;
 
 public class Geometry {
 
-    public static float[] getCircleIntersections(MapLocation centerA, float radiusA, MapLocation centerB, float radiusB) {
+    public static MapLocation[] getCircleIntersections(MapLocation centerA, float radiusA, MapLocation centerB, float radiusB) {
         // calculate distance
         float dist = centerA.distanceTo(centerB);
         Direction dir = centerA.directionTo(centerB);
         // calculate location of intersections perpendicular to intersection line
         float perpIntermediate = (dist + radiusA + radiusB) * (-dist + radiusA + radiusB) * (-dist + radiusA - radiusB) * (-dist - radiusA + radiusB);
         if (perpIntermediate < 0) {
-            return new float[]{};
+            return new MapLocation[]{};
         } else {
             // calculate location of intersections parallel to intersection line
             float parallel = ((dist * dist) + (radiusA * radiusA) - (radiusB * radiusB)) / (2 * dist);
@@ -19,9 +19,9 @@ public class Geometry {
             float perp = (float)Math.sqrt(perpIntermediate) / (dist * 2);
             MapLocation intersectionLeft = intersectionCenter.add(dir.rotateLeftDegrees(90), perp);
             MapLocation intersectionRight = intersectionCenter.add(dir.rotateRightDegrees(90), perp);
-            float radiansLeft = centerA.directionTo(intersectionLeft).radians;
-            float radiansRight = centerA.directionTo(intersectionRight).radians;
-            return new float[]{radiansRight, radiansLeft};
+            //float radiansLeft = centerA.directionTo(intersectionLeft).radians;
+            //float radiansRight = centerA.directionTo(intersectionRight).radians;
+            return new MapLocation[]{intersectionLeft, intersectionRight};
         }
     }
 

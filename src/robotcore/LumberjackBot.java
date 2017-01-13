@@ -5,6 +5,8 @@ import robotcore.RobotGlobal;
 
 public class LumberjackBot extends RobotGlobal {
 
+    private static int farmNum = -1;
+
     public static void loop() {
         while (true) {
             try {
@@ -25,45 +27,112 @@ public class LumberjackBot extends RobotGlobal {
     public static void turn() throws GameActionException {
         processNearbyRobots();
         processNearbyBullets();
+        processNearbyTrees();
+
         RobotInfo nearestEnemy = getNearestEnemy();
-        Direction goDir = myLoc.directionTo(enemyInitialArchonLocations[0]);
+        Direction invadeDir = myLoc.directionTo(enemyInitialArchonLocations[0]);
         boolean enemyInRange = false;
+        Direction combatDir = null;
         if (nearestEnemy != null) {
-            goDir = myLoc.directionTo(nearestEnemy.location);
+            combatDir = myLoc.directionTo(nearestEnemy.location);
             float distToEnemy = myLoc.distanceTo(nearestEnemy.location);
             enemyInRange = distToEnemy <= myType.bodyRadius + GameConstants.LUMBERJACK_STRIKE_RADIUS + nearestEnemy.type.bodyRadius;
         }
 
-        boolean moved = tryMoveElseLeftRight(goDir);
-        if (!moved) {
-            moved = tryMoveElseBack(goDir);
+        boolean moved = false;
+        boolean attacked = false;
+        boolean treeInRange = false;
+        Direction treeDir = null;
+        TreeInfo nearestTree = getNearestUnfriendlyTree();
+        if (nearestTree != null) {
+            float distToTree = myLoc.distanceTo(nearestTree.location);
+            treeDir = myLoc.directionTo(nearestTree.location);
+            treeInRange = distToTree <= myType.bodyRadius + myType.strideRadius + nearestTree.radius;
         }
 
-        boolean attacked = false;
+        // Decide on mode
         if (enemyInRange) {
+            // combat
             if (rc.canStrike()) {
                 rc.strike();
                 attacked = true;
             }
-        }
-        if (!attacked) {
-            processNearbyTrees();
-            TreeInfo nearestTree = getNearestTree();
-            boolean treeInRange = false;
-            if (nearestTree != null) {
-                float distToTree = myLoc.distanceTo(nearestTree.location);
-                treeInRange = distToTree <= myType.bodyRadius + myType.strideRadius + nearestTree.radius;
-            }
-            if (treeInRange) {
-                if (rc.canShake(nearestTree.ID)) {
-                    rc.shake(nearestTree.ID);
-                }
-                if (rc.canChop(nearestTree.ID)) {
-                    rc.chop(nearestTree.ID);
-                    attacked = true;
+            if (!attacked) {
+                if (treeInRange) {
+                    if (rc.canShake(nearestTree.ID)) {
+                        rc.shake(nearestTree.ID);
+                    }
+                    if (rc.canChop(nearestTree.ID)) {
+                        rc.chop(nearestTree.ID);
+                        attacked = true;
+                    }
                 }
             }
+            moved = tryMoveElseBack(combatDir);
+        } else {
+            if (farmNum < 0) {
+                farmNum = popLumberjackJobFarmNum();
+            }
+            if (farmNum >= 0) {
+                // do farm job
+                MapLocation farmLoc = readFarmTableEntryLocation(farmNum);
+                writeFarmTableEntry(farmNum, farmLoc, false, true);
+                Direction farmDir = myLoc.directionTo(farmLoc);
+                if (enemyInRange) {
+                    if (rc.canStrike()) {
+                        rc.strike();
+                        attacked = true;
+                    }
+                }
+                if (!attacked) {
+                    if (treeInRange) {
+                        if (rc.canShake(nearestTree.ID)) {
+                            rc.shake(nearestTree.ID);
+                        }
+                        if (rc.canChop(nearestTree.ID)) {
+                            rc.chop(nearestTree.ID);
+                            attacked = true;
+                        }
+                    }
+                }
+                if (treeInRange && nearestTree.location.distanceTo(farmLoc) - nearestTree.radius < 4) {
+                    moved = tryMoveElseBack(treeDir);
+                } else {
+                    moved = tryMoveDistFrom(farmLoc, 4);
+                    if (!moved) {
+                        moved = tryMoveDistFrom(farmLoc, 4);
+                    }
+                }
+            } else {
+                // invade
+                if (enemyInRange) {
+                    if (rc.canStrike()) {
+                        rc.strike();
+                        attacked = true;
+                    }
+                }
+                if (!attacked) {
+                    if (treeInRange) {
+                        if (rc.canShake(nearestTree.ID)) {
+                            rc.shake(nearestTree.ID);
+                        }
+                        if (rc.canChop(nearestTree.ID)) {
+                            rc.chop(nearestTree.ID);
+                            attacked = true;
+                        }
+                    }
+                }
+                moved = tryMoveElseLeftRight(invadeDir);
+                if (!moved) {
+                    moved = tryMoveElseBack(invadeDir);
+                }
+            }
         }
+
+
+
+
+
 
         // Clock.yield() makes the robot wait until the next turn, then it will perform this loop again
         Clock.yield();
