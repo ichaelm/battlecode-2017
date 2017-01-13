@@ -61,6 +61,7 @@ public strictfp class RobotGlobal {
     private static RobotInfo nearestEnemy = null;
     private static TreeInfo nearestTree = null;
     private static TreeInfo nearestFriendlyTree = null;
+    private static TreeInfo nearestUnfriendlyTree = null;
     private static TreeInfo lowestFriendlyTree = null;
     private static BulletInfo[] bulletsToAvoid = new BulletInfo[0];
     private static int numBulletsToAvoid = 0;
@@ -154,9 +155,11 @@ public strictfp class RobotGlobal {
     public static void processNearbyTrees() throws GameActionException {
         float minDist = Float.POSITIVE_INFINITY;
         float minFriendlyDist = Float.POSITIVE_INFINITY;
+        float minUnfriendlyDist = Float.POSITIVE_INFINITY;
         float minFriendlyHealth = Float.POSITIVE_INFINITY;
         nearestTree = null;
         nearestFriendlyTree = null;
+        nearestUnfriendlyTree = null;
         lowestFriendlyTree = null;
         int numIters = Math.min(nearbyTrees.length, DESIRED_TREES);
         for (int i = 0; i < numIters; i++) {
@@ -174,6 +177,11 @@ public strictfp class RobotGlobal {
                 if (tree.health < minFriendlyHealth && tree.location.distanceTo(myLoc) <= 3) {
                     lowestFriendlyTree = tree;
                     minFriendlyHealth = tree.health;
+                }
+            } else {
+                if (dist < minUnfriendlyDist) {
+                    nearestUnfriendlyTree = tree;
+                    minUnfriendlyDist = dist;
                 }
             }
         }
@@ -228,6 +236,10 @@ public strictfp class RobotGlobal {
 
     public static TreeInfo getNearestFriendlyTree() {
         return nearestFriendlyTree;
+    }
+
+    public static TreeInfo getNearestUnfriendlyTree() {
+        return nearestUnfriendlyTree;
     }
 
     public static TreeInfo getLowestFriendlyTree() {
@@ -584,13 +596,18 @@ public strictfp class RobotGlobal {
     public static int popLumberjackJobFarmNum() throws GameActionException {
         int begin = rc.readBroadcast(LJ_JOBS_TABLE_BEGIN_CHANNEL);
         int count = rc.readBroadcast(LJ_JOBS_TABLE_COUNT_CHANNEL);
+        if (count <= 0) {
+            return -1;
+        }
         int entryChannel = LJ_JOBS_TABLE_CHANNEL + (begin * LJ_JOBS_TABLE_ENTRY_SIZE);
         //int xChannel = begin;
         //int yChannel = begin + 1;
         int farmNumChannel = entryChannel + 2;
         int farmNum = rc.readBroadcast(farmNumChannel);
         begin = (begin + 1) % LJ_JOBS_TABLE_NUM_ENTRIES;
-        rc.broadcast(LJ_JOBS_TABLE_BEGIN_CHANNEL, begin + 1);
+        rc.broadcast(LJ_JOBS_TABLE_BEGIN_CHANNEL, begin);
+        count = count - 1;
+        rc.broadcast(LJ_JOBS_TABLE_COUNT_CHANNEL, count);
         return farmNum;
     }
 
