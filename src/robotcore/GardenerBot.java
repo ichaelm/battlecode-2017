@@ -91,6 +91,7 @@ public class GardenerBot extends RobotGlobal {
     }
     
     public static void clk() throws GameActionException {
+        /*
     	if (Clock.getBytecodeNum() > 2000) System.out.println("\t\tBytecodes: " + Clock.getBytecodeNum());
     	if (Clock.getBytecodeNum() > 8500) {
     		System.out.println("\n\t\tWARNING\n");
@@ -106,6 +107,7 @@ public class GardenerBot extends RobotGlobal {
     		
     		
     	}
+    	*/
     }
     
     public static void countTrees() {
@@ -115,7 +117,7 @@ public class GardenerBot extends RobotGlobal {
     		numPlanted = inFarm.length;
 
     		if (prev < numPlanted) {
-    			System.out.println("A tree has magically appeared!");
+    			//System.out.println("A tree has magically appeared!");
     		}
     		
     		boolean anyKilled = false;
@@ -127,11 +129,11 @@ public class GardenerBot extends RobotGlobal {
     			if (info == null) {
     				killed = true;
     			} else if (info.team != rc.getTeam()) {
-    				System.out.println("Wait... that's not our tree!!! WTF!!!");
+    				//System.out.println("Wait... that's not our tree!!! WTF!!!");
     				killed = true;
     			}
     			if (killed) {
-    				System.out.println("Tree #" + t + " was killed...");
+    				//System.out.println("Tree #" + t + " was killed...");
     				isPlanted[t] = false;
     				rc.setIndicatorDot(l, 255, 0, 0);
     			}
@@ -142,7 +144,7 @@ public class GardenerBot extends RobotGlobal {
     		}
     		
     		if (anyKilled) {
-    			System.out.println("Attempting to replant...");
+    			//System.out.println("Attempting to replant...");
     			mode = FarmingMode.PLANTING;
     		}
 
@@ -157,7 +159,7 @@ public class GardenerBot extends RobotGlobal {
     public static void turn() throws GameActionException {
     	if(teamBullets >= 10000) rc.donate(10000);
         if(rc.getRoundLimit() - rc.getRoundNum() < 2) {
-        	System.out.println("Game is ending! All bullets are being donated.");
+        	//System.out.println("Game is ending! All bullets are being donated.");
         	rc.donate(teamBullets);
         }
     	if (birthTurn < 0) {
@@ -192,7 +194,7 @@ public class GardenerBot extends RobotGlobal {
             
             if (rc.getRoundNum() > 70 && Math.random() < .05) {	// if 70 rounds pass before farm is planted, attmpt to build lumberjack to assist.
             	Direction rd = randomDirection();
-            	System.out.println("Trying to build Lumberjacks...");
+            	//System.out.println("Trying to build Lumberjacks...");
             	if(rc.canBuildRobot(RobotType.LUMBERJACK, rd)) rc.buildRobot(RobotType.LUMBERJACK, rd);
             }
             
@@ -207,7 +209,7 @@ public class GardenerBot extends RobotGlobal {
             float minArchonDist = minDistBetween(myLoc, archonLocations);
             if (minFriendlyTreeDist > 10 && minArchonDist > 6) {
                 if (rc.onTheMap(myLoc, octagonFarmRadius) 
-                		&& !rc.isCircleOccupiedExceptByThisRobot(myLoc, octagonFarmRadius)) {
+                		&& (rc.getRoundNum() > 80 || !rc.isCircleOccupiedExceptByThisRobot(myLoc, octagonFarmRadius))) {
                 	mode = FarmingMode.PLANTING;
                 }
             }
@@ -216,7 +218,7 @@ public class GardenerBot extends RobotGlobal {
         if (mode == FarmingMode.PLANTING) {
         	// Plant a plant if needed
         	if (rc.isCircleOccupiedExceptByThisRobot(myLoc, octagonFarmRadius) && numPlanted == 0) {
-        		System.out.println("Octagon Farm may not be complete! No space!");
+        		//System.out.println("Octagon Farm may not be complete! No space!");
         	}
         	if (buildDirection == null)  buildDirection = enemyInitialArchonLocations[0].directionTo(myLoc).opposite();
         	
@@ -228,7 +230,7 @@ public class GardenerBot extends RobotGlobal {
         	boolean haveBullets = rc.hasTreeBuildRequirements();
 
         	if (!amPlanting) {
-        		System.out.println("Begin planting!");
+        		//System.out.println("Begin planting!");
         		amPlanting = true;
         	} else if (goBack) {
         		if (!moved){ // if not in center, goback to center
@@ -251,7 +253,7 @@ public class GardenerBot extends RobotGlobal {
         			
         			if (haveBullets && rc.onTheMap(pLoc) && rc.isBuildReady()){ // check location, cooldown, & bullets
         				Direction tDir = treeDirections[t];
-        				System.out.println("Attempting to plant Tree #" + t);
+        				//System.out.println("Attempting to plant Tree #" + t);
         				
         				if (rc.canMove(pLoc) && !moved) {						// check if can move this turn, then do
         					rc.move(pLoc);	// Go to plantLoc
@@ -259,17 +261,17 @@ public class GardenerBot extends RobotGlobal {
         					
         					if (rc.canPlantTree(tDir)) {						// check if can plant
         						rc.plantTree(myLoc.directionTo(treeLocs[t])); 	// Success! now account for the new tree
-        						System.out.println("Tree #" + t + " is planted.");
+        						//System.out.println("Tree #" + t + " is planted.");
         						numPlanted++;
         						isPlanted[t] = true;
         					} else {
-        						System.out.println("Couldn't plant tree # " + t + " in treeDir specified.");
+        						//System.out.println("Couldn't plant tree # " + t + " in treeDir specified.");
         					}
         				} else {
-        					System.out.println("Couldn't get to Tree Planting Location #" + t);
+        					//System.out.println("Couldn't get to Tree Planting Location #" + t);
         				}
         			}
-        			System.out.println("Waiting for cooldown...");
+        			//System.out.println("Waiting for cooldown...");
         		}
         		
         	}
