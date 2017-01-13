@@ -60,25 +60,32 @@ public class SoldierBot extends RobotGlobal {
                     }
                 }
                 */
-
+        debugTick(1);
         processNearbyRobots();
+        debugTick(2);
         processNearbyBullets();
+        debugTick(3);
         RobotInfo nearestEnemy = getNearestEnemy();
+        debugTick(4);
         Direction goDir = myLoc.directionTo(enemyInitialArchonLocations[0]);
         if (nearestEnemy != null) {
             goDir = myLoc.directionTo(nearestEnemy.location);
         }
 
+        debugTick(5);
         boolean moved = tryMoveElseLeftRight(goDir);
+        debugTick(6);
         if (!moved) {
             moved = tryMoveElseBack(goDir);
         }
+        debugTick(7);
 
         if (nearestEnemy != null) {
             if (rc.canFireSingleShot()) {
                 rc.fireSingleShot(myLoc.directionTo(nearestEnemy.location));
             }
         }
+        debugTick(8);
 
         // Clock.yield() makes the robot wait until the next turn, then it will perform this loop again
         Clock.yield();

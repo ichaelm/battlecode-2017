@@ -69,6 +69,9 @@ public strictfp class RobotGlobal {
 
     // Special stored values
     private static boolean circleClockwise = true;
+    private static int[] debugBytecodesList = new int[100];
+    private static int numDebugBytecodes = 0;
+    private static boolean debugTripped = false;
 
     public static void init(RobotController rc) throws GameActionException {
         RobotGlobal.rc = rc;
@@ -91,7 +94,9 @@ public strictfp class RobotGlobal {
         myHealth = rc.getHealth();
         robotCount = rc.getRobotCount();
         int newRoundNum = rc.getRoundNum();
-        if (!neverUpdated && newRoundNum - roundNum != 1) {
+        if (!neverUpdated && newRoundNum == roundNum) {
+            System.out.println("Restarted the same turn!");
+        } else if (!neverUpdated && newRoundNum - roundNum != 1) {
             System.out.println("Skipped a turn!");
         }
         roundNum = newRoundNum;
@@ -105,6 +110,9 @@ public strictfp class RobotGlobal {
 
         knownMapBounds = getMapBounds();
         updateMapBounds(knownMapBounds);
+
+        numDebugBytecodes = 0;
+        debugTripped = false;
 
         neverUpdated = false;
     }
@@ -312,9 +320,9 @@ public strictfp class RobotGlobal {
         float currentStride = myType.strideRadius;
         while (currentStride > 0.1) {
             MapLocation newLoc = myLoc.add(dir, currentStride);
-            if (!willCollideWith(bulletsToAvoid, newLoc, myType.bodyRadius)) {
-                if (rc.canMove(newLoc)) {
-                    rc.move(newLoc);
+            if (rc.canMove(dir, currentStride)) {
+                if (!willCollideWith(bulletsToAvoid, newLoc, myType.bodyRadius)) {
+                    rc.move(dir, currentStride);
                     myLoc = newLoc;
                     return true;
                 }
@@ -332,7 +340,7 @@ public strictfp class RobotGlobal {
      * @throws GameActionException
      */
     public static boolean tryMoveElseLeftRight(Direction dir) throws GameActionException {
-        return tryMoveElseLeftRight(dir,15,11);
+        return tryMoveElseLeftRight(dir,30,5);
     }
 
     /**
@@ -348,9 +356,9 @@ public strictfp class RobotGlobal {
 
         // First, try intended direction
         MapLocation newLoc = myLoc.add(dir, myType.strideRadius);
-        if (!willCollideWith(bulletsToAvoid, newLoc, myType.bodyRadius)) {
-            if (rc.canMove(newLoc)) {
-                rc.move(newLoc);
+        if (rc.canMove(dir)) {
+            if (!willCollideWith(bulletsToAvoid, newLoc, myType.bodyRadius)) {
+                rc.move(dir);
                 myLoc = newLoc;
                 return true;
             }
@@ -362,20 +370,22 @@ public strictfp class RobotGlobal {
 
         while(currentCheck<=checksPerSide) {
             // Try the offset of the left side
-            newLoc = myLoc.add(dir.rotateLeftDegrees(degreeOffset*currentCheck), myType.strideRadius);
-            if (!willCollideWith(bulletsToAvoid, newLoc, myType.bodyRadius)) {
-                if(rc.canMove(newLoc)) {
-                    rc.move(newLoc);
+            Direction newDir = dir.rotateLeftDegrees(degreeOffset*currentCheck);
+            newLoc = myLoc.add(newDir, myType.strideRadius);
+            if(rc.canMove(newDir)) {
+                if (!willCollideWith(bulletsToAvoid, newLoc, myType.bodyRadius)) {
+                    rc.move(newDir);
                     myLoc = newLoc;
                     return true;
                 }
             }
 
             // Try the offset on the right side
-            newLoc = myLoc.add(dir.rotateLeftDegrees(degreeOffset*currentCheck), myType.strideRadius);
-            if (!willCollideWith(bulletsToAvoid, newLoc, myType.bodyRadius)) {
-                if(rc.canMove(newLoc)) {
-                    rc.move(newLoc);
+            newDir = dir.rotateRightDegrees(degreeOffset*currentCheck);
+            newLoc = myLoc.add(newDir, myType.strideRadius);
+            if(rc.canMove(newDir)) {
+                if (!willCollideWith(bulletsToAvoid, newLoc, myType.bodyRadius)) {
+                    rc.move(newDir);
                     myLoc = newLoc;
                     return true;
                 }
@@ -428,8 +438,6 @@ public strictfp class RobotGlobal {
     }
 
     public static boolean willCollideWith(BulletInfo bullet, MapLocation loc, float r) {
-
-        // Get relevant bullet information
         Direction propagationDirection = bullet.dir;
         MapLocation bulletLocation = bullet.location;
         MapLocation bulletDestination = bulletLocation.add(propagationDirection, bullet.speed);
@@ -665,6 +673,26 @@ public strictfp class RobotGlobal {
             farmTableHasLumberjackJob[farmNum] = true;
         }
         return farmTableHasLumberjackJob;
+    }
+
+    public static void debugTick(int id) {
+        int currentRoundNum = rc.getRoundNum();
+        int bytecodes = Clock.getBytecodeNum();
+        debugBytecodesList[id] = bytecodes;
+        numDebugBytecodes = Math.max(numDebugBytecodes, id+1);
+        if (currentRoundNum != roundNum) {
+            if (!debugTripped) {
+                debugTripped = true;
+                System.out.println("Detected over-bytecodes!!!");
+                System.out.println("Round changed before tick " + id);
+                for (int i = 0; i < numDebugBytecodes - 1; i++) {
+                    System.out.println(i + ": " + debugBytecodesList[i]);
+                }
+                System.out.println((numDebugBytecodes - 1) + ": " + debugBytecodesList[numDebugBytecodes - 1] + " + " + (currentRoundNum - roundNum) + " rounds");
+            } else {
+                System.out.println(id + ": " + bytecodes + " + " + (currentRoundNum - roundNum) + " rounds");
+            }
+        }
     }
 
     /*
