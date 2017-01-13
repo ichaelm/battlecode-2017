@@ -25,6 +25,10 @@ public class ArchonBot extends RobotGlobal {
 
     public static void turn() throws GameActionException {
         if(teamBullets >= 10000) rc.donate(10000);
+        if(rc.getRoundLimit() - rc.getRoundNum() < 2) {
+        	System.out.println("Game is ending! All bullets are being donated.");
+        	rc.donate(teamBullets);
+        }
     	RobotType currentBuildOrder = getBuildOrder();
         float currentBuildOrderCost = currentBuildOrder.bulletCost;
 
@@ -53,9 +57,12 @@ public class ArchonBot extends RobotGlobal {
 
         Direction gardenerDir = randomDirection();
 
-        if (gardenersBuilt < 3) {
-            if (rc.canHireGardener(gardenerDir)) {
+        if (gardenersBuilt < 2) {
+            if (rc.canHireGardener(gardenerDir) && gardenersBuilt == 0) {
                 rc.hireGardener(gardenerDir);
+                gardenersBuilt++;
+            } else if (rc.canHireGardener(gardenerDir) && Math.random() < 0.01) {
+            	rc.hireGardener(gardenerDir);
                 gardenersBuilt++;
             }
         }
