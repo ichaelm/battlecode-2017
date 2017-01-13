@@ -155,7 +155,12 @@ public class GardenerBot extends RobotGlobal {
     }
 
     public static void turn() throws GameActionException {
-        if (birthTurn < 0) {
+    	if(teamBullets >= 10000) rc.donate(10000);
+        if(rc.getRoundLimit() - rc.getRoundNum() < 2) {
+        	System.out.println("Game is ending! All bullets are being donated.");
+        	rc.donate(teamBullets);
+        }
+    	if (birthTurn < 0) {
             birthTurn = roundNum;
             goDir = randomDirection();
             birthLocation = myLoc;
