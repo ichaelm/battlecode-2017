@@ -185,7 +185,7 @@ public class GardenerBot extends RobotGlobal {
                 }
             }
             
-            if (rc.getRoundNum() > 70) {	// if 70 rounds pass before farm is planted, attmpt to build lumberjack to assist.
+            if (rc.getRoundNum() > 70 && Math.random() < .05) {	// if 70 rounds pass before farm is planted, attmpt to build lumberjack to assist.
             	Direction rd = randomDirection();
             	System.out.println("Trying to build Lumberjacks...");
             	if(rc.canBuildRobot(RobotType.LUMBERJACK, rd)) rc.buildRobot(RobotType.LUMBERJACK, rd);
@@ -283,48 +283,8 @@ public class GardenerBot extends RobotGlobal {
         }
 
         if (mode == FarmingMode.WATERING) {
-<<<<<<< HEAD
+
         	// Build a unit if possible
-=======
-            // Build a unit if possible
-            for (Direction farmDirection : farmDirections) {
-                if (rc.hasRobotBuildRequirements(currentBuildOrder)) {
-                    if (rc.canBuildRobot(currentBuildOrder, buildDir)) {
-                        rc.buildRobot(currentBuildOrder, buildDir);
-                    }
-                } else {
-                    break;
-                }
-            }
-        }
-
-        // Update farm table
-
-        if (farmTableEntryNum < 0) {
-            // Create farm table entry
-            farmTableEntryNum = createFarmTableEntry();
-        } else {
-            writeFarmTableEntry(farmTableEntryNum, myLoc, true, false);
-        }
-
-
-        /*
-        if (numPlanted >= 4) {
-            if (rc.canBuildRobot(RobotType.LUMBERJACK, buildDir) && Math.random() < 0.02) {
-                rc.buildRobot(RobotType.LUMBERJACK, buildDir);
-            } else if (teamBullets > 400 && Math.random() < .02 &&
-                    rc.canBuildRobot(RobotType.LUMBERJACK, buildDir)) {
-                rc.buildRobot(RobotType.LUMBERJACK, buildDir);
-            }
-            numPlanted = Math.min(numPlanted, rc.senseNearbyTrees(10, rc.getTeam()).length);
-        } else {
-            if (rc.canPlantTree(toBirthLocation)) {
-                rc.plantTree(toBirthLocation);
-                numPlanted++;
-            }
-        }
->>>>>>> origin/master
-
         	float so = GameConstants.GENERAL_SPAWN_OFFSET;
         	MapLocation constructionZone = farmCenter.add(buildDirection, octDiag + 2 + so);
         	rc.setIndicatorDot(constructionZone, 55, 55, 55);
@@ -339,7 +299,7 @@ public class GardenerBot extends RobotGlobal {
         			goBack = true;
         		}
         	}
-
+        	
         	if (goBack) {
         		if (!moved) {
         			moved = tryMoveExact(farmCenter);
@@ -353,9 +313,7 @@ public class GardenerBot extends RobotGlobal {
         	//System.out.println("watering");
         	
         }
-
-       
-
+        
         Clock.yield();
     }
 }
