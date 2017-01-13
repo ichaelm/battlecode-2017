@@ -313,6 +313,15 @@ public class GardenerBot extends RobotGlobal {
         	//System.out.println("watering");
         	
         }
+
+        // Update farm table
+
+        if (farmTableEntryNum < 0) {
+            // Create farm table entry
+            farmTableEntryNum = createFarmTableEntry();
+        } else {
+            writeFarmTableEntry(farmTableEntryNum, myLoc, true, false);
+        }
         
         Clock.yield();
     }
