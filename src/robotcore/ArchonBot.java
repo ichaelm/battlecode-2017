@@ -49,9 +49,12 @@ public class ArchonBot extends RobotGlobal {
 
         Direction gardenerDir = randomDirection();
 
-        if (gardenersBuilt < 3) {
-            if (rc.canHireGardener(gardenerDir)) {
+        if (gardenersBuilt < 2) {
+            if (rc.canHireGardener(gardenerDir) && gardenersBuilt == 0) {
                 rc.hireGardener(gardenerDir);
+                gardenersBuilt++;
+            } else if (rc.canHireGardener(gardenerDir) && Math.random() < 0.01) {
+            	rc.hireGardener(gardenerDir);
                 gardenersBuilt++;
             }
         }
