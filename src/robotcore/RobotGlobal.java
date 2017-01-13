@@ -67,6 +67,9 @@ public strictfp class RobotGlobal {
     private static int numBulletsToAvoid = 0;
     private static RobotType buildOrder;
 
+    // Special stored values
+    private static boolean circleClockwise = true;
+
     public static void init(RobotController rc) throws GameActionException {
         RobotGlobal.rc = rc;
         myTeam = rc.getTeam();
@@ -383,6 +386,44 @@ public strictfp class RobotGlobal {
         }
 
         // A move never happened, so return false.
+        return false;
+    }
+
+    public static boolean tryMoveDistFrom(MapLocation loc, float r) throws GameActionException {
+        boolean success;
+        if (myLoc.distanceTo(loc) - myType.strideRadius >= r) {
+            // go towards
+            success = tryMoveElseLeftRight(myLoc.directionTo(loc));
+            if (success) {
+                return true;
+            }
+            success = tryMoveElseBack(myLoc.directionTo(loc));
+            if (success) {
+                return true;
+            }
+        } else if (myLoc.distanceTo(loc) + myType.strideRadius <= r) {
+            // go away
+            success = tryMoveElseLeftRight(loc.directionTo(myLoc));
+            if (success) {
+                return true;
+            }
+            success = tryMoveElseBack(loc.directionTo(myLoc));
+            if (success) {
+                return true;
+            }
+        } else {
+            // go to intersection
+            MapLocation[] intersections = Geometry.getCircleIntersections(myLoc, myType.strideRadius, loc, r);
+            if (intersections.length >= 1) {
+                MapLocation target = intersections[circleClockwise ? 1 : 0];
+                success = tryMoveElseBack(myLoc.directionTo(target));
+                if (success) {
+                    return true;
+                } else {
+                    circleClockwise = !circleClockwise;
+                }
+            }
+        }
         return false;
     }
 

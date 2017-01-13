@@ -98,9 +98,9 @@ public class LumberjackBot extends RobotGlobal {
                 if (treeInRange && nearestTree.location.distanceTo(farmLoc) - nearestTree.radius < 4) {
                     moved = tryMoveElseBack(treeDir);
                 } else {
-                    moved = tryMoveElseLeftRight(farmDir);
+                    moved = tryMoveDistFrom(farmLoc, 4);
                     if (!moved) {
-                        moved = tryMoveElseBack(farmDir);
+                        moved = tryMoveDistFrom(farmLoc, 4);
                     }
                 }
             } else {
