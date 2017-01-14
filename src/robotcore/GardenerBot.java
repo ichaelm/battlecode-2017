@@ -381,17 +381,19 @@ public class GardenerBot extends RobotGlobal {
         	float so = GameConstants.GENERAL_SPAWN_OFFSET;
         	MapLocation constructionZone = farmCenter.add(buildDirection, octDiag + 2 + so);
         	rc.setIndicatorDot(constructionZone, 55, 55, 55);
-        	
-        	if (rc.hasRobotBuildRequirements(currentBuildOrder) && !rc.isCircleOccupiedExceptByThisRobot(constructionZone, 1)) {
-        		//System.out.println("Moved: " + moved);
-        		if (!moved) {
-        			moved = tryMoveExact(buildLoc);
-        			if (rc.canBuildRobot(currentBuildOrder, buildDirection)){
-        				rc.buildRobot(currentBuildOrder, buildDirection);
-        			}
-        			goBack = true;
-        		}
-        	}
+
+        	if (currentBuildOrder != null) {
+                if (rc.hasRobotBuildRequirements(currentBuildOrder) && !rc.isCircleOccupiedExceptByThisRobot(constructionZone, 1)) {
+                    //System.out.println("Moved: " + moved);
+                    if (!moved) {
+                        moved = tryMoveExact(buildLoc);
+                        if (rc.canBuildRobot(currentBuildOrder, buildDirection)){
+                            rc.buildRobot(currentBuildOrder, buildDirection);
+                        }
+                        goBack = true;
+                    }
+                }
+            }
         	
         	if (goBack) {
         		if (!moved) {
