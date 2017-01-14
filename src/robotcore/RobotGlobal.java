@@ -2,6 +2,14 @@ package robotcore;
 
 import battlecode.common.*;
 
+/*
+Gardener priorities:
+ 3. Primary build queue (scout, each g adds lumberjack)
+ 4. Trees
+ 6. Secondary build queue
+ 7. Global default build
+ */
+
 public strictfp class RobotGlobal {
     public static RobotController rc;
 
@@ -24,6 +32,15 @@ public strictfp class RobotGlobal {
     public static final int LJ_JOBS_TABLE_LENGTH = LJ_JOBS_TABLE_ENTRY_SIZE * LJ_JOBS_TABLE_NUM_ENTRIES;
     public static final int LJ_JOBS_TABLE_BEGIN_CHANNEL = LJ_JOBS_TABLE_CHANNEL + LJ_JOBS_TABLE_LENGTH;
     public static final int LJ_JOBS_TABLE_COUNT_CHANNEL = LJ_JOBS_TABLE_BEGIN_CHANNEL + 1;
+    public static final int BUILD_QUEUE_1_CHANNEL = LJ_JOBS_TABLE_COUNT_CHANNEL + 1;
+    public static final int BUILD_QUEUE_1_LENGTH = 100;
+    public static final int BUILD_QUEUE_1_BEGIN_CHANNEL = BUILD_QUEUE_1_CHANNEL + BUILD_QUEUE_1_LENGTH;
+    public static final int BUILD_QUEUE_1_COUNT_CHANNEL = BUILD_QUEUE_1_BEGIN_CHANNEL + 1;
+    public static final int BUILD_QUEUE_2_CHANNEL = BUILD_QUEUE_1_COUNT_CHANNEL + 1;
+    public static final int BUILD_QUEUE_2_LENGTH = 100;
+    public static final int BUILD_QUEUE_2_BEGIN_CHANNEL = BUILD_QUEUE_2_CHANNEL + BUILD_QUEUE_2_LENGTH;
+    public static final int BUILD_QUEUE_2_COUNT_CHANNEL = BUILD_QUEUE_2_BEGIN_CHANNEL + 1;
+    public static final int GLOBAL_DEFAULT_BUILD_CHANNEL = BUILD_QUEUE_2_COUNT_CHANNEL + 1;
 
     // Performance constants
     public static final int DESIRED_ROBOTS = 20;
@@ -65,13 +82,16 @@ public strictfp class RobotGlobal {
     private static TreeInfo lowestFriendlyTree = null;
     private static BulletInfo[] bulletsToAvoid = new BulletInfo[0];
     private static int numBulletsToAvoid = 0;
-    private static RobotType buildOrder;
 
     // Special stored values
     private static boolean circleClockwise = true;
     private static int[] debugBytecodesList = new int[100];
     private static int numDebugBytecodes = 0;
     private static boolean debugTripped = false;
+
+    private static RobotType[] initialBuildQueue1 = new RobotType[0];
+    private static RobotType[] initialBuildQueue2 = new RobotType[0];
+    private static RobotType initialDefaultBuild = null;
 
     public static void init(RobotController rc) throws GameActionException {
         RobotGlobal.rc = rc;
@@ -298,14 +318,6 @@ public strictfp class RobotGlobal {
                 }
             }
         }
-    }
-
-    public static void setBuildOrder(RobotType type) {
-        buildOrder = type;
-    }
-
-    public static RobotType getBuildOrder() {
-        return buildOrder;
     }
 
     /**
@@ -675,6 +687,103 @@ public strictfp class RobotGlobal {
         return farmTableHasLumberjackJob;
     }
 
+    public static RobotType peekBuildQueue1() throws GameActionException {
+        int begin = rc.readBroadcast(BUILD_QUEUE_1_BEGIN_CHANNEL);
+        int count = rc.readBroadcast(BUILD_QUEUE_1_COUNT_CHANNEL);
+        if (count < 1) {
+            return null;
+        }
+        int itemChannel = BUILD_QUEUE_1_CHANNEL + begin;
+        int robotTypeNum = rc.readBroadcast(itemChannel);
+        return RobotType.values()[robotTypeNum];
+    }
+
+    public static RobotType peekBuildQueue2() throws GameActionException {
+        int begin = rc.readBroadcast(BUILD_QUEUE_2_BEGIN_CHANNEL);
+        int count = rc.readBroadcast(BUILD_QUEUE_2_COUNT_CHANNEL);
+        if (count <= 0) {
+            return null;
+        }
+        int entryChannel = BUILD_QUEUE_2_CHANNEL + begin;
+        int robotTypeNum = rc.readBroadcast(entryChannel);
+        return RobotType.values()[robotTypeNum];
+    }
+
+    public static void addBuildQueue1(RobotType rt) throws GameActionException {
+        int begin = rc.readBroadcast(BUILD_QUEUE_1_BEGIN_CHANNEL);
+        int count = rc.readBroadcast(BUILD_QUEUE_1_COUNT_CHANNEL);
+        if (count >= BUILD_QUEUE_1_LENGTH) {
+            System.out.println("Build queue 1 overflow!");
+            return;
+        }
+        int entryIndex = (begin + count) % BUILD_QUEUE_1_LENGTH;
+        int entryChannel = BUILD_QUEUE_1_CHANNEL + entryIndex;
+        rc.broadcast(entryChannel, rt.ordinal());
+        count++;
+        rc.broadcast(BUILD_QUEUE_1_COUNT_CHANNEL, count);
+    }
+
+    public static void addBuildQueue2(RobotType rt) throws GameActionException {
+        int begin = rc.readBroadcast(BUILD_QUEUE_2_BEGIN_CHANNEL);
+        int count = rc.readBroadcast(BUILD_QUEUE_2_COUNT_CHANNEL);
+        if (count >= BUILD_QUEUE_2_LENGTH) {
+            System.out.println("Build queue 2 overflow!");
+            return;
+        }
+        int entryIndex = (begin + count) % BUILD_QUEUE_2_LENGTH;
+        int entryChannel = BUILD_QUEUE_2_CHANNEL + entryIndex;
+        rc.broadcast(entryChannel, rt.ordinal());
+        count++;
+        rc.broadcast(BUILD_QUEUE_2_COUNT_CHANNEL, count);
+    }
+
+    public static RobotType popBuildQueue1() throws GameActionException {
+        int begin = rc.readBroadcast(BUILD_QUEUE_1_BEGIN_CHANNEL);
+        int count = rc.readBroadcast(BUILD_QUEUE_1_COUNT_CHANNEL);
+        if (count <= 0) {
+            return null;
+        }
+        int entryChannel = BUILD_QUEUE_1_CHANNEL + begin;
+        int rtNum = rc.readBroadcast(entryChannel);
+        begin = (begin + 1) % BUILD_QUEUE_1_LENGTH;
+        rc.broadcast(BUILD_QUEUE_1_BEGIN_CHANNEL, begin);
+        count = count - 1;
+        rc.broadcast(BUILD_QUEUE_1_COUNT_CHANNEL, count);
+        return RobotType.values()[rtNum];
+    }
+
+    public static RobotType popBuildQueue2() throws GameActionException {
+        int begin = rc.readBroadcast(BUILD_QUEUE_2_BEGIN_CHANNEL);
+        int count = rc.readBroadcast(BUILD_QUEUE_2_COUNT_CHANNEL);
+        if (count <= 0) {
+            return null;
+        }
+        int entryChannel = BUILD_QUEUE_2_CHANNEL + begin;
+        int rtNum = rc.readBroadcast(entryChannel);
+        begin = (begin + 1) % BUILD_QUEUE_2_LENGTH;
+        rc.broadcast(BUILD_QUEUE_2_BEGIN_CHANNEL, begin);
+        count = count - 1;
+        rc.broadcast(BUILD_QUEUE_2_COUNT_CHANNEL, count);
+        return RobotType.values()[rtNum];
+    }
+
+    public static void setGlobalDefaultBuild(RobotType type) throws GameActionException {
+        if (type == null) {
+            rc.broadcast(GLOBAL_DEFAULT_BUILD_CHANNEL, -1);
+        } else {
+            rc.broadcast(GLOBAL_DEFAULT_BUILD_CHANNEL, type.ordinal());
+        }
+    }
+
+    public static RobotType getGlobalDefaultBuild() throws GameActionException {
+        int robotNum = rc.readBroadcast(GLOBAL_DEFAULT_BUILD_CHANNEL);
+        if (robotNum < 0) {
+            return null;
+        } else {
+            return RobotType.values()[robotNum];
+        }
+    }
+
     public static void debugTick(int id) {
         int currentRoundNum = rc.getRoundNum();
         int bytecodes = Clock.getBytecodeNum();
@@ -693,6 +802,34 @@ public strictfp class RobotGlobal {
                 System.out.println(id + ": " + bytecodes + " + " + (currentRoundNum - roundNum) + " rounds");
             }
         }
+    }
+
+    public static void setInitialBuildQueue1(RobotType[] initialBuildQueue1) {
+        RobotGlobal.initialBuildQueue1 = initialBuildQueue1;
+    }
+
+    public static void setInitialBuildQueue2(RobotType[] initialBuildQueue2) {
+        RobotGlobal.initialBuildQueue2 = initialBuildQueue2;
+    }
+
+    public static void setInitialDefaultBuild(RobotType initialDefaultBuild) {
+        RobotGlobal.initialDefaultBuild = initialDefaultBuild;
+    }
+
+    public static void initializeBuildQueue1() throws GameActionException {
+        for (RobotType rt : initialBuildQueue1) {
+            addBuildQueue1(rt);
+        }
+    }
+
+    public static void initializeBuildQueue2() throws GameActionException {
+        for (RobotType rt : initialBuildQueue2) {
+            addBuildQueue2(rt);
+        }
+    }
+
+    public static void initializeDefaultBuild() throws GameActionException {
+        setGlobalDefaultBuild(initialDefaultBuild);
     }
 
     /*

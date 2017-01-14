@@ -6,7 +6,7 @@ public strictfp class RobotPlayer {
     public static void run(RobotController rc) throws GameActionException {
         try {
             RobotGlobal.init(rc);
-            RobotGlobal.setBuildOrder(RobotType.LUMBERJACK);
+            RobotGlobal.setGlobalDefaultBuild(RobotType.LUMBERJACK);
         } catch (Exception e) {
             System.out.println("Exception during global init");
             e.printStackTrace();

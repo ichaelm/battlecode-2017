@@ -255,7 +255,7 @@ public class GardenerBot extends RobotGlobal {
 
         Direction buildDir = randomDirection();
 
-        RobotType currentBuildOrder = getBuildOrder();
+        RobotType currentBuildOrder = getGlobalDefaultBuild();
 
         Direction toBirthLocation = myLoc.directionTo(birthLocation);
         if (toBirthLocation == null) {

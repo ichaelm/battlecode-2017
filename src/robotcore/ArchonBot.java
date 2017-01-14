@@ -29,7 +29,7 @@ public class ArchonBot extends RobotGlobal {
         	System.out.println("Game is ending! All bullets are being donated.");
         	rc.donate(teamBullets);
         }
-    	RobotType currentBuildOrder = getBuildOrder();
+    	RobotType currentBuildOrder = getGlobalDefaultBuild();
         float currentBuildOrderCost = currentBuildOrder.bulletCost;
 
         // Archon count and leader selection
@@ -68,6 +68,9 @@ public class ArchonBot extends RobotGlobal {
         }
 
         if (isLeader()) {
+            initializeBuildQueue1();
+            initializeBuildQueue2();
+            initializeDefaultBuild();
             maintainFarmAndLumberjackTables();
         }
 
