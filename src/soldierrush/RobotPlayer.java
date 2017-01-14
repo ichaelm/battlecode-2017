@@ -10,9 +10,7 @@ public strictfp class RobotPlayer {
         try {
             RobotGlobal.init(rc);
             RobotGlobal.setInitialBuildQueue1(new RobotType[]{
-                    RobotType.LUMBERJACK,
-                    RobotType.LUMBERJACK,
-                    RobotType.LUMBERJACK
+                    // Nothing
             });
             RobotGlobal.setInitialDefaultBuild(RobotType.SOLDIER);
         } catch (Exception e) {
