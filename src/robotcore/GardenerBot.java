@@ -4,7 +4,7 @@ import battlecode.common.*;
 
 public class GardenerBot extends RobotGlobal {
 
-    private enum FarmingMode {SEARCHING, PLANTING, WATERING};
+    private enum FarmingMode {SEARCHING, FARMING};
 
     static int farmTableEntryNum = -1;
     static Direction goDir = null;
@@ -170,7 +170,7 @@ public class GardenerBot extends RobotGlobal {
     		
     		if (anyKilled) {
     			//System.out.println("Attempting to replant...");
-    			mode = FarmingMode.PLANTING;
+    			mode = FarmingMode.FARMING;
     		}
 
     		
@@ -279,11 +279,6 @@ public class GardenerBot extends RobotGlobal {
                 }
             }
             debugTick(10);
-            if (rc.getRoundNum() > 70 && Math.random() < .05) {	// if 70 rounds pass before planting, attempt to build lumberjack to assist.
-            	Direction rd = randomDirection();
-            	//System.out.println("Trying to build Lumberjacks...");
-            	if(rc.canBuildRobot(RobotType.LUMBERJACK, rd)) rc.buildRobot(RobotType.LUMBERJACK, rd);
-            }
             
             
             // transition to planting
@@ -295,12 +290,12 @@ public class GardenerBot extends RobotGlobal {
             MapLocation[] archonLocations = getMyArchonLocations();
             float minArchonDist = minDistBetween(myLoc, archonLocations);
             if (minFriendlyTreeDist > 8 && minArchonDist > 8) {
-            	if(findFarmLocation()) mode = FarmingMode.PLANTING;
+            	if(findFarmLocation()) mode = FarmingMode.FARMING;
             	
             }
         }
 
-        if (mode == FarmingMode.PLANTING) {
+        if (mode == FarmingMode.FARMING) {
         	// Plant a plant if needed
         	if (rc.isCircleOccupiedExceptByThisRobot(myLoc, octagonFarmRadius) && numPlanted == 0) {
         		//System.out.println("Octagon Farm may not be complete! No space!");
@@ -351,7 +346,7 @@ public class GardenerBot extends RobotGlobal {
 
         		int t = nextToPlant;
         		if (nextToPlant > 6) { // when done planting, set to watering mode
-        			mode = FarmingMode.WATERING;
+        			//mode = FarmingMode.WATERING;
         		}
         		else { 															// if not finished planting trees...
         			MapLocation pLoc = treePlantingLocs[t];
@@ -382,9 +377,9 @@ public class GardenerBot extends RobotGlobal {
         		
         	}
 
-        }
 
-        if (mode == FarmingMode.PLANTING || mode == FarmingMode.WATERING) {
+
+
         	// Water the neediest friendly plant
         	TreeInfo lowestFriendlyTree = getLowestFriendlyTree();
         	if (lowestFriendlyTree != null) {
@@ -393,9 +388,10 @@ public class GardenerBot extends RobotGlobal {
         		}
         	}
         	//drawFarm();
-        }
 
-        if (mode == FarmingMode.WATERING) {
+
+
+
         	
         	// Build a unit if possible
         	float so = GameConstants.GENERAL_SPAWN_OFFSET;
