@@ -314,15 +314,35 @@ public class GardenerBot extends RobotGlobal {
 
         	boolean haveBullets = rc.hasTreeBuildRequirements();
 
-        	if (!amPlanting) {
-        		//System.out.println("Begin planting!");
-        		amPlanting = true;
-        	} else if (goBack) {
-        		if (!moved){ // if not in center, goback to center
-        			moved = tryMoveExact(farmCenter);
-        			goBack = !moved;
-        		}
-        	} else {
+        	RobotType priorityBuild = peekBuildQueue1();
+
+            if (!amPlanting) {
+                //System.out.println("Begin planting!");
+                amPlanting = true;
+            } else if (goBack) {
+                if (!moved){ // if not in center, goback to center
+                    moved = tryMoveExact(farmCenter);
+                    goBack = !moved;
+                }
+            } else if (priorityBuild != null) {
+                // Build a unit if possible
+                float so = GameConstants.GENERAL_SPAWN_OFFSET;
+                MapLocation constructionZone = farmCenter.add(buildDirection, octDiag + 2 + so);
+                rc.setIndicatorDot(constructionZone, 55, 55, 55);
+                if (priorityBuild != null) {
+                    if (rc.hasRobotBuildRequirements(priorityBuild) && !rc.isCircleOccupiedExceptByThisRobot(constructionZone, 1)) {
+                        //System.out.println("Moved: " + moved);
+                        if (!moved) {
+                            moved = tryMoveExact(buildLoc);
+                            if (rc.canBuildRobot(priorityBuild, buildDirection)){
+                                rc.buildRobot(priorityBuild, buildDirection);
+                                popBuildQueue1();
+                            }
+                            goBack = true;
+                        }
+                    }
+                }
+            } else {
         		int nextToPlant = 0;
         		for (boolean b: isPlanted) {
         			if(!b) break;
@@ -382,7 +402,12 @@ public class GardenerBot extends RobotGlobal {
         	MapLocation constructionZone = farmCenter.add(buildDirection, octDiag + 2 + so);
         	rc.setIndicatorDot(constructionZone, 55, 55, 55);
 
-        	if (currentBuildOrder != null) {
+            if (goBack) {
+                if (!moved) {
+                    moved = tryMoveExact(farmCenter);
+                    goBack = false;
+                }
+            } else if (currentBuildOrder != null) {
                 if (rc.hasRobotBuildRequirements(currentBuildOrder) && !rc.isCircleOccupiedExceptByThisRobot(constructionZone, 1)) {
                     //System.out.println("Moved: " + moved);
                     if (!moved) {
@@ -394,14 +419,6 @@ public class GardenerBot extends RobotGlobal {
                     }
                 }
             }
-        	
-        	if (goBack) {
-        		if (!moved) {
-        			moved = tryMoveExact(farmCenter);
-        			goBack = false;
-        		}
-        		
-        	}
 
         	countTrees();
         	//System.out.println("watering");
