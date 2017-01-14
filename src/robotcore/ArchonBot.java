@@ -5,6 +5,7 @@ import battlecode.common.*;
 public class ArchonBot extends RobotGlobal {
     static int archonOrder = -1;
     static int gardenersBuilt = 0;
+    static boolean firstTurn = true;
 
     public static void loop() {
         while (true) {
@@ -44,6 +45,14 @@ public class ArchonBot extends RobotGlobal {
         }
         rc.broadcast(ARCHON_COUNTER_CHANNEL, archonOrder + 1);
 
+        if (isLeader()) {
+            if (firstTurn) {
+                initializeBuildQueue1();
+                initializeBuildQueue2();
+                initializeDefaultBuild();
+            }
+        }
+
         // Broadcast location
         int locChannel = ARCHON_LOCATION_TABLE_CHANNEL + (archonOrder*ARCHON_LOCATION_TABLE_ENTRY_SIZE);
         if (archonOrder >= ARCHON_LOCATION_TABLE_NUM_ENTRIES) {
@@ -66,11 +75,10 @@ public class ArchonBot extends RobotGlobal {
         }
 
         if (isLeader()) {
-            initializeBuildQueue1();
-            initializeBuildQueue2();
-            initializeDefaultBuild();
             maintainFarmAndLumberjackTables();
         }
+
+        firstTurn = false;
 
         // Clock.yield() makes the robot wait until the next turn, then it will perform this loop again
         Clock.yield();
