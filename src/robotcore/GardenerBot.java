@@ -110,25 +110,19 @@ public class GardenerBot extends RobotGlobal {
     }
     
     // quick and easy method to check if a tree or build location is occupied
-    public static boolean spotBlocked(int treeNum) {
+    public static boolean spotBlocked(int treeNum) throws GameActionException {
     	boolean occupied = true;
-    	try {
-    		rc.setIndicatorDot(treeLocs[treeNum], 0, 55, 255);
-    		occupied = rc.isCircleOccupied(treeLocs[treeNum], 1);
-    		
-    		if (occupied) {
-    			RobotInfo r = rc.senseRobotAtLocation(treeLocs[treeNum]);
-    			if(r != null) { // if blocking thing is a robot...
-    				if (r.getTeam() == rc.getTeam()) occupied = false; // if our team, say it's open (cuz it will presumably move)
-    				if (r.getType() == RobotType.ARCHON) occupied = true; // Archons, however, dont move.
-    				else occupied = true; // if enemy team, say it's occupied (cuz that robot is going to attack our gardener)
-    			}
-    		}
-    		
-		} catch (GameActionException e) {
-			System.out.println("That tree spot is blocked!");
-			e.printStackTrace();
-		}
+        rc.setIndicatorDot(treeLocs[treeNum], 0, 55, 255);
+        occupied = rc.isCircleOccupied(treeLocs[treeNum], 1);
+
+        if (occupied) {
+            RobotInfo r = rc.senseRobotAtLocation(treeLocs[treeNum]);
+            if(r != null) { // if blocking thing is a robot...
+                if (r.getTeam() == rc.getTeam()) occupied = false; // if our team, say it's open (cuz it will presumably move)
+                if (r.getType() == RobotType.ARCHON) occupied = true; // Archons, however, dont move.
+                else occupied = true; // if enemy team, say it's occupied (cuz that robot is going to attack our gardener)
+            }
+        }
     	return occupied;
     }
     
@@ -188,14 +182,15 @@ public class GardenerBot extends RobotGlobal {
 		int canPlantNum = 0;
 		Direction startDir = usefulRandomDir();
     	try {
-			if (!rc.onTheMap(myLoc, octagonFarmRadius)) { // stop looking if circle isn't all on the map
-				System.out.println("Not all on the map!");
+    		debugTick(29);
+			if (!rc.onTheMap(myLoc, octagonFarmRadius)) { // stop looking is circle isn't all on the map
+				//System.out.println("Not all on the map!");
 				return false;
 			}
 
 			if (!rc.isCircleOccupiedExceptByThisRobot(myLoc, octagonFarmRadius)) return true;
 
-			System.out.println("Trying to plant " + plantIfNum + " trees.");
+			//System.out.println("Trying to plant " + plantIfNum + " trees.");
 			
 			canPlantNum = 0;
 			buildDirection = startDir;
@@ -342,7 +337,7 @@ public class GardenerBot extends RobotGlobal {
         				//System.out.println("Attempting to plant Tree #" + t);
         				
         				if (rc.canMove(pLoc) && !moved) {						// check if can move this turn, then do
-        					rc.move(pLoc);	// Go to plantLoc
+        					moved = tryMoveExact(pLoc);	// Go to plantLoc
         					goBack = true; 
         					
         					if (rc.canPlantTree(tDir)) {						// check if can plant
