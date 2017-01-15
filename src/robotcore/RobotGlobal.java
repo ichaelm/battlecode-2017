@@ -393,7 +393,7 @@ public strictfp class RobotGlobal {
             }
 
             // Try the offset on the right side
-            newDir = dir.rotateRightDegrees(degreeOffset*currentCheck);
+            newDir = dir.rotateLeftDegrees(360f - degreeOffset*currentCheck);
             newLoc = myLoc.add(newDir, myType.strideRadius);
             if(rc.canMove(newDir)) {
                 if (!willCollideWith(bulletsToAvoid, newLoc, myType.bodyRadius)) {

@@ -350,7 +350,7 @@ public class GardenerBot extends RobotGlobal {
         				//System.out.println("Attempting to plant Tree #" + t);
         				
         				if (rc.canMove(pLoc) && !moved) {						// check if can move this turn, then do
-        					rc.move(pLoc);	// Go to plantLoc
+        					moved = tryMoveExact(pLoc);	// Go to plantLoc
         					goBack = true; 
         					
         					if (rc.canPlantTree(tDir)) {						// check if can plant
