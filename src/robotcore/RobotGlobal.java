@@ -2,8 +2,45 @@ package robotcore;
 
 import battlecode.common.*;
 
+/*
+Gardener priorities:
+ 3. Primary build queue (scout, each g adds lumberjack)
+ 4. Trees
+ 6. Secondary build queue
+ 7. Global default build
+ */
+
 public strictfp class RobotGlobal {
     public static RobotController rc;
+
+    // Channel constants
+    public static final int ARCHON_COUNTER_CHANNEL = 0;
+    public static final int ARCHON_LOCATION_TABLE_CHANNEL = ARCHON_COUNTER_CHANNEL + 1;
+    public static final int ARCHON_LOCATION_TABLE_ENTRY_SIZE = 2;
+    public static final int ARCHON_LOCATION_TABLE_NUM_ENTRIES = 3;
+    public static final int ARCHON_LOCATION_TABLE_LENGTH = ARCHON_LOCATION_TABLE_ENTRY_SIZE * ARCHON_LOCATION_TABLE_NUM_ENTRIES;
+    public static final int FARM_TABLE_CHANNEL = ARCHON_LOCATION_TABLE_CHANNEL + ARCHON_LOCATION_TABLE_LENGTH;
+    public static final int FARM_TABLE_ENTRY_SIZE = 3;
+    public static final int FARM_TABLE_NUM_ENTRIES = 30;
+    public static final int FARM_TABLE_LENGTH = FARM_TABLE_ENTRY_SIZE + FARM_TABLE_NUM_ENTRIES;
+    public static final int FARM_TABLE_COUNT_CHANNEL = FARM_TABLE_CHANNEL + FARM_TABLE_LENGTH;
+    public static final int BOUNDS_TABLE_CHANNEL = FARM_TABLE_COUNT_CHANNEL + 1; // IN_W, IN_E, IN_S, IN_N, OUT_W, OUT_E, OUT_S, OUT_N
+    public static final int BOUNDS_TABLE_LENGTH = 8;
+    public static final int LJ_JOBS_TABLE_CHANNEL = BOUNDS_TABLE_CHANNEL + BOUNDS_TABLE_LENGTH;
+    public static final int LJ_JOBS_TABLE_ENTRY_SIZE = 3;
+    public static final int LJ_JOBS_TABLE_NUM_ENTRIES = 30;
+    public static final int LJ_JOBS_TABLE_LENGTH = LJ_JOBS_TABLE_ENTRY_SIZE * LJ_JOBS_TABLE_NUM_ENTRIES;
+    public static final int LJ_JOBS_TABLE_BEGIN_CHANNEL = LJ_JOBS_TABLE_CHANNEL + LJ_JOBS_TABLE_LENGTH;
+    public static final int LJ_JOBS_TABLE_COUNT_CHANNEL = LJ_JOBS_TABLE_BEGIN_CHANNEL + 1;
+    public static final int BUILD_QUEUE_1_CHANNEL = LJ_JOBS_TABLE_COUNT_CHANNEL + 1;
+    public static final int BUILD_QUEUE_1_LENGTH = 100;
+    public static final int BUILD_QUEUE_1_BEGIN_CHANNEL = BUILD_QUEUE_1_CHANNEL + BUILD_QUEUE_1_LENGTH;
+    public static final int BUILD_QUEUE_1_COUNT_CHANNEL = BUILD_QUEUE_1_BEGIN_CHANNEL + 1;
+    public static final int BUILD_QUEUE_2_CHANNEL = BUILD_QUEUE_1_COUNT_CHANNEL + 1;
+    public static final int BUILD_QUEUE_2_LENGTH = 100;
+    public static final int BUILD_QUEUE_2_BEGIN_CHANNEL = BUILD_QUEUE_2_CHANNEL + BUILD_QUEUE_2_LENGTH;
+    public static final int BUILD_QUEUE_2_COUNT_CHANNEL = BUILD_QUEUE_2_BEGIN_CHANNEL + 1;
+    public static final int GLOBAL_DEFAULT_BUILD_CHANNEL = BUILD_QUEUE_2_COUNT_CHANNEL + 1;
 
     // Performance constants
     public static final int DESIRED_ROBOTS = 20;
@@ -59,13 +96,26 @@ public strictfp class RobotGlobal {
     public static BulletInfo[] nearbyBullets;
     public static float nearbyBulletRadius;
     public static boolean neverUpdated;
+    public static MapBounds knownMapBounds;
 
     // Results of further processing
     private static RobotInfo nearestEnemy = null;
     private static TreeInfo nearestTree = null;
+    private static TreeInfo nearestFriendlyTree = null;
+    private static TreeInfo nearestUnfriendlyTree = null;
+    private static TreeInfo lowestFriendlyTree = null;
     private static BulletInfo[] bulletsToAvoid = new BulletInfo[0];
     private static int numBulletsToAvoid = 0;
-    private static RobotType buildOrder;
+
+    // Special stored values
+    private static boolean circleClockwise = true;
+    private static int[] debugBytecodesList = new int[100];
+    private static int numDebugBytecodes = 0;
+    private static boolean debugTripped = false;
+
+    private static RobotType[] initialBuildQueue1 = new RobotType[0];
+    private static RobotType[] initialBuildQueue2 = new RobotType[0];
+    private static RobotType initialDefaultBuild = null;
 
     public static void init(RobotController rc) throws GameActionException {
         RobotGlobal.rc = rc;
@@ -88,7 +138,9 @@ public strictfp class RobotGlobal {
         myHealth = rc.getHealth();
         robotCount = rc.getRobotCount();
         int newRoundNum = rc.getRoundNum();
-        if (!neverUpdated && newRoundNum - roundNum != 1) {
+        if (!neverUpdated && newRoundNum == roundNum) {
+            System.out.println("Restarted the same turn!");
+        } else if (!neverUpdated && newRoundNum - roundNum != 1) {
             System.out.println("Skipped a turn!");
         }
         roundNum = newRoundNum;
@@ -99,6 +151,12 @@ public strictfp class RobotGlobal {
         updateNearbyRobots();
         updateNearbyTrees();
         updateNearbyBullets();
+
+        knownMapBounds = getMapBounds();
+        updateMapBounds(knownMapBounds);
+
+        numDebugBytecodes = 0;
+        debugTripped = false;
 
         neverUpdated = false;
     }
@@ -150,8 +208,14 @@ public strictfp class RobotGlobal {
     }
 
     public static void processNearbyTrees() throws GameActionException {
-        float minDist = 99999999;
+        float minDist = Float.POSITIVE_INFINITY;
+        float minFriendlyDist = Float.POSITIVE_INFINITY;
+        float minUnfriendlyDist = Float.POSITIVE_INFINITY;
+        float minFriendlyHealth = Float.POSITIVE_INFINITY;
         nearestTree = null;
+        nearestFriendlyTree = null;
+        nearestUnfriendlyTree = null;
+        lowestFriendlyTree = null;
         int numIters = Math.min(nearbyTrees.length, DESIRED_TREES);
         for (int i = 0; i < numIters; i++) {
             TreeInfo tree = nearbyTrees[i];
@@ -159,6 +223,21 @@ public strictfp class RobotGlobal {
             if (dist < minDist) {
                 nearestTree = tree;
                 minDist = dist;
+            }
+            if (tree.team == myTeam) {
+                if (dist < minFriendlyDist) {
+                    nearestFriendlyTree = tree;
+                    minFriendlyDist = dist;
+                }
+                if (tree.health < minFriendlyHealth && tree.location.distanceTo(myLoc) <= 3) {
+                    lowestFriendlyTree = tree;
+                    minFriendlyHealth = tree.health;
+                }
+            } else {
+                if (dist < minUnfriendlyDist) {
+                    nearestUnfriendlyTree = tree;
+                    minUnfriendlyDist = dist;
+                }
             }
         }
     }
@@ -176,12 +255,50 @@ public strictfp class RobotGlobal {
         }
     }
 
+    public static MapLocation[] getMyArchonLocations() throws GameActionException {
+        int numArchons = rc.readBroadcast(ARCHON_COUNTER_CHANNEL);
+        if (numArchons > ARCHON_LOCATION_TABLE_NUM_ENTRIES) {
+            System.out.println("More than 3 archons detected!!!");
+            numArchons = ARCHON_LOCATION_TABLE_NUM_ENTRIES;
+        }
+        MapLocation[] archonLocations = new MapLocation[numArchons];
+        for (int i = 0; i < numArchons; i++) {
+            float x = Float.intBitsToFloat(rc.readBroadcast(ARCHON_LOCATION_TABLE_CHANNEL + (ARCHON_LOCATION_TABLE_ENTRY_SIZE*i)));
+            float y = Float.intBitsToFloat(rc.readBroadcast(ARCHON_LOCATION_TABLE_CHANNEL + (ARCHON_LOCATION_TABLE_ENTRY_SIZE*i) + 1));
+            archonLocations[i] = new MapLocation(x, y);
+        }
+        return archonLocations;
+    }
+
+    public static float minDistBetween(MapLocation a, MapLocation[] bs) {
+        float minDist = Float.POSITIVE_INFINITY;
+        for (MapLocation b : bs) {
+            float dist = a.distanceTo(b);
+            if (dist < minDist) {
+                minDist = dist;
+            }
+        }
+        return minDist;
+    }
+
     public static RobotInfo getNearestEnemy() {
         return nearestEnemy;
     }
 
     public static TreeInfo getNearestTree() {
         return nearestTree;
+    }
+
+    public static TreeInfo getNearestFriendlyTree() {
+        return nearestFriendlyTree;
+    }
+
+    public static TreeInfo getNearestUnfriendlyTree() {
+        return nearestUnfriendlyTree;
+    }
+
+    public static TreeInfo getLowestFriendlyTree() {
+        return lowestFriendlyTree;
     }
 
     public static BulletInfo[] getBulletsToAvoid() {
@@ -227,14 +344,6 @@ public strictfp class RobotGlobal {
         }
     }
 
-    public static void setBuildOrder(RobotType type) {
-        buildOrder = type;
-    }
-
-    public static RobotType getBuildOrder() {
-        return buildOrder;
-    }
-
     /**
      * Returns a random Direction
      * @return a random Direction
@@ -250,11 +359,11 @@ public strictfp class RobotGlobal {
 
     public static boolean tryMoveElseBack(Direction dir) throws GameActionException {
         float currentStride = myType.strideRadius;
-        while (currentStride > 0) {
+        while (currentStride > 0.1) {
             MapLocation newLoc = myLoc.add(dir, currentStride);
-            if (!willCollideWith(bulletsToAvoid, newLoc, myType.bodyRadius)) {
-                if (rc.canMove(newLoc)) {
-                    rc.move(newLoc);
+            if (rc.canMove(dir, currentStride)) {
+                if (!willCollideWith(bulletsToAvoid, newLoc, myType.bodyRadius)) {
+                    rc.move(dir, currentStride);
                     myLoc = newLoc;
                     return true;
                 }
@@ -272,7 +381,7 @@ public strictfp class RobotGlobal {
      * @throws GameActionException
      */
     public static boolean tryMoveElseLeftRight(Direction dir) throws GameActionException {
-        return tryMoveElseLeftRight(dir,10,8);
+        return tryMoveElseLeftRight(dir,30,5);
     }
 
     /**
@@ -288,9 +397,9 @@ public strictfp class RobotGlobal {
 
         // First, try intended direction
         MapLocation newLoc = myLoc.add(dir, myType.strideRadius);
-        if (!willCollideWith(bulletsToAvoid, newLoc, myType.bodyRadius)) {
-            if (rc.canMove(newLoc)) {
-                rc.move(newLoc);
+        if (rc.canMove(dir)) {
+            if (!willCollideWith(bulletsToAvoid, newLoc, myType.bodyRadius)) {
+                rc.move(dir);
                 myLoc = newLoc;
                 return true;
             }
@@ -302,20 +411,22 @@ public strictfp class RobotGlobal {
 
         while(currentCheck<=checksPerSide) {
             // Try the offset of the left side
-            newLoc = myLoc.add(dir.rotateLeftDegrees(degreeOffset*currentCheck), myType.strideRadius);
-            if (!willCollideWith(bulletsToAvoid, newLoc, myType.bodyRadius)) {
-                if(rc.canMove(newLoc)) {
-                    rc.move(newLoc);
+            Direction newDir = dir.rotateLeftDegrees(degreeOffset*currentCheck);
+            newLoc = myLoc.add(newDir, myType.strideRadius);
+            if(rc.canMove(newDir)) {
+                if (!willCollideWith(bulletsToAvoid, newLoc, myType.bodyRadius)) {
+                    rc.move(newDir);
                     myLoc = newLoc;
                     return true;
                 }
             }
 
             // Try the offset on the right side
-            newLoc = myLoc.add(dir.rotateLeftDegrees(degreeOffset*currentCheck), myType.strideRadius);
-            if (!willCollideWith(bulletsToAvoid, newLoc, myType.bodyRadius)) {
-                if(rc.canMove(newLoc)) {
-                    rc.move(newLoc);
+            newDir = dir.rotateRightDegrees(degreeOffset*currentCheck);
+            newLoc = myLoc.add(newDir, myType.strideRadius);
+            if(rc.canMove(newDir)) {
+                if (!willCollideWith(bulletsToAvoid, newLoc, myType.bodyRadius)) {
+                    rc.move(newDir);
                     myLoc = newLoc;
                     return true;
                 }
@@ -329,9 +440,45 @@ public strictfp class RobotGlobal {
         return false;
     }
 
-    public static boolean willCollideWith(BulletInfo bullet, MapLocation loc, float r) {
+    public static boolean tryMoveDistFrom(MapLocation loc, float r) throws GameActionException {
+        boolean success;
+        if (myLoc.distanceTo(loc) - myType.strideRadius >= r) {
+            // go towards
+            success = tryMoveElseLeftRight(myLoc.directionTo(loc));
+            if (success) {
+                return true;
+            }
+            success = tryMoveElseBack(myLoc.directionTo(loc));
+            if (success) {
+                return true;
+            }
+        } else if (myLoc.distanceTo(loc) + myType.strideRadius <= r) {
+            // go away
+            success = tryMoveElseLeftRight(loc.directionTo(myLoc));
+            if (success) {
+                return true;
+            }
+            success = tryMoveElseBack(loc.directionTo(myLoc));
+            if (success) {
+                return true;
+            }
+        } else {
+            // go to intersection
+            MapLocation[] intersections = Geometry.getCircleIntersections(myLoc, myType.strideRadius, loc, r);
+            if (intersections.length >= 1) {
+                MapLocation target = intersections[circleClockwise ? 1 : 0];
+                success = tryMoveElseBack(myLoc.directionTo(target));
+                if (success) {
+                    return true;
+                } else {
+                    circleClockwise = !circleClockwise;
+                }
+            }
+        }
+        return false;
+    }
 
-        // Get relevant bullet information
+    public static boolean willCollideWith(BulletInfo bullet, MapLocation loc, float r) {
         Direction propagationDirection = bullet.dir;
         MapLocation bulletLocation = bullet.location;
         MapLocation bulletDestination = bulletLocation.add(propagationDirection, bullet.speed);
@@ -354,8 +501,366 @@ public strictfp class RobotGlobal {
         return false;
     }
 
-    
-    
+    public static int[] readBroadcastArray(int channelStart, int length) throws GameActionException {
+        int[] retval = new int[length];
+        for (int i = 0; i < length; i++) {
+            retval[i] = rc.readBroadcast(channelStart + i);
+        }
+        return retval;
+    }
+
+    public static void writeBroadcastArray(int channelStart, int[] arr) throws GameActionException {
+        for (int i = 0; i < arr.length; i++) {
+            rc.broadcast(channelStart + i, arr[i]);
+        }
+    }
+
+    public static MapBounds getMapBounds() throws GameActionException {
+        //BOUNDS_TABLE_CHANNEL=4, maxXc=5, CHANNEL_BOUND_INNER_SOUTH=6, CHANNEL_BOUND_INNER_NORTH=7;
+        MapBounds bounds = MapBounds.deserialize(readBroadcastArray(BOUNDS_TABLE_CHANNEL, 8));
+
+        if (bounds.getOuterBound(MapBounds.WEST) == 0 && bounds.getOuterBound(MapBounds.EAST) == 0) {
+            bounds = new MapBounds();
+            bounds.updateInnerBound(MapBounds.WEST, myLoc.x - myType.bodyRadius);
+            bounds.updateInnerBound(MapBounds.EAST, myLoc.x + myType.bodyRadius);
+            bounds.updateInnerBound(MapBounds.SOUTH, myLoc.y - myType.bodyRadius);
+            bounds.updateInnerBound(MapBounds.NORTH, myLoc.y + myType.bodyRadius);
+        }
+
+        //Debug
+        /*
+        MapLocation knownNE = new MapLocation(bounds.getInnerBound(MapBounds.EAST), bounds.getInnerBound(MapBounds.NORTH));
+        MapLocation knownSE = new MapLocation(bounds.getInnerBound(MapBounds.EAST), bounds.getInnerBound(MapBounds.SOUTH));
+        MapLocation knownNW = new MapLocation(bounds.getInnerBound(MapBounds.WEST), bounds.getInnerBound(MapBounds.NORTH));
+        MapLocation knownSW = new MapLocation(bounds.getInnerBound(MapBounds.WEST), bounds.getInnerBound(MapBounds.SOUTH));
+
+        int r = 0; int g = 255; int b = 100;
+        rc.setIndicatorLine(knownNE, knownNW, r, g, b);
+        rc.setIndicatorLine(knownNE, knownSE, r, g, b);
+        rc.setIndicatorLine(knownSW, knownSE, r, g, b);
+        rc.setIndicatorLine(knownSW, knownNW, r, g, b);
+        */
+
+        return bounds;
+
+    }
+
+    public static MapLocation[] narrowBounds (MapLocation inner, MapLocation outer) throws GameActionException {
+
+        float i = outer.distanceTo(inner) / 2;
+        Direction away = outer.directionTo(inner);
+        MapLocation mid = outer.add(away, i);
+
+        int c = 0;
+
+        while (i >= 0.0005) { // this is the precision I choose to get
+            c+=1;
+            if (rc.onTheMap(mid)) {
+                inner = mid;
+                i = inner.distanceTo(outer) / 2;
+                mid = mid.subtract(away, i);
+            }
+            else {
+                outer = mid;
+                i = inner.distanceTo(outer) / 2;
+                mid = mid.add(away, i);
+            }
+
+            if (c > 15) {
+                System.out.println("narrowBounds timed out");
+                break;
+            }
+
+        }
+
+        return new MapLocation[]{inner, outer};
+    }
+
+    public static void updateMapBounds(MapBounds bounds) throws GameActionException {
+        MapLocation[] senseLocs = new MapLocation[4];
+        senseLocs[MapBounds.NORTH] = myLoc.add(Direction.getNorth(), myType.sensorRadius - 0.001f); // maxY sensed
+        senseLocs[MapBounds.EAST] = myLoc.add(Direction.getEast(), myType.sensorRadius - 0.001f); // maxX sensed;
+        senseLocs[MapBounds.SOUTH] = myLoc.add(Direction.getSouth(), myType.sensorRadius - 0.001f); // minY sensed;
+        senseLocs[MapBounds.WEST] = myLoc.add(Direction.getWest(), myType.sensorRadius - 0.001f); // minX sensed;
+
+        for (int dirOrd = 0; dirOrd < 4; dirOrd++) {
+            MapLocation senseLoc = senseLocs[dirOrd];
+            if(!rc.onTheMap(senseLoc)) {
+                bounds.updateInnerBound(dirOrd, myLoc.add(MapBounds.dirFromOrd(dirOrd), myType.bodyRadius));
+                bounds.updateOuterBound(dirOrd, senseLoc);
+                MapLocation[] eastBounds = narrowBounds(bounds.getInnerBoundLoc(dirOrd, myLoc), bounds.getOuterBoundLoc(dirOrd, myLoc));
+                bounds.updateInnerBound(dirOrd, eastBounds[0]);
+                bounds.updateOuterBound(dirOrd, eastBounds[1]);
+            } else {
+                bounds.updateInnerBound(dirOrd, senseLoc);
+            }
+        }
+
+        writeBroadcastArray(BOUNDS_TABLE_CHANNEL, bounds.serialize());
+    }
+
+    public static final int FARM_TABLE_ENTRY_EXISTS_MASK = 0x1;
+    public static final int FARM_TABLE_ENTRY_GARDENER_MASK = 0x2;
+    public static final int FARM_TABLE_ENTRY_LUMBERJACK_MASK = 0x4;
+
+    public static int createFarmTableEntry() throws GameActionException{
+        int farmTableCount = rc.readBroadcast(FARM_TABLE_COUNT_CHANNEL);
+        int farmNum = farmTableCount;
+        rc.broadcast(FARM_TABLE_COUNT_CHANNEL, farmTableCount + 1);
+        if (farmNum >= FARM_TABLE_NUM_ENTRIES) {
+            System.out.println("Farm table overflow!");
+            return -1;
+        }
+        int farmTableEntryChannel = FARM_TABLE_CHANNEL + (farmNum * FARM_TABLE_ENTRY_SIZE);
+        writeFarmTableEntry(farmNum, myLoc, true, false);
+        return farmNum;
+    }
+
+    public static void writeFarmTableEntry(int farmNum, MapLocation loc, boolean gardenerAlive, boolean lumberjackAlive) throws GameActionException {
+        int farmTableEntryChannel = FARM_TABLE_CHANNEL + (farmNum * FARM_TABLE_ENTRY_SIZE);
+        int xChannel = farmTableEntryChannel;
+        int yChannel = farmTableEntryChannel + 1;
+        int flagsChannel = farmTableEntryChannel + 2;
+        rc.broadcast(xChannel, Float.floatToIntBits(loc.x));
+        rc.broadcast(yChannel, Float.floatToIntBits(loc.y));
+        int flags = rc.readBroadcast(flagsChannel);
+        flags = flags | FARM_TABLE_ENTRY_EXISTS_MASK;
+        if (gardenerAlive) {
+            flags = flags | FARM_TABLE_ENTRY_GARDENER_MASK;
+        }
+        if (lumberjackAlive) {
+            flags = flags | FARM_TABLE_ENTRY_LUMBERJACK_MASK;
+        }
+        rc.broadcast(flagsChannel, flags);
+    }
+
+    public static MapLocation readFarmTableEntryLocation(int farmNum) throws GameActionException {
+        int farmTableEntryChannel = FARM_TABLE_CHANNEL + (farmNum * FARM_TABLE_ENTRY_SIZE);
+        int xChannel = farmTableEntryChannel;
+        int yChannel = farmTableEntryChannel + 1;
+        float x = Float.intBitsToFloat(rc.readBroadcast(xChannel));
+        float y = Float.intBitsToFloat(rc.readBroadcast(yChannel));
+        return new MapLocation(x, y);
+    }
+
+    public static int readFarmTableEntryFlags(int farmNum) throws GameActionException {
+        int farmTableEntryChannel = FARM_TABLE_CHANNEL + (farmNum * FARM_TABLE_ENTRY_SIZE);
+        int flagsChannel = farmTableEntryChannel + 2;
+        int flags = rc.readBroadcast(flagsChannel);
+        return flags;
+    }
+
+    public static void resetFarmTableEntryFlags(int farmNum) throws GameActionException {
+        int farmTableEntryChannel = FARM_TABLE_CHANNEL + (farmNum * FARM_TABLE_ENTRY_SIZE);
+        int flagsChannel = farmTableEntryChannel + 2;
+        rc.broadcast(flagsChannel, FARM_TABLE_ENTRY_EXISTS_MASK);
+    }
+
+    public static int getFarmTableEntryCount() throws GameActionException {
+        return rc.readBroadcast(FARM_TABLE_COUNT_CHANNEL);
+    }
+
+    public static void addLumberjackJob(MapLocation loc) throws GameActionException {
+        addLumberjackJob(loc, -1);
+    }
+
+    public static void addLumberjackJob(MapLocation loc, int farmNum) throws GameActionException {
+        int begin = rc.readBroadcast(LJ_JOBS_TABLE_BEGIN_CHANNEL);
+        int count = rc.readBroadcast(LJ_JOBS_TABLE_COUNT_CHANNEL);
+        if (count >= LJ_JOBS_TABLE_NUM_ENTRIES) {
+            System.out.println("Lumberjack job table overflow!");
+            return;
+        }
+        int entryIndex = (begin + count) % LJ_JOBS_TABLE_NUM_ENTRIES;
+        int entryChannel = LJ_JOBS_TABLE_CHANNEL + (entryIndex * LJ_JOBS_TABLE_ENTRY_SIZE);
+        int xChannel = entryChannel;
+        int yChannel = entryChannel + 1;
+        int farmNumChannel = entryChannel + 2;
+        rc.broadcast(xChannel, Float.floatToIntBits(loc.x));
+        rc.broadcast(yChannel, Float.floatToIntBits(loc.y));
+        rc.broadcast(farmNumChannel, farmNum);
+        count++;
+        rc.broadcast(LJ_JOBS_TABLE_COUNT_CHANNEL, count);
+    }
+
+    public static int popLumberjackJobFarmNum() throws GameActionException {
+        int begin = rc.readBroadcast(LJ_JOBS_TABLE_BEGIN_CHANNEL);
+        int count = rc.readBroadcast(LJ_JOBS_TABLE_COUNT_CHANNEL);
+        if (count <= 0) {
+            return -1;
+        }
+        int entryChannel = LJ_JOBS_TABLE_CHANNEL + (begin * LJ_JOBS_TABLE_ENTRY_SIZE);
+        //int xChannel = begin;
+        //int yChannel = begin + 1;
+        int farmNumChannel = entryChannel + 2;
+        int farmNum = rc.readBroadcast(farmNumChannel);
+        begin = (begin + 1) % LJ_JOBS_TABLE_NUM_ENTRIES;
+        rc.broadcast(LJ_JOBS_TABLE_BEGIN_CHANNEL, begin);
+        count = count - 1;
+        rc.broadcast(LJ_JOBS_TABLE_COUNT_CHANNEL, count);
+        return farmNum;
+    }
+
+    public static boolean[] getFarmTableHasLumberjackJob() throws GameActionException {
+        int farmTableCount = rc.readBroadcast(FARM_TABLE_COUNT_CHANNEL);
+        boolean[] farmTableHasLumberjackJob = new boolean[farmTableCount];
+        int begin = rc.readBroadcast(LJ_JOBS_TABLE_BEGIN_CHANNEL);
+        int count = rc.readBroadcast(LJ_JOBS_TABLE_COUNT_CHANNEL);
+        for (int i = 0; i < count; i++) {
+            int ljIndex = (begin + i) % LJ_JOBS_TABLE_NUM_ENTRIES;
+            int entryChannel = LJ_JOBS_TABLE_CHANNEL + (ljIndex * LJ_JOBS_TABLE_ENTRY_SIZE);
+            int farmNumChannel = entryChannel + 2;
+            int farmNum = rc.readBroadcast(farmNumChannel);
+            farmTableHasLumberjackJob[farmNum] = true;
+        }
+        return farmTableHasLumberjackJob;
+    }
+
+    public static RobotType peekBuildQueue1() throws GameActionException {
+        int begin = rc.readBroadcast(BUILD_QUEUE_1_BEGIN_CHANNEL);
+        int count = rc.readBroadcast(BUILD_QUEUE_1_COUNT_CHANNEL);
+        if (count < 1) {
+            return null;
+        }
+        int itemChannel = BUILD_QUEUE_1_CHANNEL + begin;
+        int robotTypeNum = rc.readBroadcast(itemChannel);
+        return RobotType.values()[robotTypeNum];
+    }
+
+    public static RobotType peekBuildQueue2() throws GameActionException {
+        int begin = rc.readBroadcast(BUILD_QUEUE_2_BEGIN_CHANNEL);
+        int count = rc.readBroadcast(BUILD_QUEUE_2_COUNT_CHANNEL);
+        if (count <= 0) {
+            return null;
+        }
+        int entryChannel = BUILD_QUEUE_2_CHANNEL + begin;
+        int robotTypeNum = rc.readBroadcast(entryChannel);
+        return RobotType.values()[robotTypeNum];
+    }
+
+    public static void addBuildQueue1(RobotType rt) throws GameActionException {
+        int begin = rc.readBroadcast(BUILD_QUEUE_1_BEGIN_CHANNEL);
+        int count = rc.readBroadcast(BUILD_QUEUE_1_COUNT_CHANNEL);
+        if (count >= BUILD_QUEUE_1_LENGTH) {
+            System.out.println("Build queue 1 overflow!");
+            return;
+        }
+        int entryIndex = (begin + count) % BUILD_QUEUE_1_LENGTH;
+        int entryChannel = BUILD_QUEUE_1_CHANNEL + entryIndex;
+        rc.broadcast(entryChannel, rt.ordinal());
+        count++;
+        rc.broadcast(BUILD_QUEUE_1_COUNT_CHANNEL, count);
+    }
+
+    public static void addBuildQueue2(RobotType rt) throws GameActionException {
+        int begin = rc.readBroadcast(BUILD_QUEUE_2_BEGIN_CHANNEL);
+        int count = rc.readBroadcast(BUILD_QUEUE_2_COUNT_CHANNEL);
+        if (count >= BUILD_QUEUE_2_LENGTH) {
+            System.out.println("Build queue 2 overflow!");
+            return;
+        }
+        int entryIndex = (begin + count) % BUILD_QUEUE_2_LENGTH;
+        int entryChannel = BUILD_QUEUE_2_CHANNEL + entryIndex;
+        rc.broadcast(entryChannel, rt.ordinal());
+        count++;
+        rc.broadcast(BUILD_QUEUE_2_COUNT_CHANNEL, count);
+    }
+
+    public static RobotType popBuildQueue1() throws GameActionException {
+        int begin = rc.readBroadcast(BUILD_QUEUE_1_BEGIN_CHANNEL);
+        int count = rc.readBroadcast(BUILD_QUEUE_1_COUNT_CHANNEL);
+        if (count <= 0) {
+            return null;
+        }
+        int entryChannel = BUILD_QUEUE_1_CHANNEL + begin;
+        int rtNum = rc.readBroadcast(entryChannel);
+        begin = (begin + 1) % BUILD_QUEUE_1_LENGTH;
+        rc.broadcast(BUILD_QUEUE_1_BEGIN_CHANNEL, begin);
+        count = count - 1;
+        rc.broadcast(BUILD_QUEUE_1_COUNT_CHANNEL, count);
+        return RobotType.values()[rtNum];
+    }
+
+    public static RobotType popBuildQueue2() throws GameActionException {
+        int begin = rc.readBroadcast(BUILD_QUEUE_2_BEGIN_CHANNEL);
+        int count = rc.readBroadcast(BUILD_QUEUE_2_COUNT_CHANNEL);
+        if (count <= 0) {
+            return null;
+        }
+        int entryChannel = BUILD_QUEUE_2_CHANNEL + begin;
+        int rtNum = rc.readBroadcast(entryChannel);
+        begin = (begin + 1) % BUILD_QUEUE_2_LENGTH;
+        rc.broadcast(BUILD_QUEUE_2_BEGIN_CHANNEL, begin);
+        count = count - 1;
+        rc.broadcast(BUILD_QUEUE_2_COUNT_CHANNEL, count);
+        return RobotType.values()[rtNum];
+    }
+
+    public static void setGlobalDefaultBuild(RobotType type) throws GameActionException {
+        if (type == null) {
+            rc.broadcast(GLOBAL_DEFAULT_BUILD_CHANNEL, -1);
+        } else {
+            rc.broadcast(GLOBAL_DEFAULT_BUILD_CHANNEL, type.ordinal());
+        }
+    }
+
+    public static RobotType getGlobalDefaultBuild() throws GameActionException {
+        int robotNum = rc.readBroadcast(GLOBAL_DEFAULT_BUILD_CHANNEL);
+        if (robotNum < 0) {
+            return null;
+        } else {
+            return RobotType.values()[robotNum];
+        }
+    }
+
+    public static void debugTick(int id) {
+        int currentRoundNum = rc.getRoundNum();
+        int bytecodes = Clock.getBytecodeNum();
+        debugBytecodesList[id] = bytecodes;
+        numDebugBytecodes = Math.max(numDebugBytecodes, id+1);
+        if (currentRoundNum != roundNum) {
+            if (!debugTripped) {
+                debugTripped = true;
+                System.out.println("Detected over-bytecodes!!!");
+                System.out.println("Round changed before tick " + id);
+                for (int i = 0; i < numDebugBytecodes - 1; i++) {
+                    System.out.println(i + ": " + debugBytecodesList[i]);
+                }
+                System.out.println((numDebugBytecodes - 1) + ": " + debugBytecodesList[numDebugBytecodes - 1] + " + " + (currentRoundNum - roundNum) + " rounds");
+            } else {
+                System.out.println(id + ": " + bytecodes + " + " + (currentRoundNum - roundNum) + " rounds");
+            }
+        }
+    }
+
+    public static void setInitialBuildQueue1(RobotType[] initialBuildQueue1) {
+        RobotGlobal.initialBuildQueue1 = initialBuildQueue1;
+    }
+
+    public static void setInitialBuildQueue2(RobotType[] initialBuildQueue2) {
+        RobotGlobal.initialBuildQueue2 = initialBuildQueue2;
+    }
+
+    public static void setInitialDefaultBuild(RobotType initialDefaultBuild) {
+        RobotGlobal.initialDefaultBuild = initialDefaultBuild;
+    }
+
+    public static void initializeBuildQueue1() throws GameActionException {
+        for (RobotType rt : initialBuildQueue1) {
+            addBuildQueue1(rt);
+        }
+    }
+
+    public static void initializeBuildQueue2() throws GameActionException {
+        for (RobotType rt : initialBuildQueue2) {
+            addBuildQueue2(rt);
+        }
+    }
+
+    public static void initializeDefaultBuild() throws GameActionException {
+        setGlobalDefaultBuild(initialDefaultBuild);
+    }
+
     /*
 
                 RangeList exclude = new RangeList(false);

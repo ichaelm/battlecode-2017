@@ -9,7 +9,10 @@ public strictfp class RobotPlayer {
     public static void run(RobotController rc) throws GameActionException {
         try {
             RobotGlobal.init(rc);
-            RobotGlobal. setBuildOrder(RobotType.SOLDIER);
+            RobotGlobal.setInitialBuildQueue1(new RobotType[]{
+                    // Nothing
+            });
+            RobotGlobal.setInitialDefaultBuild(RobotType.SOLDIER);
         } catch (Exception e) {
             System.out.println("Exception during global init");
             e.printStackTrace();

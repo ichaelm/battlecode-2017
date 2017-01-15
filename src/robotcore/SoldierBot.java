@@ -10,13 +10,13 @@ public class SoldierBot extends RobotGlobal {
             try {
                 update();
             } catch (Exception e) {
-                System.out.println("Archon: exception during update");
+                System.out.println("Soldier: exception during update");
                 e.printStackTrace();
             }
             try {
                 turn();
             } catch (Exception e) {
-                System.out.println("Archon: exception during turn");
+                System.out.println("Soldier: exception during turn");
                 e.printStackTrace();
             }
         }
@@ -60,25 +60,36 @@ public class SoldierBot extends RobotGlobal {
                     }
                 }
                 */
-
+        debugTick(1);
         processNearbyRobots();
+        debugTick(2);
         processNearbyBullets();
+        debugTick(3);
         RobotInfo nearestEnemy = getNearestEnemy();
-        Direction goDir = myLoc.directionTo(enemyInitialArchonLocations[0]);
+        debugTick(4);
+        int a = 0;
+        a = roundNum >=  1 ? (int) (Math.random()*enemyInitialArchonLocations.length) : a;
+        rc.setIndicatorDot(enemyInitialArchonLocations[a], 255, 0, 255);
+        Direction goDir = myLoc.directionTo(enemyInitialArchonLocations[a]);
+        goDir = rc.canMove(goDir) ? goDir: randomDirection();
         if (nearestEnemy != null) {
             goDir = myLoc.directionTo(nearestEnemy.location);
         }
 
+        debugTick(5);
         boolean moved = tryMoveElseLeftRight(goDir);
+        debugTick(6);
         if (!moved) {
             moved = tryMoveElseBack(goDir);
         }
+        debugTick(7);
 
         if (nearestEnemy != null) {
             if (rc.canFireSingleShot()) {
                 rc.fireSingleShot(myLoc.directionTo(nearestEnemy.location));
             }
         }
+        debugTick(8);
 
         // Clock.yield() makes the robot wait until the next turn, then it will perform this loop again
         Clock.yield();
