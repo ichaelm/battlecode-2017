@@ -153,35 +153,23 @@ public class MapBounds {
         StringBuilder sb = new StringBuilder();
         sb.append("MapBounds{");
 
-        sb.append("NORTH=(");
-        sb.append(getInnerBound(NORTH));
-        sb.append(",");
-        sb.append(getOuterBound(NORTH));
-        sb.append(")");
+        sb.append("NORTH=");
+        sb.append(bounds[NORTH]);
 
         sb.append(",");
 
-        sb.append("EAST=(");
-        sb.append(getInnerBound(EAST));
-        sb.append(",");
-        sb.append(getOuterBound(EAST));
-        sb.append(")");
+        sb.append("EAST=");
+        sb.append(bounds[EAST]);
 
         sb.append(",");
 
-        sb.append("SOUTH=(");
-        sb.append(getInnerBound(SOUTH));
-        sb.append(",");
-        sb.append(getOuterBound(SOUTH));
-        sb.append(")");
+        sb.append("SOUTH=");
+        sb.append(bounds[SOUTH]);
 
         sb.append(",");
 
-        sb.append("WEST=(");
-        sb.append(getInnerBound(WEST));
-        sb.append(",");
-        sb.append(getOuterBound(WEST));
-        sb.append(")");
+        sb.append("WEST=");
+        sb.append(bounds[WEST]);
 
         sb.append("}");
 

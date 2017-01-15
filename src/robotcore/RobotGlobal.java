@@ -22,7 +22,7 @@ public strictfp class RobotGlobal {
     public static final int FARM_TABLE_CHANNEL = ARCHON_LOCATION_TABLE_CHANNEL + ARCHON_LOCATION_TABLE_LENGTH;
     public static final int FARM_TABLE_ENTRY_SIZE = 3;
     public static final int FARM_TABLE_NUM_ENTRIES = 30;
-    public static final int FARM_TABLE_LENGTH = FARM_TABLE_ENTRY_SIZE + FARM_TABLE_NUM_ENTRIES;
+    public static final int FARM_TABLE_LENGTH = FARM_TABLE_ENTRY_SIZE * FARM_TABLE_NUM_ENTRIES;
     public static final int FARM_TABLE_COUNT_CHANNEL = FARM_TABLE_CHANNEL + FARM_TABLE_LENGTH;
     public static final int BOUNDS_TABLE_CHANNEL = FARM_TABLE_COUNT_CHANNEL + 1; // IN_W, IN_E, IN_S, IN_N, OUT_W, OUT_E, OUT_S, OUT_N
     public static final int BOUNDS_TABLE_LENGTH = 8;
@@ -556,6 +556,9 @@ public strictfp class RobotGlobal {
 
         for (int dirOrd = 0; dirOrd < 4; dirOrd++) {
             MapLocation senseLoc = senseLocs[dirOrd];
+            if (!bounds.bounds[dirOrd].valid()) {
+                System.out.println("Detected invalid bounds! " + bounds.bounds[dirOrd].toString());
+            }
             if(!rc.onTheMap(senseLoc)) {
                 bounds.updateInnerBound(dirOrd, myLoc.add(MapBounds.dirFromOrd(dirOrd), myType.bodyRadius));
                 bounds.updateOuterBound(dirOrd, senseLoc);
@@ -564,6 +567,9 @@ public strictfp class RobotGlobal {
                 bounds.updateOuterBound(dirOrd, eastBounds[1]);
             } else {
                 bounds.updateInnerBound(dirOrd, senseLoc);
+            }
+            if (!bounds.bounds[dirOrd].valid()) {
+                System.out.println("Created invalid bounds! " + bounds.bounds[dirOrd].toString());
             }
         }
 
@@ -577,17 +583,21 @@ public strictfp class RobotGlobal {
     public static int createFarmTableEntry() throws GameActionException{
         int farmTableCount = rc.readBroadcast(FARM_TABLE_COUNT_CHANNEL);
         int farmNum = farmTableCount;
-        rc.broadcast(FARM_TABLE_COUNT_CHANNEL, farmTableCount + 1);
         if (farmNum >= FARM_TABLE_NUM_ENTRIES) {
             System.out.println("Farm table overflow!");
             return -1;
         }
-        int farmTableEntryChannel = FARM_TABLE_CHANNEL + (farmNum * FARM_TABLE_ENTRY_SIZE);
+        rc.broadcast(FARM_TABLE_COUNT_CHANNEL, farmTableCount + 1);
         writeFarmTableEntry(farmNum, myLoc, true, false);
         return farmNum;
     }
 
     public static void writeFarmTableEntry(int farmNum, MapLocation loc, boolean gardenerAlive, boolean lumberjackAlive) throws GameActionException {
+        int farmTableCount = rc.readBroadcast(FARM_TABLE_COUNT_CHANNEL);
+        if (farmNum >= farmTableCount) {
+            System.out.println("Farm number invalid!");
+            return;
+        }
         int farmTableEntryChannel = FARM_TABLE_CHANNEL + (farmNum * FARM_TABLE_ENTRY_SIZE);
         int xChannel = farmTableEntryChannel;
         int yChannel = farmTableEntryChannel + 1;
