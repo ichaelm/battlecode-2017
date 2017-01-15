@@ -455,6 +455,45 @@ public strictfp class RobotGlobal {
         return false;
     }
 
+
+    public static boolean tryHireGardener(Direction dir) throws GameActionException {
+        return tryHireGardener(dir, 20, 8);
+    }
+
+    public static boolean tryHireGardener(Direction dir, float degreeOffset, int checksPerSide) throws GameActionException {
+        // First, try intended direction
+        if (rc.canHireGardener(dir)) {
+            rc.hireGardener(dir);
+            return true;
+        }
+
+        // Now try a bunch of similar angles
+        boolean moved = false;
+        int currentCheck = 1;
+
+        while(currentCheck<=checksPerSide) {
+            // Try the offset of the left side
+            Direction newDir = dir.rotateLeftDegrees(degreeOffset*currentCheck);
+            if (rc.canHireGardener(newDir)) {
+                rc.hireGardener(newDir);
+                return true;
+            }
+
+            // Try the offset on the right side
+            newDir = dir.rotateRightDegrees(degreeOffset*currentCheck);
+            if (rc.canHireGardener(newDir)) {
+                rc.hireGardener(newDir);
+                return true;
+            }
+
+            // No move performed, try slightly further
+            currentCheck++;
+        }
+
+        // A move never happened, so return false.
+        return false;
+    }
+
     public static boolean tryMoveDistFrom(MapLocation loc, float r) throws GameActionException {
         boolean success;
         if (myLoc.distanceTo(loc) - myType.strideRadius >= r) {
@@ -492,6 +531,8 @@ public strictfp class RobotGlobal {
         }
         return false;
     }
+
+
 
     public static boolean willCollideWith(BulletInfo bullet, MapLocation loc, float r) {
         Direction propagationDirection = bullet.dir;
@@ -567,6 +608,18 @@ public strictfp class RobotGlobal {
             bounds.updateInnerBound(MapBounds.EAST, myLoc.x + myType.bodyRadius);
             bounds.updateInnerBound(MapBounds.SOUTH, myLoc.y - myType.bodyRadius);
             bounds.updateInnerBound(MapBounds.NORTH, myLoc.y + myType.bodyRadius);
+            for (MapLocation loc : myInitialArchonLocations) {
+                bounds.updateInnerBound(MapBounds.WEST, loc.x - RobotType.ARCHON.bodyRadius);
+                bounds.updateInnerBound(MapBounds.EAST, loc.x + RobotType.ARCHON.bodyRadius);
+                bounds.updateInnerBound(MapBounds.SOUTH, loc.y - RobotType.ARCHON.bodyRadius);
+                bounds.updateInnerBound(MapBounds.NORTH, loc.y + RobotType.ARCHON.bodyRadius);
+            }
+            for (MapLocation loc : enemyInitialArchonLocations) {
+                bounds.updateInnerBound(MapBounds.WEST, loc.x - RobotType.ARCHON.bodyRadius);
+                bounds.updateInnerBound(MapBounds.EAST, loc.x + RobotType.ARCHON.bodyRadius);
+                bounds.updateInnerBound(MapBounds.SOUTH, loc.y - RobotType.ARCHON.bodyRadius);
+                bounds.updateInnerBound(MapBounds.NORTH, loc.y + RobotType.ARCHON.bodyRadius);
+            }
         }
 
         //Debug

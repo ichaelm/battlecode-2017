@@ -60,17 +60,25 @@ public class ArchonBot extends RobotGlobal {
             rc.broadcast(locChannel, Float.floatToIntBits(myLoc.x));
             rc.broadcast(locChannel + 1, Float.floatToIntBits(myLoc.y));
         }
-
-        Direction gardenerDir = randomDirection();
+        Direction gardenerDir;
+        if (getExperimental()) {
+            float mapCenterX = (knownMapBounds.getInnerBound(MapBounds.EAST) + knownMapBounds.getInnerBound(MapBounds.WEST)) / 2f;
+            float mapCenterY = (knownMapBounds.getInnerBound(MapBounds.NORTH) + knownMapBounds.getInnerBound(MapBounds.SOUTH)) / 2f;
+            MapLocation knownMapCenter = new MapLocation(mapCenterX, mapCenterY);
+            gardenerDir = myLoc.directionTo(knownMapCenter);
+        } else {
+            gardenerDir = randomDirection();
+        }
 
         RobotGlobal.GardenerSchedule gardenerSchedule = getGardenerSchedule();
         int gardenersBuilt = rc.readBroadcast(NUM_GARDENERS_BUILT_CHANNEL);
+        boolean success;
         switch (gardenerSchedule) {
             case ONCE_EVERY_N_ROUNDS:
                 int gardenerScheduleN = getGardenerScheduleN();
                 if (gardenersBuilt < (roundNum / gardenerScheduleN) + 1) {
-                    if (rc.canHireGardener(gardenerDir)) {
-                        rc.hireGardener(gardenerDir);
+                    success = tryHireGardener(gardenerDir);
+                    if (success) {
                         gardenersBuilt++;
                         rc.broadcast(NUM_GARDENERS_BUILT_CHANNEL, gardenersBuilt);
                         addBuildQueue1(RobotType.LUMBERJACK);
@@ -79,8 +87,8 @@ public class ArchonBot extends RobotGlobal {
                 break;
             case WHEN_FULL:
                 if (teamBullets >= 190) {
-                    if (rc.canHireGardener(gardenerDir)) {
-                        rc.hireGardener(gardenerDir);
+                    success = tryHireGardener(gardenerDir);
+                    if (success) {
                         gardenersBuilt++;
                         rc.broadcast(NUM_GARDENERS_BUILT_CHANNEL, gardenersBuilt);
                         addBuildQueue1(RobotType.LUMBERJACK);

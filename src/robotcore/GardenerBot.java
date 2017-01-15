@@ -101,7 +101,7 @@ public class GardenerBot extends RobotGlobal {
         }
     	return occupied;
     }
-    
+
     public static void countTrees() {
     	try {
     		int prev = numPlanted;
@@ -137,11 +137,12 @@ public class GardenerBot extends RobotGlobal {
 				}
 
     		}
-    		
-    		if (needToPlant) {
-    			//System.out.println("Attempting to replant...");
-    			mode = FarmingMode.FARMING;
-    		}
+    		if (!getExperimental()) {
+				if (needToPlant) {
+					//System.out.println("Attempting to replant...");
+					mode = FarmingMode.FARMING;
+				}
+			}
 
     		
     	} catch (GameActionException e) {
@@ -149,6 +150,7 @@ public class GardenerBot extends RobotGlobal {
     	}
 
     }
+
     
     // This method will be a very thorough search of all tree locations and 
     // build locations around the gardener for possible farm plots
@@ -161,9 +163,16 @@ public class GardenerBot extends RobotGlobal {
 		Direction startDir = usefulRandomDir();
     	try {
     		debugTick(29);
-			if (!rc.onTheMap(myLoc, octagonFarmRadius)) { // stop looking is circle isn't all on the map
-				//System.out.println("Not all on the map!");
-				return false;
+    		if (getExperimental()) {
+				if (!rc.onTheMap(myLoc, octagonFarmRadius + 2)) { // stop looking is circle isn't all on the map
+					//System.out.println("Not all on the map!");
+					return false;
+				}
+			} else {
+				if (!rc.onTheMap(myLoc, octagonFarmRadius)) { // stop looking is circle isn't all on the map
+					//System.out.println("Not all on the map!");
+					return false;
+				}
 			}
 
 			if (!rc.isCircleOccupiedExceptByThisRobot(myLoc, octagonFarmRadius)) return true;
