@@ -23,6 +23,8 @@ public class LumberjackBot extends RobotGlobal {
             }
         }
     }
+    
+    static int a = (int) (Math.random()*enemyInitialArchonLocations.length);
 
     public static void turn() throws GameActionException {
         processNearbyRobots();
@@ -32,8 +34,6 @@ public class LumberjackBot extends RobotGlobal {
         
         int roundnum = rc.getRoundNum();
         RobotInfo nearestEnemy = getNearestEnemy();
-        int a = 0;
-        a = roundNum >=  1 ? (int) (Math.random()*enemyInitialArchonLocations.length) : a;
         Direction invadeDir = myLoc.directionTo(enemyInitialArchonLocations[a]);
         rc.setIndicatorDot(enemyInitialArchonLocations[a], 255, 0, 255);
         boolean enemyInRange = false;

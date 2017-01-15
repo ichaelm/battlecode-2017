@@ -46,7 +46,10 @@ public strictfp class RobotGlobal {
     public static final int DESIRED_ROBOTS = 20;
     public static final int DESIRED_TREES = 20;
     public static final int DESIRED_BULLETS = 20;
-
+    
+    // Scout variables
+    public static Direction currentDirection;
+    
     // Start of game info
     public static Team myTeam;
     public static Team enemyTeam;
@@ -88,6 +91,10 @@ public strictfp class RobotGlobal {
     private static int[] debugBytecodesList = new int[100];
     private static int numDebugBytecodes = 0;
     private static boolean debugTripped = false;
+    private static final int SINGLE = 1;
+    private static final int TRIAD = 3;
+    private static final int PENTAD = 5;
+    private static int soldierShots = SINGLE;
 
     private static RobotType[] initialBuildQueue1 = new RobotType[0];
     private static RobotType[] initialBuildQueue2 = new RobotType[0];
@@ -327,6 +334,36 @@ public strictfp class RobotGlobal {
     public static Direction randomDirection() {
         return new Direction((float)Math.random() * 2 * (float)Math.PI);
     }
+    
+    static Direction[] usefulDirections = { // every 16th of a circle
+    		new Direction((float) 0.0),
+    		new Direction((float) 22.5),
+    		new Direction((float) 45.0),
+    		new Direction((float) 67.5),
+    		new Direction((float) 90.0),
+    		new Direction((float) 112.5),
+    		new Direction((float) 135.0),
+    		new Direction((float) 157.5),
+    		new Direction((float) 180.0),
+    		new Direction((float) 202.5),
+    		new Direction((float) 225.0),
+    		new Direction((float) 247.5),
+    		new Direction((float) 270.0),
+    		new Direction((float) 292.5),
+    		new Direction((float) 315.0),
+    		new Direction((float) 337.5)
+    };
+    
+    // replacement for RandomDirection that helps to get useful angles
+    public static Direction usefulRandomDir() {
+    	int nextI = (int) (16*Math.random());
+    	return usefulDirections[nextI];
+    }
+    
+    //Given a Direction, it returns the Direction after a 180 degree turn
+    public static Direction turn180(Direction currDir) {
+    	return new Direction((float) (currDir.radians + Math.PI % (2 * Math.PI)));
+    }
 
     public static boolean tryMoveElseBack(Direction dir) throws GameActionException {
         float currentStride = myType.strideRadius;
@@ -458,9 +495,36 @@ public strictfp class RobotGlobal {
         boolean intersects = intersections.length > 0;
         return intersects;
     }
+    
+    public static boolean willCollideWithMe(BulletInfo bullet) {
+        MapLocation loc = myLoc; 
+        float r = myType.bodyRadius;
+    	Direction propagationDirection = bullet.dir;
+        MapLocation bulletLocation = bullet.location;
+        MapLocation bulletDestination = bulletLocation.add(propagationDirection, bullet.speed);
+
+        MapLocation[] intersections = Geometry.getCircleLineSegmentIntersections(loc, r, bulletLocation, bulletDestination);
+        boolean intersects = intersections.length > 0;
+        return intersects;
+    }
 
     public static boolean willCollideWith(BulletInfo[] bullets, MapLocation loc, float r) {
         for (BulletInfo bullet : bullets) {
+            if (bullet == null) {
+                break;
+            } else {
+                if (willCollideWith(bullet, loc, r)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+    
+    public static boolean willCollideWithMe(BulletInfo[] bullets) {
+    	MapLocation loc = myLoc; 
+        float r = myType.bodyRadius;
+    	for (BulletInfo bullet : bullets) {
             if (bullet == null) {
                 break;
             } else {
@@ -516,7 +580,7 @@ public strictfp class RobotGlobal {
 
     }
 
-    public static MapLocation[] narrowBounds (MapLocation inner, MapLocation outer) throws GameActionException {
+    public static MapLocation[] mapBST (MapLocation inner, MapLocation outer) throws GameActionException {
 
         float i = outer.distanceTo(inner) / 2;
         Direction away = outer.directionTo(inner);
@@ -562,7 +626,7 @@ public strictfp class RobotGlobal {
             if(!rc.onTheMap(senseLoc)) {
                 bounds.updateInnerBound(dirOrd, myLoc.add(MapBounds.dirFromOrd(dirOrd), myType.bodyRadius));
                 bounds.updateOuterBound(dirOrd, senseLoc);
-                MapLocation[] eastBounds = narrowBounds(bounds.getInnerBoundLoc(dirOrd, myLoc), bounds.getOuterBoundLoc(dirOrd, myLoc));
+                MapLocation[] eastBounds = mapBST(bounds.getInnerBoundLoc(dirOrd, myLoc), bounds.getOuterBoundLoc(dirOrd, myLoc));
                 bounds.updateInnerBound(dirOrd, eastBounds[0]);
                 bounds.updateOuterBound(dirOrd, eastBounds[1]);
             } else {

@@ -27,30 +27,7 @@ public class GardenerBot extends RobotGlobal {
     static boolean goBack = false;
     static Direction[] treeDirections = new Direction[7];
 
-    static Direction[] usefulDirections = { // every 16th of a circle
-    		new Direction((float) 0.0),
-    		new Direction((float) 22.5),
-    		new Direction((float) 45.0),
-    		new Direction((float) 67.5),
-    		new Direction((float) 90.0),
-    		new Direction((float) 112.5),
-    		new Direction((float) 135.0),
-    		new Direction((float) 157.5),
-    		new Direction((float) 180.0),
-    		new Direction((float) 202.5),
-    		new Direction((float) 225.0),
-    		new Direction((float) 247.5),
-    		new Direction((float) 270.0),
-    		new Direction((float) 292.5),
-    		new Direction((float) 315.0),
-    		new Direction((float) 337.5)
-    };
     
-    // replacement for RandomDirection that helps to get useful angles
-    public static Direction usefulRandomDir() {
-    	int nextI = (int) (16*Math.random());
-    	return usefulDirections[nextI];
-    }
 
     // Sets up everything needed to plant a farm and maintain it etc.
     public static void getTreeLocations(Direction missingTreeDir) {
