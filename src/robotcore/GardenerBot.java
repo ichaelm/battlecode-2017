@@ -297,43 +297,38 @@ public class GardenerBot extends RobotGlobal {
                     }
                 }
             } else {
-        		int nextToPlant = 0;
-        		for (boolean b: isTreeAlive) {
-        			if(!b) break;
-        			nextToPlant ++;
-        		}
+				for (int t = 0; t < 7; t++) {
+					boolean isAlive = isTreeAlive[t];
+					boolean isBlocked = isTreeBlocked[t];
+					if (!isAlive && !isBlocked) {
+						// try to plant this one
+						MapLocation pLoc = treePlantingLocs[t];
 
-        		int t = nextToPlant;
-        		if (nextToPlant > 6) { // when done planting, set to watering mode
-        			//mode = FarmingMode.WATERING;
-        		}
-        		else { 															// if not finished planting trees...
-        			MapLocation pLoc = treePlantingLocs[t];
-        			
-        			if (haveBullets && rc.onTheMap(pLoc) && rc.isBuildReady()){ // check location, cooldown, & bullets
-        				Direction tDir = treeDirections[t];
-        				//System.out.println("Attempting to plant Tree #" + t);
-        				
-        				if (rc.canMove(pLoc) && !moved) {						// check if can move this turn, then do
-        					moved = tryMoveExact(pLoc);	// Go to plantLoc
-        					goBack = true; 
-        					
-        					if (rc.canPlantTree(tDir)) {						// check if can plant
-        						rc.plantTree(myLoc.directionTo(treeLocs[t])); 	// Success! now account for the new tree
-        						//System.out.println("Tree #" + t + " is planted.");
-        						numPlanted++;
-        						isTreeAlive[t] = true;
-        					} else {
-        						isTreeAlive[t] = true; // force it to move on to the next tree
-        						//System.out.println("Couldn't plant tree # " + t + " in treeDir specified.");
-        					}
-        				} else {
-        					//System.out.println("Couldn't get to Tree Planting Location #" + t);
-        				}
-        			}
-        			//System.out.println("Waiting for cooldown...");
-        		}
-        		
+						if (haveBullets && rc.onTheMap(pLoc) && rc.isBuildReady()){ // check location, cooldown, & bullets
+							Direction tDir = treeDirections[t];
+							//System.out.println("Attempting to plant Tree #" + t);
+
+							if (rc.canMove(pLoc) && !moved) {						// check if can move this turn, then do
+								moved = tryMoveExact(pLoc);	// Go to plantLoc
+								goBack = true;
+
+								if (rc.canPlantTree(tDir)) {						// check if can plant
+									rc.plantTree(myLoc.directionTo(treeLocs[t])); 	// Success! now account for the new tree
+									//System.out.println("Tree #" + t + " is planted.");
+									numPlanted++;
+									isTreeAlive[t] = true;
+								} else {
+									isTreeAlive[t] = true; // force it to move on to the next tree
+									//System.out.println("Couldn't plant tree # " + t + " in treeDir specified.");
+								}
+							} else {
+								//System.out.println("Couldn't get to Tree Planting Location #" + t);
+							}
+						}
+						//System.out.println("Waiting for cooldown...");
+						break;
+					}
+				}
         	}
 
         	// Water the neediest friendly plant

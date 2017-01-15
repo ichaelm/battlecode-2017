@@ -101,6 +101,7 @@ public strictfp class RobotGlobal {
     private static int soldierShots = SINGLE;
     private static GardenerSchedule gardenerSchedule = GardenerSchedule.ONCE_EVERY_N_ROUNDS;
     private static int gardenerScheduleN = -1;
+    private static boolean experimental = false;
 
     private static RobotType[] initialBuildQueue1 = new RobotType[0];
     private static RobotType[] initialBuildQueue2 = new RobotType[0];
@@ -926,6 +927,14 @@ public strictfp class RobotGlobal {
 
     public static int getGardenerScheduleN() {
         return gardenerScheduleN;
+    }
+
+    public static void setExperimental(boolean experimental) {
+        RobotGlobal.experimental = experimental;
+    }
+
+    public static boolean getExperimental() {
+        return experimental;
     }
 
     /*
