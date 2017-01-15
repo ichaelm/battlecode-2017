@@ -12,7 +12,6 @@ public class GardenerBot extends RobotGlobal {
     static MapLocation birthLocation = null;
     static Direction buildDirection = null;
     static FarmingMode mode = FarmingMode.SEARCHING;
-    //static Direction firstMove = Direction.getEast();
     static MapLocation farmCenter = null;
     static MapLocation buildLoc = null;
     static float octEdge = (float) 0.4693;
@@ -21,7 +20,8 @@ public class GardenerBot extends RobotGlobal {
     //static int plantStartTurn = 0;
     static int numPlanted = 0;
     static boolean amPlanting = false;
-    static boolean[] isPlanted = new boolean[7];
+    static boolean[] isTreeAlive = new boolean[7];
+	static boolean[] isTreeBlocked = new boolean[7]; // A spot is marked as blocked if the block is not  due to one of our non-archon robots
     static MapLocation[] treeLocs = new MapLocation[7];
     static MapLocation[] treePlantingLocs = new MapLocation[7];
     static boolean goBack = false;
@@ -111,16 +111,15 @@ public class GardenerBot extends RobotGlobal {
     
     // quick and easy method to check if a tree or build location is occupied
     public static boolean spotBlocked(int treeNum) throws GameActionException {
-    	boolean occupied = true;
         rc.setIndicatorDot(treeLocs[treeNum], 0, 55, 255);
-        occupied = rc.isCircleOccupied(treeLocs[treeNum], 1);
+        boolean occupied = rc.isCircleOccupied(treeLocs[treeNum], 1);
 
         if (occupied) {
             RobotInfo r = rc.senseRobotAtLocation(treeLocs[treeNum]);
             if(r != null) { // if blocking thing is a robot...
-                if (r.getTeam() == rc.getTeam()) occupied = false; // if our team, say it's open (cuz it will presumably move)
-                if (r.getType() == RobotType.ARCHON) occupied = true; // Archons, however, dont move.
-                else occupied = true; // if enemy team, say it's occupied (cuz that robot is going to attack our gardener)
+                if (r.getTeam() == rc.getTeam() && r.getType() != RobotType.ARCHON) {
+                	occupied = false; // if our team, say it's open (cuz it will presumably move)
+				}
             }
         }
     	return occupied;
@@ -133,34 +132,36 @@ public class GardenerBot extends RobotGlobal {
     		numPlanted = inFarm.length;
 
     		if (prev < numPlanted) {
-    			//System.out.println("A tree has magically appeared!");
-    		}
+				//System.out.println("A tree has magically appeared!");
+			}
     		
-    		boolean anyKilled = false;
+    		boolean needToPlant = false;
 
     		for (int t = 0; t < 7; t++) {
-    			boolean killed = false;
+    			boolean treeNotExists = false;
     			MapLocation l = treeLocs[t];
     			TreeInfo info = rc.senseTreeAtLocation(l);
     			if (info == null) {
-    				killed = true;
+					treeNotExists = true;
     			} else if (info.team != rc.getTeam()) {
     				//System.out.println("Wait... that's not our tree!!! WTF!!!");
-    				killed = true;
+					treeNotExists = true;
     			}
-    			if (killed) {
+    			// treeNotExists is correct
+    			if (treeNotExists) {
     				//System.out.println("Tree #" + t + " was killed...");
     				rc.setIndicatorDot(l, 255, 0, 0);
-    				if (!spotBlocked(t)) { // if this build location isn't blocked, signal to replant
-	    				isPlanted[t] = false;
-    				}
-    			}
-    			
-    			if (killed) anyKilled = true;
+					isTreeBlocked[t] = spotBlocked(t);
+					isTreeAlive[t] = false;
+					needToPlant = true;
+    			} else {
+					isTreeBlocked[t] = false;
+					isTreeAlive[t] = true;
+				}
 
     		}
     		
-    		if (anyKilled) {
+    		if (needToPlant) {
     			//System.out.println("Attempting to replant...");
     			mode = FarmingMode.FARMING;
     		}
@@ -197,13 +198,13 @@ public class GardenerBot extends RobotGlobal {
 			MapLocation buildLocation = myLoc.add(buildDirection, octDiag + 2);
 			rc.setIndicatorDot(buildLocation, 55, 99, 66);
 			
-			isPlanted = new boolean[7];
+			isTreeAlive = new boolean[7];
 			if (!rc.isCircleOccupiedExceptByThisRobot(buildLocation, 1)) {
 				getTreeLocations(buildDirection);
 				for(int i = 0; i < 7; i++) { // see how many other spots are blocked
 					//debugTick(11+2*i);
 					if (!spotBlocked(i)) canPlantNum ++;
-					else isPlanted[i] = true;
+					else isTreeAlive[i] = true;
 					debugTick(12+2*i);
 					if (canPlantNum >= plantIfNum) return true; // if enough spots, plant
 				}
@@ -320,7 +321,7 @@ public class GardenerBot extends RobotGlobal {
                 }
             } else {
         		int nextToPlant = 0;
-        		for (boolean b: isPlanted) {
+        		for (boolean b: isTreeAlive) {
         			if(!b) break;
         			nextToPlant ++;
         		}
@@ -344,9 +345,9 @@ public class GardenerBot extends RobotGlobal {
         						rc.plantTree(myLoc.directionTo(treeLocs[t])); 	// Success! now account for the new tree
         						//System.out.println("Tree #" + t + " is planted.");
         						numPlanted++;
-        						isPlanted[t] = true;
+        						isTreeAlive[t] = true;
         					} else {
-        						isPlanted[t] = true; // force it to move on to the next tree
+        						isTreeAlive[t] = true; // force it to move on to the next tree
         						//System.out.println("Couldn't plant tree # " + t + " in treeDir specified.");
         					}
         				} else {

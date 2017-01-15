@@ -3,9 +3,6 @@ package robotcore;
 import battlecode.common.Direction;
 import battlecode.common.MapLocation;
 
-/**
- * Created by Michael on 1/12/2017.
- */
 public class MapBounds {
     public static final int NORTH = 0;
     public static final int EAST = 1;
