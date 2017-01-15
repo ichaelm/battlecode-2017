@@ -29,8 +29,13 @@ public class LumberjackBot extends RobotGlobal {
         processNearbyBullets();
         processNearbyTrees();
 
+        
+        int roundnum = rc.getRoundNum();
         RobotInfo nearestEnemy = getNearestEnemy();
-        Direction invadeDir = myLoc.directionTo(enemyInitialArchonLocations[0]);
+        int a = 0;
+        a = roundNum >=  1 ? (int) (Math.random()*enemyInitialArchonLocations.length) : a;
+        Direction invadeDir = myLoc.directionTo(enemyInitialArchonLocations[a]);
+        rc.setIndicatorDot(enemyInitialArchonLocations[a], 255, 0, 255);
         boolean enemyInRange = false;
         Direction combatDir = null;
         if (nearestEnemy != null) {
