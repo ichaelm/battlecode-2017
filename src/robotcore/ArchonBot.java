@@ -32,25 +32,76 @@ public class ArchonBot extends RobotGlobal {
 
         // Archon count and leader selection
         if (isLeader()) {
-            // Since I'm the leader and it's not turn 0, I reset the counter (by broadcasting 1 below)
+            System.out.println("is leader and not turn 0");
+            // Since I'm the leader and it's not turn 0, I reset the counter
+            int numArchons = rc.readBroadcast(ARCHON_COUNTER_CHANNEL);
+            rc.broadcast(ARCHON_COUNTER_CHANNEL, 1);
+            rc.broadcast(NUM_ARCHONS_CHANNEL, numArchons);
         } else {
+            System.out.println("is not leader or turn 0");
             // Either it's turn 0, or I'm not the leader. So count.
-            int newArchonOrder = rc.readBroadcast(ARCHON_COUNTER_CHANNEL);
-            if (newArchonOrder > archonOrder) {
-                // Leader died, so now I am the leader
-                newArchonOrder = 0;
+            if (firstTurn) {
+                archonOrder = rc.readBroadcast(ARCHON_COUNTER_CHANNEL);
+                rc.broadcast(ARCHON_COUNTER_CHANNEL, archonOrder + 1);
+            } else {
+                int newArchonOrder = rc.readBroadcast(ARCHON_COUNTER_CHANNEL);
+                if (newArchonOrder > archonOrder) {
+                    // Leader died, so now I am the leader
+                    newArchonOrder = 0;
+                }
+                archonOrder = newArchonOrder;
+                rc.broadcast(ARCHON_COUNTER_CHANNEL, archonOrder + 1);
             }
-            archonOrder = newArchonOrder;
         }
-        rc.broadcast(ARCHON_COUNTER_CHANNEL, archonOrder + 1);
 
         if (isLeader()) {
+            System.out.println("is leader");
             if (firstTurn) {
+                System.out.println("first turn");
                 initializeBuildQueue1();
                 initializeBuildQueue2();
                 initializeDefaultBuild();
             }
         }
+
+        boolean iMakeGardeners;
+        if (firstTurn) {
+            MapLocation maxMinDistLoc = null;
+            float maxMinDist = -1f;
+            for (MapLocation loc : myInitialArchonLocations) {
+                float minDist = minDistBetween(loc, enemyInitialArchonLocations);
+                if (minDist > maxMinDist) {
+                    maxMinDist = minDist;
+                    maxMinDistLoc = loc;
+                }
+            }
+            if (myLoc.distanceTo(maxMinDistLoc) < RobotType.ARCHON.bodyRadius) { // if it's me
+                iMakeGardeners = true;
+            } else {
+                iMakeGardeners = false;
+            }
+        } else {
+            if (isLeader()) {
+                MapLocation[] myArchonLocations = getMyArchonLocations();
+                int maxMinDistArchon = -1;
+                float maxMinDist = -1f;
+                for (int i = 0; i < myArchonLocations.length; i++) {
+                    MapLocation loc = myArchonLocations[i];
+                    float minDist = minDistBetween(loc, enemyInitialArchonLocations);
+                    if (minDist > maxMinDist) {
+                        maxMinDist = minDist;
+                        maxMinDistArchon = i;
+                    }
+                }
+                System.out.println("maxMinDistArchon = " + maxMinDistArchon);
+                rc.broadcast(WHICH_ARCHON_MAKES_GARDENERS_CHANNEL, maxMinDistArchon);
+            }
+
+            int whichArchonMakesGardeners = rc.readBroadcast(WHICH_ARCHON_MAKES_GARDENERS_CHANNEL);
+
+            iMakeGardeners = (archonOrder == whichArchonMakesGardeners);
+        }
+
 
         // Broadcast location
         int locChannel = ARCHON_LOCATION_TABLE_CHANNEL + (archonOrder*ARCHON_LOCATION_TABLE_ENTRY_SIZE);
@@ -60,41 +111,44 @@ public class ArchonBot extends RobotGlobal {
             rc.broadcast(locChannel, Float.floatToIntBits(myLoc.x));
             rc.broadcast(locChannel + 1, Float.floatToIntBits(myLoc.y));
         }
-        Direction gardenerDir;
-        if (getExperimental()) {
-            float mapCenterX = (knownMapBounds.getInnerBound(MapBounds.EAST) + knownMapBounds.getInnerBound(MapBounds.WEST)) / 2f;
-            float mapCenterY = (knownMapBounds.getInnerBound(MapBounds.NORTH) + knownMapBounds.getInnerBound(MapBounds.SOUTH)) / 2f;
-            MapLocation knownMapCenter = new MapLocation(mapCenterX, mapCenterY);
-            gardenerDir = myLoc.directionTo(knownMapCenter);
-        } else {
-            gardenerDir = randomDirection();
-        }
 
-        RobotGlobal.GardenerSchedule gardenerSchedule = getGardenerSchedule();
-        int gardenersBuilt = rc.readBroadcast(NUM_GARDENERS_BUILT_CHANNEL);
-        boolean success;
-        switch (gardenerSchedule) {
-            case ONCE_EVERY_N_ROUNDS:
-                int gardenerScheduleN = getGardenerScheduleN();
-                if (gardenersBuilt < (roundNum / gardenerScheduleN) + 1) {
-                    success = tryHireGardener(gardenerDir);
-                    if (success) {
-                        gardenersBuilt++;
-                        rc.broadcast(NUM_GARDENERS_BUILT_CHANNEL, gardenersBuilt);
-                        addBuildQueue1(RobotType.LUMBERJACK);
+        if (iMakeGardeners) {
+            Direction gardenerDir;
+            if (getExperimental()) {
+                float mapCenterX = (knownMapBounds.getInnerBound(MapBounds.EAST) + knownMapBounds.getInnerBound(MapBounds.WEST)) / 2f;
+                float mapCenterY = (knownMapBounds.getInnerBound(MapBounds.NORTH) + knownMapBounds.getInnerBound(MapBounds.SOUTH)) / 2f;
+                MapLocation knownMapCenter = new MapLocation(mapCenterX, mapCenterY);
+                gardenerDir = myLoc.directionTo(knownMapCenter);
+            } else {
+                gardenerDir = randomDirection();
+            }
+
+            RobotGlobal.GardenerSchedule gardenerSchedule = getGardenerSchedule();
+            int gardenersBuilt = rc.readBroadcast(NUM_GARDENERS_BUILT_CHANNEL);
+            boolean success;
+            switch (gardenerSchedule) {
+                case ONCE_EVERY_N_ROUNDS:
+                    int gardenerScheduleN = getGardenerScheduleN();
+                    if (gardenersBuilt < (roundNum / gardenerScheduleN) + 1) {
+                        success = tryHireGardener(gardenerDir);
+                        if (success) {
+                            gardenersBuilt++;
+                            rc.broadcast(NUM_GARDENERS_BUILT_CHANNEL, gardenersBuilt);
+                            addBuildQueue1(RobotType.LUMBERJACK);
+                        }
                     }
-                }
-                break;
-            case WHEN_FULL:
-                if (teamBullets >= 190) {
-                    success = tryHireGardener(gardenerDir);
-                    if (success) {
-                        gardenersBuilt++;
-                        rc.broadcast(NUM_GARDENERS_BUILT_CHANNEL, gardenersBuilt);
-                        addBuildQueue1(RobotType.LUMBERJACK);
+                    break;
+                case WHEN_FULL:
+                    if (teamBullets >= 190) {
+                        success = tryHireGardener(gardenerDir);
+                        if (success) {
+                            gardenersBuilt++;
+                            rc.broadcast(NUM_GARDENERS_BUILT_CHANNEL, gardenersBuilt);
+                            addBuildQueue1(RobotType.LUMBERJACK);
+                        }
                     }
-                }
-                break;
+                    break;
+            }
         }
 
         if (isLeader()) {

@@ -18,7 +18,8 @@ public strictfp class RobotGlobal {
 
     // Channel constants
     public static final int ARCHON_COUNTER_CHANNEL = 0;
-    public static final int ARCHON_LOCATION_TABLE_CHANNEL = ARCHON_COUNTER_CHANNEL + 1;
+    public static final int NUM_ARCHONS_CHANNEL = ARCHON_COUNTER_CHANNEL + 1;
+    public static final int ARCHON_LOCATION_TABLE_CHANNEL = NUM_ARCHONS_CHANNEL + 1;
     public static final int ARCHON_LOCATION_TABLE_ENTRY_SIZE = 2;
     public static final int ARCHON_LOCATION_TABLE_NUM_ENTRIES = 3;
     public static final int ARCHON_LOCATION_TABLE_LENGTH = ARCHON_LOCATION_TABLE_ENTRY_SIZE * ARCHON_LOCATION_TABLE_NUM_ENTRIES;
@@ -45,6 +46,7 @@ public strictfp class RobotGlobal {
     public static final int BUILD_QUEUE_2_COUNT_CHANNEL = BUILD_QUEUE_2_BEGIN_CHANNEL + 1;
     public static final int GLOBAL_DEFAULT_BUILD_CHANNEL = BUILD_QUEUE_2_COUNT_CHANNEL + 1;
     public static final int NUM_GARDENERS_BUILT_CHANNEL = GLOBAL_DEFAULT_BUILD_CHANNEL + 1;
+    public static final int WHICH_ARCHON_MAKES_GARDENERS_CHANNEL = NUM_GARDENERS_BUILT_CHANNEL + 1;
 
     // Performance constants
     public static final int DESIRED_ROBOTS = 20;
@@ -246,7 +248,8 @@ public strictfp class RobotGlobal {
     }
 
     public static MapLocation[] getMyArchonLocations() throws GameActionException {
-        int numArchons = rc.readBroadcast(ARCHON_COUNTER_CHANNEL);
+        int numArchons = rc.readBroadcast(NUM_ARCHONS_CHANNEL);
+        System.out.println("numArchons = " + numArchons);
         if (numArchons > ARCHON_LOCATION_TABLE_NUM_ENTRIES) {
             System.out.println("More than 3 archons detected!!!");
             numArchons = ARCHON_LOCATION_TABLE_NUM_ENTRIES;
