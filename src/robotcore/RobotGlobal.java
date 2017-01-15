@@ -9,7 +9,31 @@ public strictfp class RobotGlobal {
     public static final int DESIRED_ROBOTS = 20;
     public static final int DESIRED_TREES = 20;
     public static final int DESIRED_BULLETS = 20;
-
+    
+    //Unit maximums - used for gardener/archon to check what/whether to build
+    public static int MAX_SCOUTS 		= 3;
+    public static int MAX_SOLDIERS 		= 100;
+    public static int MAX_LUMBERJACKS 	= 10;
+    public static int MAX_TANKS			= 2;
+    public static int MAX_GARDENERS		= 12;
+    
+    //Channel Constants
+    
+    //Store number of each unit alive, potentially used to decide production by gardener
+    public static int scoutCountChannel 		= 0;
+    public static int soldierCountChannel 		= 1;
+    public static int lumberjackCountChannel 	= 2;
+    public static int tankCountChannel 			= 3;
+    public static int gardenerCountChannel 		= 4;
+    
+    public static int conserveBulletsChannel 	= 5; // Store 0 if free to use bullets, 1 if should ceasefire
+    
+    //Gardeners are special. Most builds seem to not have them moving
+    public static int knownGardenerChannel		= 6; //Store locations of gardeners
+    
+    // Scout variables
+    public static Direction currentDirection;
+    
     // Start of game info
     public static Team myTeam;
     public static Team enemyTeam;
@@ -218,6 +242,11 @@ public strictfp class RobotGlobal {
     public static Direction randomDirection() {
         return new Direction((float)Math.random() * 2 * (float)Math.PI);
     }
+    
+    //Given a Direction, it returns the Direction after a 180 degree turn
+    public static Direction turn180(Direction currDir) {
+    	return new Direction((float) (currDir.radians + Math.PI % (2 * Math.PI)));
+    }
 
     public static boolean tryMoveElseBack(Direction dir) throws GameActionException {
         float currentStride = myType.strideRadius;
@@ -325,6 +354,8 @@ public strictfp class RobotGlobal {
         return false;
     }
 
+    
+    
     /*
 
                 RangeList exclude = new RangeList(false);

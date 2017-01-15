@@ -33,12 +33,20 @@ public class GardenerBot extends RobotGlobal {
         Direction buildDir = randomDirection();
 
         RobotType currentBuildOrder = getBuildOrder();
-
-        // Randomly attempt to build a soldier or lumberjack in this direction
-        if (rc.canBuildRobot(currentBuildOrder, buildDir)) {
-            rc.buildRobot(currentBuildOrder, buildDir);
+        
+        //If there is no tree scout, build one in the random direction
+        int treeScoutCount = rc.readBroadcast(scoutCountChannel);
+        if (treeScoutCount < MAX_SCOUTS && rc.canBuildRobot(RobotType.SCOUT, buildDir)) {
+        	System.out.println("I just built a Scout!");
+        	rc.buildRobot(RobotType.SCOUT, buildDir);
+        	rc.broadcast(scoutCountChannel, treeScoutCount + 1);
+        } else {
+        	// Randomly attempt to build a soldier or lumberjack in this direction
+            if (rc.canBuildRobot(currentBuildOrder, buildDir)) {
+                rc.buildRobot(currentBuildOrder, buildDir);
+            }
         }
-
+        
         // Move randomly
         tryMoveElseLeftRight(randomDirection());
 
