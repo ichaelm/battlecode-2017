@@ -4,7 +4,6 @@ import battlecode.common.*;
 
 public class ArchonBot extends RobotGlobal {
     static int archonOrder = -1;
-    static int gardenersBuilt = 0;
     static boolean firstTurn = true;
 
     public static void loop() {
@@ -64,12 +63,30 @@ public class ArchonBot extends RobotGlobal {
 
         Direction gardenerDir = randomDirection();
 
-        if (gardenersBuilt < (roundNum / 200) + 1) {
-            if (rc.canHireGardener(gardenerDir)) {
-                rc.hireGardener(gardenerDir);
-                gardenersBuilt++;
-                addBuildQueue1(RobotType.LUMBERJACK);
-            }
+        RobotGlobal.GardenerSchedule gardenerSchedule = getGardenerSchedule();
+        int gardenersBuilt = rc.readBroadcast(NUM_GARDENERS_BUILT_CHANNEL);
+        switch (gardenerSchedule) {
+            case ONCE_EVERY_N_ROUNDS:
+                int gardenerScheduleN = getGardenerScheduleN();
+                if (gardenersBuilt < (roundNum / gardenerScheduleN) + 1) {
+                    if (rc.canHireGardener(gardenerDir)) {
+                        rc.hireGardener(gardenerDir);
+                        gardenersBuilt++;
+                        rc.broadcast(NUM_GARDENERS_BUILT_CHANNEL, gardenersBuilt);
+                        addBuildQueue1(RobotType.LUMBERJACK);
+                    }
+                }
+                break;
+            case WHEN_FULL:
+                if (teamBullets >= 190) {
+                    if (rc.canHireGardener(gardenerDir)) {
+                        rc.hireGardener(gardenerDir);
+                        gardenersBuilt++;
+                        rc.broadcast(NUM_GARDENERS_BUILT_CHANNEL, gardenersBuilt);
+                        addBuildQueue1(RobotType.LUMBERJACK);
+                    }
+                }
+                break;
         }
 
         if (isLeader()) {

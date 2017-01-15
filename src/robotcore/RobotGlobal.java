@@ -11,6 +11,9 @@ Gardener priorities:
  */
 
 public strictfp class RobotGlobal {
+
+    public enum GardenerSchedule {ONCE_EVERY_N_ROUNDS, WHEN_FULL};
+
     public static RobotController rc;
 
     // Channel constants
@@ -41,6 +44,7 @@ public strictfp class RobotGlobal {
     public static final int BUILD_QUEUE_2_BEGIN_CHANNEL = BUILD_QUEUE_2_CHANNEL + BUILD_QUEUE_2_LENGTH;
     public static final int BUILD_QUEUE_2_COUNT_CHANNEL = BUILD_QUEUE_2_BEGIN_CHANNEL + 1;
     public static final int GLOBAL_DEFAULT_BUILD_CHANNEL = BUILD_QUEUE_2_COUNT_CHANNEL + 1;
+    public static final int NUM_GARDENERS_BUILT_CHANNEL = GLOBAL_DEFAULT_BUILD_CHANNEL + 1;
 
     // Performance constants
     public static final int DESIRED_ROBOTS = 20;
@@ -95,6 +99,8 @@ public strictfp class RobotGlobal {
     private static final int TRIAD = 3;
     private static final int PENTAD = 5;
     private static int soldierShots = SINGLE;
+    private static GardenerSchedule gardenerSchedule = GardenerSchedule.ONCE_EVERY_N_ROUNDS;
+    private static int gardenerScheduleN = -1;
 
     private static RobotType[] initialBuildQueue1 = new RobotType[0];
     private static RobotType[] initialBuildQueue2 = new RobotType[0];
@@ -904,6 +910,22 @@ public strictfp class RobotGlobal {
 
     public static void initializeDefaultBuild() throws GameActionException {
         setGlobalDefaultBuild(initialDefaultBuild);
+    }
+
+    public static void setGardenerSchedule(GardenerSchedule schedule) {
+        RobotGlobal.gardenerSchedule = schedule;
+    }
+
+    public static GardenerSchedule getGardenerSchedule() {
+        return gardenerSchedule;
+    }
+
+    public static void setGardenerScheduleN(int n) {
+        RobotGlobal.gardenerScheduleN = n;
+    }
+
+    public static int getGardenerScheduleN() {
+        return gardenerScheduleN;
     }
 
     /*

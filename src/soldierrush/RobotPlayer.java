@@ -13,6 +13,8 @@ public strictfp class RobotPlayer {
                     // Nothing
             });
             RobotGlobal.setInitialDefaultBuild(RobotType.SOLDIER);
+            RobotGlobal.setGardenerSchedule(RobotGlobal.GardenerSchedule.ONCE_EVERY_N_ROUNDS);
+            RobotGlobal.setGardenerScheduleN(200);
         } catch (Exception e) {
             System.out.println("Exception during global init");
             e.printStackTrace();
