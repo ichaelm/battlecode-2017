@@ -67,7 +67,11 @@ public class SoldierBot extends RobotGlobal {
         debugTick(3);
         RobotInfo nearestEnemy = getNearestEnemy();
         debugTick(4);
-        Direction goDir = myLoc.directionTo(enemyInitialArchonLocations[0]);
+        int a = 0;
+        a = roundNum >=  1 ? (int) (Math.random()*enemyInitialArchonLocations.length) : a;
+        rc.setIndicatorDot(enemyInitialArchonLocations[a], 255, 0, 255);
+        Direction goDir = myLoc.directionTo(enemyInitialArchonLocations[a]);
+        goDir = rc.canMove(goDir) ? goDir: randomDirection();
         if (nearestEnemy != null) {
             goDir = myLoc.directionTo(nearestEnemy.location);
         }
