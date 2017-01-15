@@ -12,7 +12,7 @@ public class GardenerBot extends RobotGlobal {
     static MapLocation birthLocation = null;
     static Direction buildDirection = null;
     static FarmingMode mode = FarmingMode.SEARCHING;
-    static Direction firstMove = Direction.getEast();
+    //static Direction firstMove = Direction.getEast();
     static MapLocation farmCenter = null;
     static MapLocation buildLoc = null;
     static float octEdge = (float) 0.4693;
@@ -55,7 +55,7 @@ public class GardenerBot extends RobotGlobal {
     // Sets up everything needed to plant a farm and maintain it etc.
     public static void getTreeLocations(Direction missingTreeDir) {
     	buildDirection = missingTreeDir;
-    	firstMove = missingTreeDir.rotateLeftDegrees(45);
+    	Direction firstMove = missingTreeDir.rotateLeftDegrees(45);
     	
     	if (farmCenter == null) farmCenter = myLoc;
     	else if (myLoc.distanceTo(farmCenter) > 1) farmCenter = myLoc;
@@ -81,13 +81,11 @@ public class GardenerBot extends RobotGlobal {
 
     }
     
-    public static void drawFarm() {
+    public static void drawFarm() { // draws all tree locations in green
     	try{
     		for (MapLocation t: treeLocs) {
-    			if (rc.onTheMap(t)) rc.setIndicatorDot(t, 0, 255, 0);
+    			if (rc.onTheMap(t)) rc.setIndicatorDot(t, 0, 200, 0);
     		}
-    		//if (rc.onTheMap(farmCenter)) rc.setIndicatorDot(farmCenter, 0, 0, 255);
-
     	} catch (Exception e) {
     		System.out.println("Exception during Dot Drawing");
     		e.printStackTrace();
@@ -180,23 +178,21 @@ public class GardenerBot extends RobotGlobal {
 
     }
     
-    // This method will be a very thorough search of all tree locations and build locations around the gardener for possible farm locations
+    // This method will be a very thorough search of all tree locations and 
+    // build locations around the gardener for possible farm plots
     private static boolean findFarmLocation() {
-    	debugTick(9);
 		int rNum = rc.getRoundNum();
 		int plantIfNum = (int) Math.max((7 - (Math.ceil(7*rNum/200))), 1);
 		if (rNum > 200) plantIfNum = 1;
 		
 		int canPlantNum = 0;
-		boolean timeToPlant = false;
 		Direction startDir = usefulRandomDir();
     	try {
-    		debugTick(29);
-			if (!rc.onTheMap(myLoc, octagonFarmRadius)) { // stop looking is circle isn't all on the map
+			if (!rc.onTheMap(myLoc, octagonFarmRadius)) { // stop looking if circle isn't all on the map
 				System.out.println("Not all on the map!");
 				return false;
 			}
-			debugTick(30);
+
 			if (!rc.isCircleOccupiedExceptByThisRobot(myLoc, octagonFarmRadius)) return true;
 
 			System.out.println("Trying to plant " + plantIfNum + " trees.");
@@ -205,31 +201,30 @@ public class GardenerBot extends RobotGlobal {
 			buildDirection = startDir;
 			MapLocation buildLocation = myLoc.add(buildDirection, octDiag + 2);
 			rc.setIndicatorDot(buildLocation, 55, 99, 66);
-			debugTick(40);
+			
 			isPlanted = new boolean[7];
 			if (!rc.isCircleOccupiedExceptByThisRobot(buildLocation, 1)) {
 				getTreeLocations(buildDirection);
 				for(int i = 0; i < 7; i++) { // see how many other spots are blocked
-					debugTick(11+2*i);
+					//debugTick(11+2*i);
 					if (!spotBlocked(i)) canPlantNum ++;
 					else isPlanted[i] = true;
 					debugTick(12+2*i);
 					if (canPlantNum >= plantIfNum) return true; // if enough spots, plant
 				}
-				debugTick(50);
+				//debugTick(50);
 				//System.out.println("I can plant " + canPlantNum + " trees" );
 				if (canPlantNum >= plantIfNum) return true; // if enough spots, plant
 
 			}
-			debugTick(60);
 			
 			
 		} catch (GameActionException e) {
-			// TODO Auto-generated catch block
+			System.out.println("Find Farm Locations Exception");
 			e.printStackTrace();
 		}
     	
-    	return timeToPlant;
+    	return false;
     	/*
     	if (rc.onTheMap(myLoc, octagonFarmRadius) 
         		&& (rc.getRoundNum() > 80 || !rc.isCircleOccupiedExceptByThisRobot(myLoc, octagonFarmRadius))) {
@@ -253,8 +248,6 @@ public class GardenerBot extends RobotGlobal {
 
         processNearbyBullets();
 
-        Direction buildDir = randomDirection();
-
         RobotType currentBuildOrder = getGlobalDefaultBuild();
 
         Direction toBirthLocation = myLoc.directionTo(birthLocation);
@@ -262,10 +255,6 @@ public class GardenerBot extends RobotGlobal {
             toBirthLocation = randomDirection();
         }
 
-  /** ============================================================================================
-   * =============================================================================================
-   * =============================================================================================
-   */
         processNearbyTrees();
         boolean moved = false;
         if (mode == FarmingMode.SEARCHING) {
@@ -278,8 +267,6 @@ public class GardenerBot extends RobotGlobal {
                     goDir = randomDirection();
                 }
             }
-            debugTick(10);
-            
             
             // transition to planting
             float minFriendlyTreeDist = Float.POSITIVE_INFINITY;
@@ -303,8 +290,7 @@ public class GardenerBot extends RobotGlobal {
         	if (buildDirection == null)  buildDirection = enemyInitialArchonLocations[0].directionTo(myLoc).opposite();
         	
         	getTreeLocations(buildDirection); // can change missing tree direction later
-        	buildDir = firstMove;
-        
+        	
         	drawFarm();
 
         	boolean haveBullets = rc.hasTreeBuildRequirements();
@@ -377,9 +363,6 @@ public class GardenerBot extends RobotGlobal {
         		
         	}
 
-
-
-
         	// Water the neediest friendly plant
         	TreeInfo lowestFriendlyTree = getLowestFriendlyTree();
         	if (lowestFriendlyTree != null) {
@@ -389,10 +372,6 @@ public class GardenerBot extends RobotGlobal {
         	}
         	//drawFarm();
 
-
-
-
-        	
         	// Build a unit if possible
         	float so = GameConstants.GENERAL_SPAWN_OFFSET;
         	MapLocation constructionZone = farmCenter.add(buildDirection, octDiag + 2 + so);
@@ -429,7 +408,7 @@ public class GardenerBot extends RobotGlobal {
         } else {
             writeFarmTableEntry(farmTableEntryNum, myLoc, true, false);
         }
-        debugTick(70);
+        debugTick(7);
         Clock.yield();
     }
 
