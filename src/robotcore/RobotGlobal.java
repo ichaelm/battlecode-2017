@@ -14,6 +14,8 @@ public strictfp class RobotGlobal {
 
     public enum GardenerSchedule {ONCE_EVERY_N_ROUNDS, WHEN_FULL};
 
+    public enum ScoutMode {HARASS, COLLECT};
+
     public static RobotController rc;
 
     // Channel constants
@@ -52,6 +54,8 @@ public strictfp class RobotGlobal {
     public static final int ATTACK_LOCATION_EXISTS_CHANNEL = ATTACK_LOCATION_Y_CHANNEL + 1;
     public static final int ATTACK_FINISHED_CHANNEL = ATTACK_LOCATION_EXISTS_CHANNEL + 1;
     public static final int ATTACK_LOCATION_NUM_CHANNEL = ATTACK_FINISHED_CHANNEL + 1;
+    public static final int NEW_SCOUT_MODE_CHANNEL = ATTACK_LOCATION_NUM_CHANNEL + 1;
+    public static final int OVERRIDE_SCOUT_MODE_CHANNEL = NEW_SCOUT_MODE_CHANNEL + 1;
 
     // Performance constants
     public static final int DESIRED_ROBOTS = 20;
@@ -975,6 +979,31 @@ public strictfp class RobotGlobal {
         boolean finished = rc.readBroadcast(ATTACK_FINISHED_CHANNEL) > 0;
         rc.broadcast(ATTACK_FINISHED_CHANNEL, 0);
         return finished;
+    }
+
+    public static void sendScoutMode(ScoutMode mode, boolean override) throws GameActionException {
+        rc.broadcast(NEW_SCOUT_MODE_CHANNEL, mode.ordinal());
+        if (override) {
+            rc.broadcast(OVERRIDE_SCOUT_MODE_CHANNEL, mode.ordinal());
+        } else {
+            rc.broadcast(OVERRIDE_SCOUT_MODE_CHANNEL, -1);
+        }
+    }
+
+    public static ScoutMode queryScoutMode(ScoutMode mode) throws GameActionException {
+        int overrideModeOrd = rc.readBroadcast(OVERRIDE_SCOUT_MODE_CHANNEL);
+        if (overrideModeOrd < 0) {
+            // No override, so only change mode if no current mode
+            if (mode == null) {
+                // No current mode, so change to new mode
+                int newModeOrd = rc.readBroadcast(NEW_SCOUT_MODE_CHANNEL);
+                mode = ScoutMode.values()[newModeOrd];
+            }
+        } else {
+            // Mode override
+            mode = ScoutMode.values()[overrideModeOrd];
+        }
+        return mode;
     }
 
     public static void setInitialBuildQueue1(RobotType[] initialBuildQueue1) {

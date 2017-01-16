@@ -69,6 +69,7 @@ public class ArchonBot extends RobotGlobal {
                     sendAttackLocation(null);
                 }
             }
+            sendScoutMode(ScoutMode.COLLECT, false);
         }
 
         boolean iMakeGardeners;

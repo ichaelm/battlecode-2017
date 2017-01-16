@@ -5,27 +5,28 @@ import robotcore.RobotGlobal;
 
 public class ScoutBot extends RobotGlobal {
 
+	static ScoutMode mode = null;
+
     public static void loop() {
         while (true) {
             try {
                 update();
             } catch (Exception e) {
-                System.out.println("Archon: exception during update");
+                System.out.println("Scout: exception during update");
                 e.printStackTrace();
             }
             try {
                 turn();
             } catch (Exception e) {
-                System.out.println("Archon: exception during turn");
+                System.out.println("Scout: exception during turn");
                 e.printStackTrace();
             }
         }
     }
 
     public static void turn() throws GameActionException {
-    	//Time to be a tree-seeking scout
-    	if (roundNum < 100) {
-    		//Set to 100 assuming that after that point we're out 
+    	mode = queryScoutMode(mode);
+    	if (mode == ScoutMode.COLLECT) {
     		
     		//Set a direction randomly to start
         	if (currentDirection == null) {
@@ -83,7 +84,7 @@ public class ScoutBot extends RobotGlobal {
 	        		tryMoveElseLeftRight(currentDirection);
 	        	}
         	}
-    	} else {
+    	} else if (mode == ScoutMode.HARASS) {
     		//Have some other default scout behavior for when we're done shaking trees
     		
     		//Move towards enemy archon initial
