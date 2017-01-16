@@ -6,11 +6,8 @@ import robotcore.RobotGlobal;
 
 
 public class SoldierBot extends RobotGlobal {
-	static RobotInfo nearestEnemy = null;
-	static boolean[] visitedArchonLocations = new boolean[enemyInitialArchonLocations.length];
-	static boolean wander = false;
-	static int goCount = 0;
 	static Direction goDir;
+	static boolean firstTurn = true;
 	
     public static void loop() {
         while (true) {
@@ -27,35 +24,6 @@ public class SoldierBot extends RobotGlobal {
                 e.printStackTrace();
             }
         }
-    }
-    
-    static int a = (int) (Math.random()*enemyInitialArchonLocations.length);
-    
- // Makes soldiers explore more archon locations once reaching one and later wander the whole map
-    public static void coordinate() throws GameActionException { 
-    	MapLocation arcLoc = enemyInitialArchonLocations[a];
-    	nearestEnemy = getNearestEnemy();
-    	if (wander) return;
-    	// if I can see the Archon location I'm headed to and there isn't an enemy near it...
-    	if (rc.canSenseLocation(arcLoc) && nearestEnemy == null) { 
-    		rc.setIndicatorLine(myLoc, arcLoc, 222, 222, 222);
-    		visitedArchonLocations[a] = true;
-    		
-    		if (enemyInitialArchonLocations.length == 1) return; // if only one, do nothing
-    		int i = 0;
-    		for (boolean v: visitedArchonLocations) { // find next unvisited location
-    			
-    			if (v) i++;
-    			else {
-    				a = i;
-    				return;
-    			}
-    		}
-    		
-    		System.out.println("All archon locations visited!");
-    		wander = true;			// activate wander mode once Archon locations have been checked
-    	}
-    	
     }
     
     public static void turn() throws GameActionException {
@@ -96,52 +64,46 @@ public class SoldierBot extends RobotGlobal {
                     }
                 }
                 */
-        debugTick(1);
-        processNearbyRobots();
-        debugTick(2);
-        processNearbyBullets();
-        debugTick(3);
-        coordinate();
-        debugTick(4);
-        
-        if (!wander) {
-        	rc.setIndicatorDot(enemyInitialArchonLocations[a], 255, 0, 255);
-            //rc.setIndicatorLine(myLoc, enemyInitialArchonLocations[a], 1, 1, 1);
-        	goDir = myLoc.directionTo(enemyInitialArchonLocations[a]);
-        	goDir = rc.canMove(goDir) ? goDir: randomDirection();
-        }
-        else {
-        	rc.setIndicatorDot(myLoc, 0, 200, 0);
-        	if (goCount < 20 && rc.canMove(goDir)) {
-        		goCount ++;
-        	} 
-        	else {
-        		goCount = 0;
-        		goDir = randomDirection();
-        	}
-        	
-        }
-        debugTick(5);
-        
-        
-        if (nearestEnemy != null) {
-            goDir = myLoc.directionTo(nearestEnemy.location);
+
+        if (firstTurn) {
+            goDir = randomDirection();
         }
 
+        processNearbyRobots();
+        processNearbyBullets();
+
+        MapLocation attackLoc = queryAttackLocation();
+        RobotInfo nearestEnemy = getNearestEnemy();
+
+        if (nearestEnemy != null) {
+            goDir = myLoc.directionTo(nearestEnemy.location);
+        } else if (attackLoc != null) {
+            goDir = myLoc.directionTo(attackLoc);
+            if (myLoc.distanceTo(attackLoc) < myType.bodyRadius * 2) {
+                sendAttackFinished();
+            }
+        }
       
-        boolean moved = tryMoveElseLeftRight(goDir);
-        debugTick(6);
+        boolean moved;
+        if (nearestEnemy == null && attackLoc == null) {
+            moved = tryMoveElseLeftRight(goDir, 15, 2);
+        } else {
+            moved = tryMoveElseLeftRight(goDir);
+        }
         if (!moved) {
             moved = tryMoveElseBack(goDir);
+            if (!moved) {
+                goDir = randomDirection();
+            }
         }
-        debugTick(7);
 
         if (nearestEnemy != null) {
             if (rc.canFireSingleShot()) {
                 rc.fireSingleShot(myLoc.directionTo(nearestEnemy.location));
             }
         }
-        debugTick(8);
+
+        firstTurn = false;
 
         // Clock.yield() makes the robot wait until the next turn, then it will perform this loop again
         Clock.yield();

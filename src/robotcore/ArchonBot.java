@@ -26,19 +26,16 @@ public class ArchonBot extends RobotGlobal {
     public static void turn() throws GameActionException {
         if(teamBullets >= 10000) rc.donate(10000);
         if(rc.getRoundLimit() - rc.getRoundNum() < 2) {
-        	System.out.println("Game is ending! All bullets are being donated.");
         	rc.donate(teamBullets);
         }
 
         // Archon count and leader selection
         if (isLeader()) {
-            System.out.println("is leader and not turn 0");
             // Since I'm the leader and it's not turn 0, I reset the counter
             int numArchons = rc.readBroadcast(ARCHON_COUNTER_CHANNEL);
             rc.broadcast(ARCHON_COUNTER_CHANNEL, 1);
             rc.broadcast(NUM_ARCHONS_CHANNEL, numArchons);
         } else {
-            System.out.println("is not leader or turn 0");
             // Either it's turn 0, or I'm not the leader. So count.
             if (firstTurn) {
                 archonOrder = rc.readBroadcast(ARCHON_COUNTER_CHANNEL);
@@ -55,12 +52,22 @@ public class ArchonBot extends RobotGlobal {
         }
 
         if (isLeader()) {
-            System.out.println("is leader");
             if (firstTurn) {
-                System.out.println("first turn");
                 initializeBuildQueue1();
                 initializeBuildQueue2();
                 initializeDefaultBuild();
+                sendAttackLocation(enemyInitialArchonLocations[0]);
+            }
+            if (popAttackFinished()) {
+                int attackNum = rc.readBroadcast(ATTACK_LOCATION_NUM_CHANNEL);
+                attackNum++;
+                if (attackNum < enemyInitialArchonLocations.length) {
+                    MapLocation attackLoc = enemyInitialArchonLocations[attackNum];
+                    sendAttackLocation(attackLoc);
+                    rc.broadcast(ATTACK_LOCATION_NUM_CHANNEL, attackNum);
+                } else {
+                    sendAttackLocation(null);
+                }
             }
         }
 
@@ -93,7 +100,6 @@ public class ArchonBot extends RobotGlobal {
                         maxMinDistArchon = i;
                     }
                 }
-                System.out.println("maxMinDistArchon = " + maxMinDistArchon);
                 rc.broadcast(WHICH_ARCHON_MAKES_GARDENERS_CHANNEL, maxMinDistArchon);
             }
 
@@ -114,14 +120,10 @@ public class ArchonBot extends RobotGlobal {
 
         if (iMakeGardeners) {
             Direction gardenerDir;
-            if (getExperimental()) {
-                float mapCenterX = (knownMapBounds.getInnerBound(MapBounds.EAST) + knownMapBounds.getInnerBound(MapBounds.WEST)) / 2f;
-                float mapCenterY = (knownMapBounds.getInnerBound(MapBounds.NORTH) + knownMapBounds.getInnerBound(MapBounds.SOUTH)) / 2f;
-                MapLocation knownMapCenter = new MapLocation(mapCenterX, mapCenterY);
-                gardenerDir = myLoc.directionTo(knownMapCenter);
-            } else {
-                gardenerDir = randomDirection();
-            }
+            float mapCenterX = (knownMapBounds.getInnerBound(MapBounds.EAST) + knownMapBounds.getInnerBound(MapBounds.WEST)) / 2f;
+            float mapCenterY = (knownMapBounds.getInnerBound(MapBounds.NORTH) + knownMapBounds.getInnerBound(MapBounds.SOUTH)) / 2f;
+            MapLocation knownMapCenter = new MapLocation(mapCenterX, mapCenterY);
+            gardenerDir = myLoc.directionTo(knownMapCenter);
 
             RobotGlobal.GardenerSchedule gardenerSchedule = getGardenerSchedule();
             int gardenersBuilt = rc.readBroadcast(NUM_GARDENERS_BUILT_CHANNEL);
