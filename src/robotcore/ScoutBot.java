@@ -58,7 +58,7 @@ public class ScoutBot extends RobotGlobal {
         	
         	if (nearestTree != null) {
         		//Move towards nearest tree if not already shaken
-        		if (nearestTree.getContainedRobot() != null || nearestTree.getContainedBullets() > 0) {
+        		if (nearestTree.getContainedBullets() > 0) {
         			Direction treeDirection = myLoc.directionTo(nearestTree.location);
         			tryMoveElseLeftRight(treeDirection);
         			
