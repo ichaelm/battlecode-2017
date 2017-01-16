@@ -23,19 +23,13 @@ public class LumberjackBot extends RobotGlobal {
             }
         }
     }
-    
-    static int a = (int) (Math.random()*enemyInitialArchonLocations.length);
 
     public static void turn() throws GameActionException {
         processNearbyRobots();
         processNearbyBullets();
         processNearbyTrees();
 
-        
-        int roundnum = rc.getRoundNum();
         RobotInfo nearestEnemy = getNearestEnemy();
-        Direction invadeDir = myLoc.directionTo(enemyInitialArchonLocations[a]);
-        rc.setIndicatorDot(enemyInitialArchonLocations[a], 255, 0, 255);
         boolean enemyInRange = false;
         Direction combatDir = null;
         if (nearestEnemy != null) {
@@ -127,17 +121,14 @@ public class LumberjackBot extends RobotGlobal {
                         }
                     }
                 }
+                MapLocation invadeLoc = queryAttackLocation();
+                Direction invadeDir = myLoc.directionTo(invadeLoc);
                 moved = tryMoveElseLeftRight(invadeDir);
                 if (!moved) {
                     moved = tryMoveElseBack(invadeDir);
                 }
             }
         }
-
-
-
-
-
 
         // Clock.yield() makes the robot wait until the next turn, then it will perform this loop again
         Clock.yield();
