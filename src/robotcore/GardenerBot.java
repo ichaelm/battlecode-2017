@@ -137,12 +137,6 @@ public class GardenerBot extends RobotGlobal {
 				}
 
     		}
-    		if (!getExperimental()) {
-				if (needToPlant) {
-					//System.out.println("Attempting to replant...");
-					mode = FarmingMode.FARMING;
-				}
-			}
 
     		
     	} catch (GameActionException e) {
@@ -163,16 +157,9 @@ public class GardenerBot extends RobotGlobal {
 		Direction startDir = usefulRandomDir();
     	try {
     		debugTick(29);
-    		if (getExperimental()) {
-				if (!rc.onTheMap(myLoc, octagonFarmRadius + 2)) { // stop looking is circle isn't all on the map
-					//System.out.println("Not all on the map!");
-					return false;
-				}
-			} else {
-				if (!rc.onTheMap(myLoc, octagonFarmRadius)) { // stop looking is circle isn't all on the map
-					//System.out.println("Not all on the map!");
-					return false;
-				}
+			if (!rc.onTheMap(myLoc, octagonFarmRadius)) { // stop looking is circle isn't all on the map
+				//System.out.println("Not all on the map!");
+				return false;
 			}
 
 			if (!rc.isCircleOccupiedExceptByThisRobot(myLoc, octagonFarmRadius)) return true;
@@ -224,31 +211,26 @@ public class GardenerBot extends RobotGlobal {
         }
     	if (birthTurn < 0) {
             birthTurn = roundNum;
-            goDir = randomDirection();
             birthLocation = myLoc;
+            goDir = randomDirection();
         }
 
         processNearbyBullets();
 
         RobotType currentBuildOrder = getGlobalDefaultBuild();
 
-        Direction toBirthLocation = myLoc.directionTo(birthLocation);
-        if (toBirthLocation == null) {
-            toBirthLocation = randomDirection();
-        }
-
         processNearbyTrees();
         boolean moved = false;
         if (mode == FarmingMode.SEARCHING) {
+			amPlanting = false;
             // move
-        	amPlanting = false;
-            moved = tryMoveElseBack(goDir);
-            if (!moved) {
-                moved = tryMoveElseBack(goDir);
-                if (!moved) {
-                    goDir = randomDirection();
-                }
-            }
+			moved = tryMoveElseBack(goDir);
+			if (!moved) {
+				moved = tryMoveElseBack(goDir);
+				if (!moved) {
+					goDir = randomDirection();
+				}
+			}
             
             // transition to planting
             float minFriendlyTreeDist = Float.POSITIVE_INFINITY;
