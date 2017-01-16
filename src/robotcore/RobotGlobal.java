@@ -94,6 +94,9 @@ public strictfp class RobotGlobal {
 
     // Results of further processing
     private static RobotInfo nearestEnemy = null;
+    private static RobotInfo nearestEnemyLumberjack = null;
+    private static RobotInfo nearestEnemyShooter = null;
+    private static RobotInfo nearestEnemyGardener = null;
     private static TreeInfo nearestTree = null;
     private static TreeInfo nearestFriendlyTree = null;
     private static TreeInfo nearestUnfriendlyTree = null;
@@ -193,16 +196,38 @@ public strictfp class RobotGlobal {
     }
 
     public static void processNearbyRobots() throws GameActionException {
-        float minDist = 99999999;
         nearestEnemy = null;
+        float minEnemyDist = 99999999;
+        nearestEnemyLumberjack = null;
+        float minEnemyLumberjackDist = 99999999;
+        nearestEnemyShooter = null;
+        float minEnemyShooterDist = 99999999;
+        nearestEnemyGardener = null;
+        float minEnemyGardenerDist = 99999999;
         int numIters = Math.min(nearbyRobots.length, DESIRED_ROBOTS);
         for (int i = 0; i < numIters; i++) {
             RobotInfo robot = nearbyRobots[i];
             if (robot.getTeam() == enemyTeam) {
                 float dist = myLoc.distanceTo(robot.getLocation()) - robot.getRadius();
-                if (dist < minDist) {
+                if (dist < minEnemyDist) {
                     nearestEnemy = robot;
-                    minDist = dist;
+                    minEnemyDist = dist;
+                }
+                if (robot.type == RobotType.LUMBERJACK) {
+                    if (dist < minEnemyLumberjackDist) {
+                        nearestEnemyLumberjack = robot;
+                        minEnemyLumberjackDist = dist;
+                    }
+                } else if (robot.type == RobotType.SOLDIER || robot.type == RobotType.TANK || robot.type == RobotType.SCOUT) {
+                    if (dist < minEnemyShooterDist) {
+                        nearestEnemyShooter = robot;
+                        minEnemyShooterDist = dist;
+                    }
+                } else if (robot.type == RobotType.GARDENER) {
+                    if (dist < minEnemyGardenerDist) {
+                        nearestEnemyGardener = robot;
+                        minEnemyGardenerDist = dist;
+                    }
                 }
             }
         }
@@ -258,7 +283,6 @@ public strictfp class RobotGlobal {
 
     public static MapLocation[] getMyArchonLocations() throws GameActionException {
         int numArchons = rc.readBroadcast(NUM_ARCHONS_CHANNEL);
-        System.out.println("numArchons = " + numArchons);
         if (numArchons > ARCHON_LOCATION_TABLE_NUM_ENTRIES) {
             System.out.println("More than 3 archons detected!!!");
             numArchons = ARCHON_LOCATION_TABLE_NUM_ENTRIES;
@@ -285,6 +309,18 @@ public strictfp class RobotGlobal {
 
     public static RobotInfo getNearestEnemy() {
         return nearestEnemy;
+    }
+
+    public static RobotInfo getNearestEnemyLumberjack() {
+        return nearestEnemyLumberjack;
+    }
+
+    public static RobotInfo getNearestEnemyShooter() {
+        return nearestEnemyShooter;
+    }
+
+    public static RobotInfo getNearestEnemyGardener() {
+        return nearestEnemyGardener;
     }
 
     public static TreeInfo getNearestTree() {
@@ -400,26 +436,10 @@ public strictfp class RobotGlobal {
         return false;
     }
 
-    /**
-     * Attempts to move in a given direction, while avoiding small obstacles directly in the path.
-     *
-     * @param dir The intended direction of movement
-     * @return true if a move was performed
-     * @throws GameActionException
-     */
     public static boolean tryMoveElseLeftRight(Direction dir) throws GameActionException {
         return tryMoveElseLeftRight(dir,30,5);
     }
 
-    /**
-     * Attempts to move in a given direction, while avoiding small obstacles direction in the path.
-     *
-     * @param dir The intended direction of movement
-     * @param degreeOffset Spacing between checked directions (degrees)
-     * @param checksPerSide Number of extra directions checked on each side, if intended direction was unavailable
-     * @return true if a move was performed
-     * @throws GameActionException
-     */
     public static boolean tryMoveElseLeftRight(Direction dir, float degreeOffset, int checksPerSide) throws GameActionException {
 
         // First, try intended direction
@@ -506,6 +526,81 @@ public strictfp class RobotGlobal {
         return false;
     }
 
+    public static boolean tryMoveElseBackExcludeCircle(Direction dir, MapLocation excludeLoc, float excludeR) throws GameActionException {
+        float currentStride = myType.strideRadius;
+        while (currentStride > 0.1) {
+            MapLocation newLoc = myLoc.add(dir, currentStride);
+            if (rc.canMove(dir, currentStride)) {
+                if (newLoc.distanceTo(excludeLoc) <= excludeR) {
+                    if (!willCollideWith(bulletsToAvoid, newLoc, myType.bodyRadius)) {
+                        rc.move(dir, currentStride);
+                        myLoc = newLoc;
+                        return true;
+                    }
+                }
+            }
+            currentStride -= 0.2;
+        }
+        return false;
+    }
+
+    public static boolean tryMoveElseLeftRightExcludeCircle(Direction dir, MapLocation excludeLoc, float excludeR) throws GameActionException {
+        return tryMoveElseLeftRightExcludeCircle(dir, excludeLoc, excludeR, 30, 5);
+    }
+
+    public static boolean tryMoveElseLeftRightExcludeCircle(Direction dir, MapLocation excludeLoc, float excludeR, float degreeOffset, int checksPerSide) throws GameActionException {
+
+        // First, try intended direction
+        MapLocation newLoc = myLoc.add(dir, myType.strideRadius);
+        if (rc.canMove(dir)) {
+            if (newLoc.distanceTo(excludeLoc) <= excludeR) {
+                if (!willCollideWith(bulletsToAvoid, newLoc, myType.bodyRadius)) {
+                    rc.move(dir);
+                    myLoc = newLoc;
+                    return true;
+                }
+            }
+        }
+
+        // Now try a bunch of similar angles
+        boolean moved = false;
+        int currentCheck = 1;
+
+        while(currentCheck<=checksPerSide) {
+            // Try the offset of the left side
+            Direction newDir = dir.rotateLeftDegrees(degreeOffset*currentCheck);
+            newLoc = myLoc.add(newDir, myType.strideRadius);
+            if(rc.canMove(newDir)) {
+                if (newLoc.distanceTo(excludeLoc) <= excludeR) {
+                    if (!willCollideWith(bulletsToAvoid, newLoc, myType.bodyRadius)) {
+                        rc.move(newDir);
+                        myLoc = newLoc;
+                        return true;
+                    }
+                }
+            }
+
+            // Try the offset on the right side
+            newDir = dir.rotateRightDegrees(degreeOffset*currentCheck);
+            newLoc = myLoc.add(newDir, myType.strideRadius);
+            if(rc.canMove(newDir)) {
+                if (newLoc.distanceTo(excludeLoc) <= excludeR) {
+                    if (!willCollideWith(bulletsToAvoid, newLoc, myType.bodyRadius)) {
+                        rc.move(newDir);
+                        myLoc = newLoc;
+                        return true;
+                    }
+                }
+            }
+
+            // No move performed, try slightly further
+            currentCheck++;
+        }
+
+        // A move never happened, so return false.
+        return false;
+    }
+
     public static boolean tryMoveDistFrom(MapLocation loc, float r) throws GameActionException {
         boolean success;
         if (myLoc.distanceTo(loc) - myType.strideRadius >= r) {
@@ -538,13 +633,59 @@ public strictfp class RobotGlobal {
                     return true;
                 } else {
                     circleClockwise = !circleClockwise;
+                    target = intersections[circleClockwise ? 1 : 0];
+                    success = tryMoveElseBack(myLoc.directionTo(target));
+                    if (success) {
+                        return true;
+                    }
                 }
             }
         }
         return false;
     }
 
-
+    public static boolean tryMoveDistFromExcludeCircle(MapLocation targetLoc, float targetR, MapLocation excludeLoc, float excludeR) throws GameActionException {
+        boolean success;
+        if (myLoc.distanceTo(targetLoc) - myType.strideRadius >= targetR) {
+            // go towards
+            success = tryMoveElseLeftRightExcludeCircle(myLoc.directionTo(targetLoc), excludeLoc, excludeR);
+            if (success) {
+                return true;
+            }
+            success = tryMoveElseBackExcludeCircle(myLoc.directionTo(targetLoc), excludeLoc, excludeR);
+            if (success) {
+                return true;
+            }
+        } else if (myLoc.distanceTo(targetLoc) + myType.strideRadius <= targetR) {
+            // go away
+            success = tryMoveElseLeftRightExcludeCircle(targetLoc.directionTo(myLoc), excludeLoc, excludeR);
+            if (success) {
+                return true;
+            }
+            success = tryMoveElseBackExcludeCircle(targetLoc.directionTo(myLoc), excludeLoc, excludeR);
+            if (success) {
+                return true;
+            }
+        } else {
+            // go to intersection
+            MapLocation[] intersections = Geometry.getCircleIntersections(myLoc, myType.strideRadius, targetLoc, targetR);
+            if (intersections.length >= 1) {
+                MapLocation target = intersections[circleClockwise ? 1 : 0];
+                success = tryMoveElseBackExcludeCircle(myLoc.directionTo(target), excludeLoc, excludeR);
+                if (success) {
+                    return true;
+                } else {
+                    circleClockwise = !circleClockwise;
+                    target = intersections[circleClockwise ? 1 : 0];
+                    success = tryMoveElseBackExcludeCircle(myLoc.directionTo(target), excludeLoc, excludeR);
+                    if (success) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
 
     public static boolean willCollideWith(BulletInfo bullet, MapLocation loc, float r) {
         Direction propagationDirection = bullet.dir;
