@@ -113,7 +113,17 @@ public class LumberjackBot extends RobotGlobal {
                 }
                 if (!attacked) {
                     if (treeInRange) {
-                        if (rc.canShake(nearestTree.ID)) {
+                    	TreeInfo nRT = getNearestRobotTree();
+                        if (nRT != null && prioritizeRobotTrees) {
+                        	if (rc.canChop(nRT.ID)) {
+                                rc.chop(nRT.ID);
+                                attacked = true;
+                            }
+                        	else if (!moved) {
+                        		moved = tryMoveElseLeftRight(myLoc.directionTo(nRT.location));
+                        	}
+                        }
+                    	if (rc.canShake(nearestTree.ID)) {
                             rc.shake(nearestTree.ID);
                         }
                         if (rc.canChop(nearestTree.ID)) {
