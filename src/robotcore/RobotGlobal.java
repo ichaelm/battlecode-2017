@@ -420,8 +420,16 @@ public strictfp class RobotGlobal {
     	return new Direction((float) (currDir.radians + Math.PI % (2 * Math.PI)));
     }
 
+    public static boolean tryMoveElseBack(MapLocation loc) throws GameActionException {
+        return tryMoveElseBack(myLoc.directionTo(loc), myLoc.distanceTo(loc));
+    }
+
     public static boolean tryMoveElseBack(Direction dir) throws GameActionException {
-        float currentStride = myType.strideRadius;
+        return tryMoveElseBack(dir, myType.strideRadius);
+    }
+
+    public static boolean tryMoveElseBack(Direction dir, float dist) throws GameActionException {
+        float currentStride = dist;
         while (currentStride > 0.1) {
             MapLocation newLoc = myLoc.add(dir, currentStride);
             if (rc.canMove(dir, currentStride)) {
@@ -436,17 +444,33 @@ public strictfp class RobotGlobal {
         return false;
     }
 
+    public static boolean tryMoveElseLeftRight(MapLocation loc) throws GameActionException {
+        return tryMoveElseLeftRight(myLoc.directionTo(loc), myLoc.distanceTo(loc));
+    }
+
     public static boolean tryMoveElseLeftRight(Direction dir) throws GameActionException {
-        return tryMoveElseLeftRight(dir,30,5);
+        return tryMoveElseLeftRight(dir, myType.strideRadius);
+    }
+
+    public static boolean tryMoveElseLeftRight(Direction dir, float dist) throws GameActionException {
+        return tryMoveElseLeftRight(dir, dist, 30, 5);
+    }
+
+    public static boolean tryMoveElseLeftRight(MapLocation loc, float degreeOffset, int checksPerSide) throws GameActionException {
+        return tryMoveElseLeftRight(myLoc.directionTo(loc), myLoc.distanceTo(loc), degreeOffset, checksPerSide);
     }
 
     public static boolean tryMoveElseLeftRight(Direction dir, float degreeOffset, int checksPerSide) throws GameActionException {
+        return tryMoveElseLeftRight(dir, myType.strideRadius, degreeOffset, checksPerSide);
+    }
+
+    public static boolean tryMoveElseLeftRight(Direction dir, float dist, float degreeOffset, int checksPerSide) throws GameActionException {
 
         // First, try intended direction
-        MapLocation newLoc = myLoc.add(dir, myType.strideRadius);
-        if (rc.canMove(dir)) {
+        MapLocation newLoc = myLoc.add(dir, dist);
+        if (rc.canMove(dir, dist)) {
             if (!willCollideWith(bulletsToAvoid, newLoc, myType.bodyRadius)) {
-                rc.move(dir);
+                rc.move(dir, dist);
                 myLoc = newLoc;
                 return true;
             }
@@ -459,10 +483,10 @@ public strictfp class RobotGlobal {
         while(currentCheck<=checksPerSide) {
             // Try the offset of the left side
             Direction newDir = dir.rotateLeftDegrees(degreeOffset*currentCheck);
-            newLoc = myLoc.add(newDir, myType.strideRadius);
-            if(rc.canMove(newDir)) {
+            newLoc = myLoc.add(newDir, dist);
+            if(rc.canMove(newDir, dist)) {
                 if (!willCollideWith(bulletsToAvoid, newLoc, myType.bodyRadius)) {
-                    rc.move(newDir);
+                    rc.move(newDir, dist);
                     myLoc = newLoc;
                     return true;
                 }
@@ -470,10 +494,10 @@ public strictfp class RobotGlobal {
 
             // Try the offset on the right side
             newDir = dir.rotateRightDegrees(degreeOffset*currentCheck);
-            newLoc = myLoc.add(newDir, myType.strideRadius);
-            if(rc.canMove(newDir)) {
+            newLoc = myLoc.add(newDir, dist);
+            if(rc.canMove(newDir, dist)) {
                 if (!willCollideWith(bulletsToAvoid, newLoc, myType.bodyRadius)) {
-                    rc.move(newDir);
+                    rc.move(newDir, dist);
                     myLoc = newLoc;
                     return true;
                 }
@@ -526,12 +550,20 @@ public strictfp class RobotGlobal {
         return false;
     }
 
+    public static boolean tryMoveElseBackExcludeCircle(MapLocation loc, MapLocation excludeLoc, float excludeR) throws GameActionException {
+        return tryMoveElseBackExcludeCircle(myLoc.directionTo(loc), myLoc.distanceTo(loc), excludeLoc, excludeR);
+    }
+
     public static boolean tryMoveElseBackExcludeCircle(Direction dir, MapLocation excludeLoc, float excludeR) throws GameActionException {
-        float currentStride = myType.strideRadius;
+        return tryMoveElseBackExcludeCircle(dir, myType.strideRadius, excludeLoc, excludeR);
+    }
+
+    public static boolean tryMoveElseBackExcludeCircle(Direction dir, float dist, MapLocation excludeLoc, float excludeR) throws GameActionException {
+        float currentStride = dist;
         while (currentStride > 0.1) {
             MapLocation newLoc = myLoc.add(dir, currentStride);
             if (rc.canMove(dir, currentStride)) {
-                if (newLoc.distanceTo(excludeLoc) <= excludeR) {
+                if (newLoc.distanceTo(excludeLoc) > excludeR) {
                     if (!willCollideWith(bulletsToAvoid, newLoc, myType.bodyRadius)) {
                         rc.move(dir, currentStride);
                         myLoc = newLoc;
@@ -541,21 +573,35 @@ public strictfp class RobotGlobal {
             }
             currentStride -= 0.2;
         }
+        if (myLoc.distanceTo(excludeLoc) > excludeR) {
+            boolean success = tryMoveDistFrom(excludeLoc, excludeR);
+            if (success) {
+                return true;
+            }
+        }
         return false;
     }
 
-    public static boolean tryMoveElseLeftRightExcludeCircle(Direction dir, MapLocation excludeLoc, float excludeR) throws GameActionException {
-        return tryMoveElseLeftRightExcludeCircle(dir, excludeLoc, excludeR, 30, 5);
+    public static boolean tryMoveElseLeftRightExcludeCircle(MapLocation loc, MapLocation excludeLoc, float excludeR) throws GameActionException {
+        return tryMoveElseLeftRightExcludeCircle(myLoc.directionTo(loc), myLoc.distanceTo(loc), excludeLoc, excludeR);
     }
 
-    public static boolean tryMoveElseLeftRightExcludeCircle(Direction dir, MapLocation excludeLoc, float excludeR, float degreeOffset, int checksPerSide) throws GameActionException {
+    public static boolean tryMoveElseLeftRightExcludeCircle(Direction dir, MapLocation excludeLoc, float excludeR) throws GameActionException {
+        return tryMoveElseLeftRightExcludeCircle(dir, myType.strideRadius, excludeLoc, excludeR);
+    }
+
+    public static boolean tryMoveElseLeftRightExcludeCircle(Direction dir, float dist, MapLocation excludeLoc, float excludeR) throws GameActionException {
+        return tryMoveElseLeftRightExcludeCircle(dir, dist, excludeLoc, excludeR, 30, 5);
+    }
+
+    public static boolean tryMoveElseLeftRightExcludeCircle(Direction dir, float dist, MapLocation excludeLoc, float excludeR, float degreeOffset, int checksPerSide) throws GameActionException {
 
         // First, try intended direction
-        MapLocation newLoc = myLoc.add(dir, myType.strideRadius);
-        if (rc.canMove(dir)) {
-            if (newLoc.distanceTo(excludeLoc) <= excludeR) {
+        MapLocation newLoc = myLoc.add(dir, dist);
+        if (rc.canMove(dir, dist)) {
+            if (newLoc.distanceTo(excludeLoc) > excludeR) {
                 if (!willCollideWith(bulletsToAvoid, newLoc, myType.bodyRadius)) {
-                    rc.move(dir);
+                    rc.move(dir, dist);
                     myLoc = newLoc;
                     return true;
                 }
@@ -569,11 +615,11 @@ public strictfp class RobotGlobal {
         while(currentCheck<=checksPerSide) {
             // Try the offset of the left side
             Direction newDir = dir.rotateLeftDegrees(degreeOffset*currentCheck);
-            newLoc = myLoc.add(newDir, myType.strideRadius);
-            if(rc.canMove(newDir)) {
-                if (newLoc.distanceTo(excludeLoc) <= excludeR) {
+            newLoc = myLoc.add(newDir, dist);
+            if(rc.canMove(newDir, dist)) {
+                if (newLoc.distanceTo(excludeLoc) > excludeR) {
                     if (!willCollideWith(bulletsToAvoid, newLoc, myType.bodyRadius)) {
-                        rc.move(newDir);
+                        rc.move(newDir, dist);
                         myLoc = newLoc;
                         return true;
                     }
@@ -582,11 +628,11 @@ public strictfp class RobotGlobal {
 
             // Try the offset on the right side
             newDir = dir.rotateRightDegrees(degreeOffset*currentCheck);
-            newLoc = myLoc.add(newDir, myType.strideRadius);
-            if(rc.canMove(newDir)) {
-                if (newLoc.distanceTo(excludeLoc) <= excludeR) {
+            newLoc = myLoc.add(newDir, dist);
+            if(rc.canMove(newDir, dist)) {
+                if (newLoc.distanceTo(excludeLoc) > excludeR) {
                     if (!willCollideWith(bulletsToAvoid, newLoc, myType.bodyRadius)) {
-                        rc.move(newDir);
+                        rc.move(newDir, dist);
                         myLoc = newLoc;
                         return true;
                     }
@@ -595,6 +641,12 @@ public strictfp class RobotGlobal {
 
             // No move performed, try slightly further
             currentCheck++;
+        }
+        if (myLoc.distanceTo(excludeLoc) <= excludeR) {
+            boolean success = tryMoveDistFrom(excludeLoc, excludeR);
+            if (success) {
+                return true;
+            }
         }
 
         // A move never happened, so return false.
@@ -628,13 +680,23 @@ public strictfp class RobotGlobal {
             MapLocation[] intersections = Geometry.getCircleIntersections(myLoc, myType.strideRadius, loc, r);
             if (intersections.length >= 1) {
                 MapLocation target = intersections[circleClockwise ? 1 : 0];
-                success = tryMoveElseBack(myLoc.directionTo(target));
+                if (myLoc.distanceTo(target) < myType.strideRadius) {
+                    success = tryMoveElseBack(target);
+                } else {
+                    success = tryMoveElseBack(myLoc.directionTo(target));
+                    System.out.println("Intersection too far!");
+                }
                 if (success) {
                     return true;
                 } else {
                     circleClockwise = !circleClockwise;
                     target = intersections[circleClockwise ? 1 : 0];
-                    success = tryMoveElseBack(myLoc.directionTo(target));
+                    if (myLoc.distanceTo(target) < myType.strideRadius) {
+                        success = tryMoveElseBack(target);
+                    } else {
+                        success = tryMoveElseBack(myLoc.directionTo(target));
+                        System.out.println("Intersection too far!");
+                    }
                     if (success) {
                         return true;
                     }
@@ -671,13 +733,23 @@ public strictfp class RobotGlobal {
             MapLocation[] intersections = Geometry.getCircleIntersections(myLoc, myType.strideRadius, targetLoc, targetR);
             if (intersections.length >= 1) {
                 MapLocation target = intersections[circleClockwise ? 1 : 0];
-                success = tryMoveElseBackExcludeCircle(myLoc.directionTo(target), excludeLoc, excludeR);
+                if (myLoc.distanceTo(target) < myType.strideRadius) {
+                    success = tryMoveElseBackExcludeCircle(target, excludeLoc, excludeR);
+                } else {
+                    success = tryMoveElseBackExcludeCircle(myLoc.directionTo(target), excludeLoc, excludeR);
+                    System.out.println("Intersection too far!");
+                }
                 if (success) {
                     return true;
                 } else {
                     circleClockwise = !circleClockwise;
                     target = intersections[circleClockwise ? 1 : 0];
-                    success = tryMoveElseBackExcludeCircle(myLoc.directionTo(target), excludeLoc, excludeR);
+                    if (myLoc.distanceTo(target) < myType.strideRadius) {
+                        success = tryMoveElseBackExcludeCircle(target, excludeLoc, excludeR);
+                    } else {
+                        success = tryMoveElseBackExcludeCircle(myLoc.directionTo(target), excludeLoc, excludeR);
+                        System.out.println("Intersection too far!");
+                    }
                     if (success) {
                         return true;
                     }

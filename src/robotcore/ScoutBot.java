@@ -94,8 +94,10 @@ public class ScoutBot extends RobotGlobal {
 			RobotInfo targetLumberjack = getNearestEnemyLumberjack();
 			RobotInfo selectedGardenerInfo = null;
 			if (selectedGardenerLoc != null) { // If an enemy gardener is selected:
-				// If the gardener is dead, forget it
-				selectedGardenerInfo = rc.senseRobotAtLocation(selectedGardenerLoc);
+				// If the gardener is dead or out of range, forget it
+				if (myLoc.distanceTo(selectedGardenerLoc) < myType.sensorRadius) {
+					selectedGardenerInfo = rc.senseRobotAtLocation(selectedGardenerLoc);
+				}
 				if (selectedGardenerInfo == null) {
 					selectedGardenerLoc = null;
 				}
@@ -107,7 +109,7 @@ public class ScoutBot extends RobotGlobal {
 					selectedGardenerLoc = selectedGardenerInfo.location;
 				}
 			}
-			if (targetLumberjack != null && targetLumberjack.location.distanceTo(myLoc) <= myType.bodyRadius + RobotType.LUMBERJACK.bodyRadius + RobotType.LUMBERJACK.strideRadius + GameConstants.LUMBERJACK_STRIKE_RADIUS) { // If an enemy lumberjack is close enough to hit me:
+			if (targetLumberjack != null && targetLumberjack.location.distanceTo(myLoc) <= myType.strideRadius + myType.bodyRadius + RobotType.LUMBERJACK.bodyRadius + RobotType.LUMBERJACK.strideRadius + GameConstants.LUMBERJACK_STRIKE_RADIUS) { // If an enemy lumberjack is close enough to hit me:
 				if (selectedGardenerLoc != null) { // If an enemy gardener is selected
 					// Move so that the lumberjack can't hit me, but towards the correct distance from the gardener
 					tryMoveDistFromExcludeCircle(
@@ -135,9 +137,11 @@ public class ScoutBot extends RobotGlobal {
 				if (selectedGardenerLoc != null) { // If an enemy gardener is selected:
 					TreeInfo selectedCampingTreeInfo = null;
 					if (selectedCampingTreeLoc != null) { // If a camping tree is selected:
-						// If the camping tree is dead, forget it
-						selectedCampingTreeInfo = rc.senseTreeAtLocation(selectedCampingTreeLoc);
-						if (selectedCampingTreeInfo == null) {
+						// If the camping tree is dead or too far, forget it
+						if (myLoc.distanceTo(selectedCampingTreeLoc) < myType.sensorRadius) {
+							selectedCampingTreeInfo = rc.senseTreeAtLocation(selectedCampingTreeLoc);
+						}
+						if (selectedCampingTreeInfo == null || selectedCampingTreeInfo.location.distanceTo(selectedGardenerLoc) > 3) {
 							selectedCampingTreeLoc = null;
 						}
 					}
