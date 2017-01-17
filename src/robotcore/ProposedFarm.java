@@ -38,7 +38,7 @@ public class ProposedFarm {
             moveDir = treeDir.rotateLeftDegrees((float) 67.5);
 
             this.treePlantingLocs[T] = curLoc.add(moveDir, octEdge);
-            this.treeLocs[T] = this.treePlantingLocs[T].add(treeDir, 2);
+            this.treeLocs[T] = this.treePlantingLocs[T].add(treeDir, 2 + GameConstants.GENERAL_SPAWN_OFFSET);
             this.treeDirections[T] = treeDir;
         }
     }

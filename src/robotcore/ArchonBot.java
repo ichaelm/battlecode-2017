@@ -143,7 +143,6 @@ public class ArchonBot extends RobotGlobal {
                 case WHEN_FULL:
                     int numFarmsFull = numFarmTableEntriesFull();
                     int numFarms = getFarmTableEntryCount();
-                    System.out.println("numFarmsFree = " + (numFarms - numFarmsFull));
                     if (numFarms == numFarmsFull) {
                         success = tryHireGardener(gardenerDir);
                         if (success) {

@@ -1078,7 +1078,9 @@ public strictfp class RobotGlobal {
     public static void resetFarmTableEntryFlags(int farmNum) throws GameActionException {
         int farmTableEntryChannel = FARM_TABLE_CHANNEL + (farmNum * FARM_TABLE_ENTRY_SIZE);
         int flagsChannel = farmTableEntryChannel + 2;
-        rc.broadcast(flagsChannel, FARM_TABLE_ENTRY_EXISTS_MASK);
+        int flags = rc.readBroadcast(flagsChannel);
+        flags = flags & (FARM_TABLE_ENTRY_EXISTS_MASK | FARM_TABLE_ENTRY_FULL_MASK);
+        rc.broadcast(flagsChannel, flags);
     }
 
     public static int getFarmTableEntryCount() throws GameActionException {

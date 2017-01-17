@@ -109,10 +109,11 @@ public class GardenerBot extends RobotGlobal {
 		int plantIfNum = (int) Math.max((7 - (Math.ceil(7*roundNum/200))), 1);
 		if (roundNum > 200) plantIfNum = 1;
     	ProposedFarm farm = proposeRandomFarmHere();
+    	boolean onMap = proposedFarmIsOnMap(farm);
     	boolean buildClear = proposedFarmBuildClear(farm);
     	int blockedNum = proposedFarmQueryNumBlocked(farm);
 		boolean enoughClear = (7-blockedNum) >= plantIfNum;
-    	if (buildClear && enoughClear) {
+    	if (onMap && buildClear && enoughClear) {
     		return farm;
 		} else {
     		return null;
@@ -229,7 +230,7 @@ public class GardenerBot extends RobotGlobal {
 						// try to plant this one
 						MapLocation pLoc = farmGeo.getTreePlantingLocs()[t];
 
-						if (haveBullets && rc.onTheMap(pLoc) && rc.isBuildReady()){ // check location, cooldown, & bullets
+						if (haveBullets && rc.onTheMap(pLoc, 1) && rc.isBuildReady()){ // check location, cooldown, & bullets
 							Direction tDir = farmGeo.getTreeDirections()[t];
 							//System.out.println("Attempting to plant Tree #" + t);
 
@@ -327,7 +328,7 @@ public class GardenerBot extends RobotGlobal {
 				if (!isTreeAlive[i] && !isTreeBlocked[i]) {
 					isFull = false;
 				} else {
-					rc.setIndicatorDot(farmGeo.getTreePlantingLocs()[i], 0, 0, 0);
+					rc.setIndicatorDot(farmGeo.getTreeLocs()[i], 0, 0, 0);
 				}
 			}
 		} else {
