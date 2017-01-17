@@ -24,6 +24,7 @@ public class SoldierBot extends RobotGlobal {
 			rc.setIndicatorLine(myLoc, target, 255, 0, 0);
 		}
 
+		
 	}
 
 
