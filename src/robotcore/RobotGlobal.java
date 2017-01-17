@@ -109,13 +109,14 @@ public strictfp class RobotGlobal {
     private static int[] debugBytecodesList = new int[100];
     private static int numDebugBytecodes = 0;
     private static boolean debugTripped = false;
-    private static final int SINGLE = 1;
-    private static final int TRIAD = 3;
-    private static final int PENTAD = 5;
-    private static int soldierShots = SINGLE;
     private static GardenerSchedule gardenerSchedule = GardenerSchedule.ONCE_EVERY_N_ROUNDS;
     private static int gardenerScheduleN = -1;
     private static boolean experimental = false;
+    private static final int SINGLE = 1;
+    private static final int TRIAD = 3;
+    private static final int PENTAD = 5;
+    public static int soldierShots = SINGLE;
+    public static boolean friendlyFireOn = true;
 
     private static RobotType[] initialBuildQueue1 = new RobotType[0];
     private static RobotType[] initialBuildQueue2 = new RobotType[0];
@@ -898,18 +899,17 @@ public strictfp class RobotGlobal {
         }
 
         //Debug
-        /*
         MapLocation knownNE = new MapLocation(bounds.getInnerBound(MapBounds.EAST), bounds.getInnerBound(MapBounds.NORTH));
         MapLocation knownSE = new MapLocation(bounds.getInnerBound(MapBounds.EAST), bounds.getInnerBound(MapBounds.SOUTH));
         MapLocation knownNW = new MapLocation(bounds.getInnerBound(MapBounds.WEST), bounds.getInnerBound(MapBounds.NORTH));
         MapLocation knownSW = new MapLocation(bounds.getInnerBound(MapBounds.WEST), bounds.getInnerBound(MapBounds.SOUTH));
-
-        int r = 0; int g = 255; int b = 100;
+		
+        int r = 0; int g = 255; int b = 255;
         rc.setIndicatorLine(knownNE, knownNW, r, g, b);
         rc.setIndicatorLine(knownNE, knownSE, r, g, b);
         rc.setIndicatorLine(knownSW, knownSE, r, g, b);
         rc.setIndicatorLine(knownSW, knownNW, r, g, b);
-        */
+        
 
         return bounds;
 
