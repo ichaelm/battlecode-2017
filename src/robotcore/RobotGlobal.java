@@ -855,7 +855,7 @@ public strictfp class RobotGlobal {
                 } else {
                     MapLocation[] intersections = Geometry.getCircleLineSegmentIntersections(itemLoc, itemR, start, target);
                     if (intersections.length > 0) {
-                        return false;
+                        return true;
                     }
                 }
             }
@@ -869,12 +869,12 @@ public strictfp class RobotGlobal {
                 } else {
                     MapLocation[] intersections = Geometry.getCircleLineSegmentIntersections(itemLoc, itemR, start, target);
                     if (intersections.length > 0) {
-                        return false;
+                        return true;
                     }
                 }
             }
         }
-        return true;
+        return false;
     }
 
     public static int[] readBroadcastArray(int channelStart, int length) throws GameActionException {

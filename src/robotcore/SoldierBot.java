@@ -9,20 +9,28 @@ public class SoldierBot extends RobotGlobal {
 	static Direction goDir;
 	static boolean firstTurn = true;
 	static int goCount = 0;
-	static boolean shoot = true;
-	static RobotInfo nearestEnemy = null; 
-	static MapLocation attackLoc = null;
+	static boolean dontShoot = false;
 
 	public static void friendlyFire(Direction d) throws GameActionException { // determines whether or not friendly fire will occur
-		MapLocation target = null; 
-		if (nearestEnemy != null) {
-			 target = nearestEnemy.location;
-		} else return;
-		
-		shoot = hasLineOfSight(target); // if I have line of sight, I want to shoot
-		if (!shoot) {
-			rc.setIndicatorLine(myLoc, target, 255, 0, 0);
+		RobotInfo[] enemiesInFront = rc.senseNearbyRobots(myLoc.add(d, 2), 0.95f, myTeam.opponent());
+		RobotInfo[] alliesInFront = rc.senseNearbyRobots(myLoc.add(d, 2), 0.95f, myTeam);
+
+		if (enemiesInFront.length > 0) dontShoot = false; // if enemies right in front, shoot
+		else dontShoot = true; // else, don't
+
+		int numAllies = alliesInFront.length;
+		int numEnemies = enemiesInFront.length;
+		if (numAllies > numEnemies) dontShoot = true; // if more allies right in front, don't
+		//if (dontShoot) return; // if allies are too close, return don't shoot
+
+		for (float dist = 3f; dist < 6.3f; dist = 0.6f) {
+			enemiesInFront = rc.senseNearbyRobots(myLoc.add(d, dist), 0.4f, myTeam.opponent());
+			alliesInFront = rc.senseNearbyRobots(myLoc.add(d, dist), 0.3f, myTeam);
+			numAllies += alliesInFront.length;
+			numEnemies += enemiesInFront.length;
 		}
+
+		if (numAllies > numEnemies) dontShoot = true; // if more allies right in front, don't
 
 	}
 
@@ -50,14 +58,13 @@ public class SoldierBot extends RobotGlobal {
         if (firstTurn) {
             goDir = randomDirection();
         }
-        shoot = true;
         
         tryToShake();
         processNearbyRobots();
         processNearbyBullets();
 
-        attackLoc = queryAttackLocation();
-        nearestEnemy = getNearestEnemy();
+        MapLocation attackLoc = queryAttackLocation();
+        RobotInfo nearestEnemy = getNearestEnemy();
 
         if (nearestEnemy != null) {
             goDir = myLoc.directionTo(nearestEnemy.location);
@@ -83,7 +90,7 @@ public class SoldierBot extends RobotGlobal {
         }
 
         if (nearestEnemy != null) {
-            if (rc.canFireSingleShot() && shoot) { // if this soldier is to avoid FriendlyFire
+            if (rc.canFireSingleShot() && !dontShoot) { // if this soldier is to avoid FriendlyFire
                 rc.fireSingleShot(myLoc.directionTo(nearestEnemy.location));
             }
         }
