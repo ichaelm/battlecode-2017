@@ -4,70 +4,25 @@ import battlecode.common.*;
 
 public class GardenerBot extends RobotGlobal {
 
-    private enum FarmingMode {SEARCHING, FARMING};
+	// Farm geometry constants
+	static final float octEdge = (float) 0.4693;
+	static final float octDiag = (float) 0.6132;
+	static final float octagonFarmRadius = (float) 3.625;
 
-    static int farmTableEntryNum = -1;
+	// My state
+    private enum FarmingMode {SEARCHING, FARMING};
     static Direction goDir = null;
     static int birthTurn = -1;
-    static MapLocation birthLocation = null;
-    static Direction buildDirection = null;
     static FarmingMode mode = FarmingMode.SEARCHING;
-    static MapLocation farmCenter = null;
-    static MapLocation buildLoc = null;
-    static float octEdge = (float) 0.4693;
-    static float octDiag = (float) 0.6132;
-    static float octagonFarmRadius = (float) 3.625;
-    //static int plantStartTurn = 0;
-    static int numPlanted = 0;
-    static boolean amPlanting = false;
+	static boolean goBack = false;
+	static int farmTableEntryNum = -1;
+
+	// Farm geometry
+	static ProposedFarm farmGeo;
+
+    // Farm state
     static boolean[] isTreeAlive = new boolean[7];
 	static boolean[] isTreeBlocked = new boolean[7]; // A spot is marked as blocked if the block is not  due to one of our non-archon robots
-    static MapLocation[] treeLocs = new MapLocation[7];
-    static MapLocation[] treePlantingLocs = new MapLocation[7];
-    static boolean goBack = false;
-    static Direction[] treeDirections = new Direction[7];
-
-    
-
-    // Sets up everything needed to plant a farm and maintain it etc.
-    public static void getTreeLocations(Direction missingTreeDir) {
-    	buildDirection = missingTreeDir;
-    	Direction firstMove = missingTreeDir.rotateLeftDegrees(45);
-    	
-    	if (farmCenter == null) farmCenter = myLoc;
-    	else if (myLoc.distanceTo(farmCenter) > 1) farmCenter = myLoc;
-    	
-    	Direction treeDir = firstMove;
-    	Direction moveDir = treeDir.rotateLeftDegrees((float) 67.5);
-    	
-    	buildLoc = farmCenter.add(buildDirection, octDiag);
-    	treePlantingLocs[0] = farmCenter.add(firstMove, octDiag);
-    	treeLocs[0] = farmCenter.add(firstMove, octDiag + 2);
-    	treeDirections[0] = treeDir;
-    	
-    	MapLocation curLoc = treePlantingLocs[0];
-    	for(int T = 1; T < 7; T++) {
-    		curLoc = treePlantingLocs[T-1];
-    		treeDir = firstMove.rotateLeftDegrees(45*T);
-        	moveDir = treeDir.rotateLeftDegrees((float) 67.5);
-    		
-    		treePlantingLocs[T] = curLoc.add(moveDir, octEdge);
-    		treeLocs[T] = treePlantingLocs[T].add(treeDir, 2);
-    		treeDirections[T] = treeDir;
-    	}
-
-    }
-    
-    public static void drawFarm() { // draws all tree locations in green
-    	try{
-    		for (MapLocation t: treeLocs) {
-    			if (rc.onTheMap(t)) rc.setIndicatorDot(t, 0, 200, 0);
-    		}
-    	} catch (Exception e) {
-    		System.out.println("Exception during Dot Drawing");
-    		e.printStackTrace();
-    	}
-    }
 
     public static void loop() {
         while (true) {
@@ -88,119 +43,79 @@ public class GardenerBot extends RobotGlobal {
     
     // quick and easy method to check if a tree or build location is occupied
     public static boolean spotBlocked(int treeNum) throws GameActionException {
-        rc.setIndicatorDot(treeLocs[treeNum], 0, 55, 255);
-        boolean occupied = rc.isCircleOccupied(treeLocs[treeNum], 1);
-
-        if (occupied) {
-            RobotInfo r = rc.senseRobotAtLocation(treeLocs[treeNum]);
-            if(r != null) { // if blocking thing is a robot...
-                if (r.getTeam() == rc.getTeam() && r.getType() != RobotType.ARCHON) {
-                	occupied = false; // if our team, say it's open (cuz it will presumably move)
-				}
-            }
-        }
+        rc.setIndicatorDot(farmGeo.getTreeLocs()[treeNum], 0, 55, 255);
+        boolean occupied = !rc.onTheMap(farmGeo.getTreeLocs()[treeNum], 1) || rc.isCircleOccupiedExceptByThisRobot(farmGeo.getTreeLocs()[treeNum], 1);
     	return occupied;
     }
 
-    public static void countTrees() {
-    	try {
-    		int prev = numPlanted;
-    		TreeInfo[] inFarm = rc.senseNearbyTrees(myLoc, octagonFarmRadius, rc.getTeam());
-    		numPlanted = inFarm.length;
-
-    		if (prev < numPlanted) {
-				//System.out.println("A tree has magically appeared!");
+    public static void countTrees() throws GameActionException {
+		for (int t = 0; t < 7; t++) {
+			boolean treeNotExists = false;
+			MapLocation l = farmGeo.getTreeLocs()[t];
+			TreeInfo info = rc.senseTreeAtLocation(l);
+			if (info == null) {
+				treeNotExists = true;
+			} else if (info.team != rc.getTeam()) {
+				//System.out.println("Wait... that's not our tree!!! WTF!!!");
+				treeNotExists = true;
 			}
-    		
-    		boolean needToPlant = false;
-
-    		for (int t = 0; t < 7; t++) {
-    			boolean treeNotExists = false;
-    			MapLocation l = treeLocs[t];
-    			TreeInfo info = rc.senseTreeAtLocation(l);
-    			if (info == null) {
-					treeNotExists = true;
-    			} else if (info.team != rc.getTeam()) {
-    				//System.out.println("Wait... that's not our tree!!! WTF!!!");
-					treeNotExists = true;
-    			}
-    			// treeNotExists is correct
-    			if (treeNotExists) {
-    				//System.out.println("Tree #" + t + " was killed...");
-    				rc.setIndicatorDot(l, 255, 0, 0);
-					isTreeBlocked[t] = spotBlocked(t);
-					isTreeAlive[t] = false;
-					needToPlant = true;
-    			} else {
-					isTreeBlocked[t] = false;
-					isTreeAlive[t] = true;
-				}
-
-    		}
-
-    		
-    	} catch (GameActionException e) {
-    		e.printStackTrace();
-    	}
-
+			// treeNotExists is correct
+			if (treeNotExists) {
+				//System.out.println("Tree #" + t + " was killed...");
+				rc.setIndicatorDot(l, 255, 0, 0);
+				isTreeBlocked[t] = spotBlocked(t);
+				isTreeAlive[t] = false;
+			} else {
+				isTreeBlocked[t] = false;
+				isTreeAlive[t] = true;
+			}
+		}
     }
 
-    
-    // This method will be a very thorough search of all tree locations and 
-    // build locations around the gardener for possible farm plots
-    private static boolean findFarmLocation() {
-		int rNum = rc.getRoundNum();
-		int plantIfNum = (int) Math.max((7 - (Math.ceil(7*rNum/200))), 1);
-		if (rNum > 200) plantIfNum = 1;
-		
-		int canPlantNum = 0;
-		Direction startDir = usefulRandomDir();
-    	try {
-    		debugTick(29);
-			if (!rc.onTheMap(myLoc, octagonFarmRadius)) { // stop looking is circle isn't all on the map
-				//System.out.println("Not all on the map!");
-				return false;
-			}
+    private static ProposedFarm proposeRandomFarmHere() {
+    	return new ProposedFarm(myLoc, usefulRandomDir());
+	}
 
-			if (!rc.isCircleOccupiedExceptByThisRobot(myLoc, octagonFarmRadius)) return true;
+	private static boolean proposedFarmIsOnMap(ProposedFarm farm) throws GameActionException {
+    	return rc.onTheMap(myLoc, octagonFarmRadius);
+	}
 
-			//System.out.println("Trying to plant " + plantIfNum + " trees.");
-			
-			canPlantNum = 0;
-			buildDirection = startDir;
-			MapLocation buildLocation = myLoc.add(buildDirection, octDiag + 2);
-			rc.setIndicatorDot(buildLocation, 55, 99, 66);
-			
-			isTreeAlive = new boolean[7];
-			if (!rc.isCircleOccupiedExceptByThisRobot(buildLocation, 1)) {
-				getTreeLocations(buildDirection);
-				for(int i = 0; i < 7; i++) { // see how many other spots are blocked
-					//debugTick(11+2*i);
-					if (!spotBlocked(i)) canPlantNum ++;
-					else isTreeAlive[i] = true;
-					debugTick(12+2*i);
-					if (canPlantNum >= plantIfNum) return true; // if enough spots, plant
-				}
-				//debugTick(50);
-				//System.out.println("I can plant " + canPlantNum + " trees" );
-				if (canPlantNum >= plantIfNum) return true; // if enough spots, plant
+	private static boolean proposedFarmBuildClear(ProposedFarm farm) throws GameActionException {
+    	return !rc.isCircleOccupiedExceptByThisRobot(farm.getConstructionZone(), 1);
+	}
 
-			}
-			
-			
-		} catch (GameActionException e) {
-			System.out.println("Find Farm Locations Exception");
-			e.printStackTrace();
+	private static boolean[] proposedFarmQueryBlocked(ProposedFarm farm) throws GameActionException {
+		MapLocation[] treeLocs = farm.getTreeLocs();
+		boolean[] blocked = new boolean[treeLocs.length];
+		for (int i = 0; i < treeLocs.length; i++) {
+			blocked[i] = !rc.onTheMap(treeLocs[i], 1) || rc.isCircleOccupiedExceptByThisRobot(treeLocs[i], 1);
 		}
-    	
-    	return false;
-    	/*
-    	if (rc.onTheMap(myLoc, octagonFarmRadius) 
-        		&& (rc.getRoundNum() > 80 || !rc.isCircleOccupiedExceptByThisRobot(myLoc, octagonFarmRadius))) {
-        	mode = FarmingMode.PLANTING;
-        }
-        */
-		
+		return blocked;
+	}
+
+	private static int proposedFarmQueryNumBlocked(ProposedFarm farm) throws GameActionException {
+		MapLocation[] treeLocs = farm.getTreeLocs();
+		int numBlocked = 0;
+		for (int i = 0; i < treeLocs.length; i++) {
+			if (rc.isCircleOccupiedExceptByThisRobot(treeLocs[i], 1)) {
+				numBlocked++;
+			}
+		}
+		return numBlocked;
+	}
+
+	private static ProposedFarm tryProposeFarm() throws GameActionException {
+		int plantIfNum = (int) Math.max((7 - (Math.ceil(7*roundNum/200))), 1);
+		if (roundNum > 200) plantIfNum = 1;
+    	ProposedFarm farm = proposeRandomFarmHere();
+    	boolean buildClear = proposedFarmBuildClear(farm);
+    	int blockedNum = proposedFarmQueryNumBlocked(farm);
+		boolean enoughClear = (7-blockedNum) >= plantIfNum;
+    	if (buildClear && enoughClear) {
+    		return farm;
+		} else {
+    		return null;
+		}
 	}
 
     public static void turn() throws GameActionException {
@@ -211,7 +126,6 @@ public class GardenerBot extends RobotGlobal {
         }
     	if (birthTurn < 0) {
             birthTurn = roundNum;
-            birthLocation = myLoc;
             goDir = randomDirection();
         }
 
@@ -222,7 +136,6 @@ public class GardenerBot extends RobotGlobal {
         processNearbyTrees();
         boolean moved = false;
         if (mode == FarmingMode.SEARCHING) {
-			amPlanting = false;
             // move
 			moved = tryMoveElseBack(goDir);
 			if (!moved) {
@@ -241,49 +154,45 @@ public class GardenerBot extends RobotGlobal {
             MapLocation[] archonLocations = getMyArchonLocations();
             float minArchonDist = minDistBetween(myLoc, archonLocations);
             if (minFriendlyTreeDist > 8 && minArchonDist > 8) {
-            	if(findFarmLocation()) mode = FarmingMode.FARMING;
+            	ProposedFarm farm = tryProposeFarm();
+            	if(farm != null) {
+            		farmGeo = farm;
+            		mode = FarmingMode.FARMING;
+            		addBuildQueue1(RobotType.LUMBERJACK);
+				}
             	
             }
         }
 
         if (mode == FarmingMode.FARMING) {
+
+			countTrees();
         	// Plant a plant if needed
-        	if (rc.isCircleOccupiedExceptByThisRobot(myLoc, octagonFarmRadius) && numPlanted == 0) {
-        		//System.out.println("Octagon Farm may not be complete! No space!");
-        	}
-        	if (buildDirection == null)  buildDirection = enemyInitialArchonLocations[0].directionTo(myLoc).opposite();
         	
-        	getTreeLocations(buildDirection); // can change missing tree direction later
-        	
-        	drawFarm();
+        	farmGeo.drawFarm(rc);
 
 			RobotType priorityBuild = peekBuildQueue1();
 			RobotType secondaryBuild = peekBuildQueue2();
 			float skippedCost = 0;
-			boolean builtSomething = false;
 
-            if (!amPlanting) {
-                //System.out.println("Begin planting!");
-                amPlanting = true;
-            } else if (goBack) {
+            if (goBack) {
                 if (!moved){ // if not in center, goback to center
-                    moved = tryMoveExact(farmCenter);
+                    moved = tryMoveExact(farmGeo.getFarmCenter());
                     goBack = !moved;
                 }
             } else if (priorityBuild != null) {
                 // Build a unit if possible
                 float so = GameConstants.GENERAL_SPAWN_OFFSET;
-                MapLocation constructionZone = farmCenter.add(buildDirection, octDiag + 2 + so);
-                rc.setIndicatorDot(constructionZone, 55, 55, 55);
+                rc.setIndicatorDot(farmGeo.getBuildLoc(), 55, 55, 55);
                 boolean builtPriority = false;
-				if (rc.hasRobotBuildRequirements(priorityBuild) && !rc.isCircleOccupiedExceptByThisRobot(constructionZone, 1)) {
+				if (rc.hasRobotBuildRequirements(priorityBuild) && !rc.isCircleOccupiedExceptByThisRobot(farmGeo.getConstructionZone(), 1)) {
 					//System.out.println("Moved: " + moved);
 					if (!moved) {
-						moved = tryMoveExact(buildLoc);
+						moved = tryMoveExact(farmGeo.getBuildLoc());
 						if (moved) {
 							goBack = true;
-							if (rc.canBuildRobot(priorityBuild, buildDirection)) {
-								rc.buildRobot(priorityBuild, buildDirection);
+							if (rc.canBuildRobot(priorityBuild, farmGeo.getBuildDirection())) {
+								rc.buildRobot(priorityBuild, farmGeo.getBuildDirection());
 								popBuildQueue1();
 								builtPriority = true;
 							}
@@ -301,10 +210,10 @@ public class GardenerBot extends RobotGlobal {
 					boolean isBlocked = isTreeBlocked[t];
 					if (!isAlive && !isBlocked) {
 						// try to plant this one
-						MapLocation pLoc = treePlantingLocs[t];
+						MapLocation pLoc = farmGeo.getTreePlantingLocs()[t];
 
 						if (haveBullets && rc.onTheMap(pLoc) && rc.isBuildReady()){ // check location, cooldown, & bullets
-							Direction tDir = treeDirections[t];
+							Direction tDir = farmGeo.getTreeDirections()[t];
 							//System.out.println("Attempting to plant Tree #" + t);
 
 							if (rc.canMove(pLoc) && !moved) {						// check if can move this turn, then do
@@ -313,9 +222,8 @@ public class GardenerBot extends RobotGlobal {
 									goBack = true;
 
 									if (rc.canPlantTree(tDir)) {						// check if can plant
-										rc.plantTree(myLoc.directionTo(treeLocs[t])); 	// Success! now account for the new tree
+										rc.plantTree(myLoc.directionTo(farmGeo.getTreeLocs()[t])); 	// Success! now account for the new tree
 										//System.out.println("Tree #" + t + " is planted.");
-										numPlanted++;
 										isTreeAlive[t] = true;
 										builtTree = true;
 									} else {
@@ -339,17 +247,16 @@ public class GardenerBot extends RobotGlobal {
         	if (secondaryBuild != null && teamBullets > skippedCost + secondaryBuild.bulletCost) {
 				// Build a unit if possible
 				float so = GameConstants.GENERAL_SPAWN_OFFSET;
-				MapLocation constructionZone = farmCenter.add(buildDirection, octDiag + 2 + so);
-				rc.setIndicatorDot(constructionZone, 55, 55, 55);
+				rc.setIndicatorDot(farmGeo.getConstructionZone(), 55, 55, 55);
 				boolean builtSecondary = false;
-				if (rc.hasRobotBuildRequirements(secondaryBuild) && !rc.isCircleOccupiedExceptByThisRobot(constructionZone, 1)) {
+				if (rc.hasRobotBuildRequirements(secondaryBuild) && !rc.isCircleOccupiedExceptByThisRobot(farmGeo.getConstructionZone(), 1)) {
 					//System.out.println("Moved: " + moved);
 					if (!moved) {
-						moved = tryMoveExact(buildLoc);
+						moved = tryMoveExact(farmGeo.getBuildLoc());
 						if (moved) {
 							goBack = true;
-							if (rc.canBuildRobot(secondaryBuild, buildDirection)) {
-								rc.buildRobot(secondaryBuild, buildDirection);
+							if (rc.canBuildRobot(secondaryBuild, farmGeo.getBuildDirection())) {
+								rc.buildRobot(secondaryBuild, farmGeo.getBuildDirection());
 								popBuildQueue2();
 								builtSecondary = true;
 							}
@@ -372,40 +279,49 @@ public class GardenerBot extends RobotGlobal {
 
         	// Build a unit if possible
         	float so = GameConstants.GENERAL_SPAWN_OFFSET;
-        	MapLocation constructionZone = farmCenter.add(buildDirection, octDiag + 2 + so);
-        	rc.setIndicatorDot(constructionZone, 55, 55, 55);
+        	rc.setIndicatorDot(farmGeo.getConstructionZone(), 55, 55, 55);
 
             if (goBack) {
                 if (!moved) {
-                    moved = tryMoveExact(farmCenter);
+                    moved = tryMoveExact(farmGeo.getFarmCenter());
                     goBack = false;
                 }
             } else if (currentBuildOrder != null && teamBullets > skippedCost + currentBuildOrder.bulletCost) {
-                if (rc.hasRobotBuildRequirements(currentBuildOrder) && !rc.isCircleOccupiedExceptByThisRobot(constructionZone, 1)) {
+                if (rc.hasRobotBuildRequirements(currentBuildOrder) && !rc.isCircleOccupiedExceptByThisRobot(farmGeo.getConstructionZone(), 1)) {
                     //System.out.println("Moved: " + moved);
                     if (!moved) {
-                        moved = tryMoveExact(buildLoc);
-                        if (rc.canBuildRobot(currentBuildOrder, buildDirection)){
-                            rc.buildRobot(currentBuildOrder, buildDirection);
+                        moved = tryMoveExact(farmGeo.getBuildLoc());
+                        if (rc.canBuildRobot(currentBuildOrder, farmGeo.getBuildDirection())){
+                            rc.buildRobot(currentBuildOrder, farmGeo.getBuildDirection());
                         }
                         goBack = true;
                     }
                 }
             }
-
-        	countTrees();
         	//System.out.println("watering");
-        	
         }
 
-        // Update farm table
 
-        if (farmTableEntryNum < 0) {
-            // Create farm table entry
-            farmTableEntryNum = createFarmTableEntry();
-        } else {
-            writeFarmTableEntry(farmTableEntryNum, myLoc, true, false);
-        }
+		// Update farm table
+		boolean isFull;
+        if (mode == FarmingMode.FARMING) {
+        	isFull = true;
+			for (int i = 0; i < 7; i++) {
+				if (!isTreeAlive[i] && !isTreeBlocked[i]) {
+					isFull = false;
+				}
+			}
+		} else {
+        	isFull = false;
+		}
+
+		if (farmTableEntryNum < 0) {
+			// Create farm table entry
+			farmTableEntryNum = createFarmTableEntry();
+		} else {
+			writeFarmTableEntry(farmTableEntryNum, myLoc, true, false, isFull);
+		}
+
         debugTick(7);
         Clock.yield();
     }

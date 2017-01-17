@@ -137,17 +137,17 @@ public class ArchonBot extends RobotGlobal {
                         if (success) {
                             gardenersBuilt++;
                             rc.broadcast(NUM_GARDENERS_BUILT_CHANNEL, gardenersBuilt);
-                            addBuildQueue1(RobotType.LUMBERJACK);
                         }
                     }
                     break;
                 case WHEN_FULL:
-                    if (teamBullets >= 190) {
+                    int numFarmsFull = numFarmTableEntriesFull();
+                    int numFarms = getFarmTableEntryCount();
+                    if (numFarms == numFarmsFull) {
                         success = tryHireGardener(gardenerDir);
                         if (success) {
                             gardenersBuilt++;
                             rc.broadcast(NUM_GARDENERS_BUILT_CHANNEL, gardenersBuilt);
-                            addBuildQueue1(RobotType.LUMBERJACK);
                         }
                     }
                     break;
