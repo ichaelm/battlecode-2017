@@ -112,9 +112,8 @@ public class ScoutBot extends RobotGlobal {
 			if (targetLumberjack != null && targetLumberjack.location.distanceTo(myLoc) <= myType.strideRadius + myType.bodyRadius + RobotType.LUMBERJACK.bodyRadius + RobotType.LUMBERJACK.strideRadius + GameConstants.LUMBERJACK_STRIKE_RADIUS) { // If an enemy lumberjack is close enough to hit me:
 				if (selectedGardenerLoc != null) { // If an enemy gardener is selected
 					// Move so that the lumberjack can't hit me, but towards the correct distance from the gardener
-					tryMoveDistFromExcludeCircle(
-							selectedGardenerLoc,
-							2,
+					tryMoveElseLeftRightExcludeCircle(
+							myLoc.directionTo(selectedGardenerLoc),
 							targetLumberjack.location,
 							myType.bodyRadius + RobotType.LUMBERJACK.bodyRadius + RobotType.LUMBERJACK.strideRadius + GameConstants.LUMBERJACK_STRIKE_RADIUS
 					);

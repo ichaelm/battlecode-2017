@@ -610,6 +610,14 @@ public strictfp class RobotGlobal {
         return tryMoveElseLeftRightExcludeCircle(dir, dist, excludeLoc, excludeR, 30, 5);
     }
 
+    public static boolean tryMoveElseLeftRightExcludeCircle(MapLocation loc, MapLocation excludeLoc, float excludeR, float degreeOffset, int checksPerSide) throws GameActionException {
+        return tryMoveElseLeftRightExcludeCircle(myLoc.directionTo(loc), myLoc.distanceTo(loc), excludeLoc, excludeR, degreeOffset, checksPerSide);
+    }
+
+    public static boolean tryMoveElseLeftRightExcludeCircle(Direction dir, MapLocation excludeLoc, float excludeR, float degreeOffset, int checksPerSide) throws GameActionException {
+        return tryMoveElseLeftRightExcludeCircle(dir, myType.strideRadius, excludeLoc, excludeR, degreeOffset, checksPerSide);
+    }
+
     public static boolean tryMoveElseLeftRightExcludeCircle(Direction dir, float dist, MapLocation excludeLoc, float excludeR, float degreeOffset, int checksPerSide) throws GameActionException {
 
         // First, try intended direction
@@ -698,8 +706,14 @@ public strictfp class RobotGlobal {
                 MapLocation target = intersections[circleClockwise ? 1 : 0];
                 if (myLoc.distanceTo(target) < myType.strideRadius) {
                     success = tryMoveElseBack(target);
+                    if (!success) {
+                        success = tryMoveElseLeftRight(target, 15, 5);
+                    }
                 } else {
                     success = tryMoveElseBack(myLoc.directionTo(target));
+                    if (!success) {
+                        success = tryMoveElseLeftRight(myLoc.directionTo(target), 15, 5);
+                    }
                     System.out.println("Intersection too far!");
                 }
                 if (success) {
@@ -711,7 +725,6 @@ public strictfp class RobotGlobal {
                         success = tryMoveElseBack(target);
                     } else {
                         success = tryMoveElseBack(myLoc.directionTo(target));
-                        System.out.println("Intersection too far!");
                     }
                     if (success) {
                         return true;
@@ -751,9 +764,14 @@ public strictfp class RobotGlobal {
                 MapLocation target = intersections[circleClockwise ? 1 : 0];
                 if (myLoc.distanceTo(target) < myType.strideRadius) {
                     success = tryMoveElseBackExcludeCircle(target, excludeLoc, excludeR);
+                    if (!success) {
+                        success = tryMoveElseLeftRightExcludeCircle(target, excludeLoc, excludeR, 15, 5);
+                    }
                 } else {
                     success = tryMoveElseBackExcludeCircle(myLoc.directionTo(target), excludeLoc, excludeR);
-                    System.out.println("Intersection too far!");
+                    if (!success) {
+                        success = tryMoveElseLeftRightExcludeCircle(myLoc.directionTo(target), excludeLoc, excludeR, 15, 5);
+                    }
                 }
                 if (success) {
                     return true;
@@ -764,7 +782,6 @@ public strictfp class RobotGlobal {
                         success = tryMoveElseBackExcludeCircle(target, excludeLoc, excludeR);
                     } else {
                         success = tryMoveElseBackExcludeCircle(myLoc.directionTo(target), excludeLoc, excludeR);
-                        System.out.println("Intersection too far!");
                     }
                     if (success) {
                         return true;
