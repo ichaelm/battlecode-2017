@@ -15,6 +15,7 @@ public strictfp class RobotPlayer {
             RobotGlobal.setInitialDefaultBuild(RobotType.SOLDIER);
             RobotGlobal.setGardenerSchedule(RobotGlobal.GardenerSchedule.ONCE_EVERY_N_ROUNDS);
             RobotGlobal.setGardenerScheduleN(200);
+            RobotGlobal.friendlyFireOn = false;
         } catch (Exception e) {
             System.out.println("Exception during global init");
             e.printStackTrace();
