@@ -10,13 +10,13 @@ public class TankBot extends RobotGlobal {
             try {
                 update();
             } catch (Exception e) {
-                System.out.println("Archon: exception during update");
+                System.out.println("Tank: exception during update");
                 e.printStackTrace();
             }
             try {
                 turn();
             } catch (Exception e) {
-                System.out.println("Archon: exception during turn");
+                System.out.println("Tank: exception during turn");
                 e.printStackTrace();
             }
         }

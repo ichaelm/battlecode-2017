@@ -12,13 +12,13 @@ public class LumberjackBot extends RobotGlobal {
             try {
                 update();
             } catch (Exception e) {
-                System.out.println("Archon: exception during update");
+                System.out.println("Lumberjack: exception during update");
                 e.printStackTrace();
             }
             try {
                 turn();
             } catch (Exception e) {
-                System.out.println("Archon: exception during turn");
+                System.out.println("Lumberjack: exception during turn");
                 e.printStackTrace();
             }
         }

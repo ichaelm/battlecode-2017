@@ -714,7 +714,6 @@ public strictfp class RobotGlobal {
                     if (!success) {
                         success = tryMoveElseLeftRight(myLoc.directionTo(target), 15, 5);
                     }
-                    System.out.println("Intersection too far!");
                 }
                 if (success) {
                     return true;
