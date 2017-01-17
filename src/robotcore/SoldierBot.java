@@ -68,7 +68,8 @@ public class SoldierBot extends RobotGlobal {
         if (firstTurn) {
             goDir = randomDirection();
         }
-
+        
+        tryToShake();
         processNearbyRobots();
         processNearbyBullets();
 

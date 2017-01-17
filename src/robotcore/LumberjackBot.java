@@ -28,7 +28,8 @@ public class LumberjackBot extends RobotGlobal {
         processNearbyRobots();
         processNearbyBullets();
         processNearbyTrees();
-
+        tryToShake();
+        
         RobotInfo nearestEnemy = getNearestEnemy();
         boolean enemyInRange = false;
         Direction combatDir = null;
