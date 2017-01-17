@@ -273,13 +273,28 @@ public strictfp class RobotGlobal {
         bulletsToAvoid = new BulletInfo[numIters];
         numBulletsToAvoid = 0;
         for (int i = 0; i < numIters; i++) {
-            BulletInfo bullet = nearbyBullets[i];
-            if (willCollideWith(bullet, myLoc, myType.bodyRadius + myType.strideRadius)) {
-                bulletsToAvoid[numBulletsToAvoid] = bullet;
-                numBulletsToAvoid++;
-            }
+        	BulletInfo bullet = nearbyBullets[i];
+        	if (willCollideWith(bullet, myLoc, myType.bodyRadius + myType.strideRadius)) {
+        		bulletsToAvoid[numBulletsToAvoid] = bullet;
+        		numBulletsToAvoid++;
+        	}
         }
     }
+
+    public static void tryToShake() throws GameActionException {
+    	float radius = 1 + myType.bodyRadius;
+    	if (nearbyTrees.length > 0) {
+    		int tryMax = 3;
+    		int tried = 0;
+    		for (TreeInfo t: nearbyTrees) {
+    			if (t.containedBullets < 1) continue;
+    			if (++tried >= tryMax) break;
+    			if (rc.canShake(t.ID)) rc.shake(t.ID);
+    			if (t.location.distanceTo(myLoc) > radius) break;
+    		}
+    	}
+    }
+
 
     public static MapLocation[] getMyArchonLocations() throws GameActionException {
         int numArchons = rc.readBroadcast(NUM_ARCHONS_CHANNEL);
