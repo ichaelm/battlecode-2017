@@ -26,6 +26,7 @@ public class GardenerBot extends RobotGlobal {
     static MapLocation[] treePlantingLocs = new MapLocation[7];
     static boolean goBack = false;
     static Direction[] treeDirections = new Direction[7];
+    static boolean builtSecondary = false;
 
     
 
@@ -223,7 +224,23 @@ public class GardenerBot extends RobotGlobal {
         boolean moved = false;
         if (mode == FarmingMode.SEARCHING) {
 			amPlanting = false;
-            // move
+
+			if (rc.getRoundNum() < birthTurn + 20) {
+				RobotType secondaryBuild = peekBuildQueue2();
+		// if secondarybuild is a Tank, attempt to build upon birth (since trees block it from being constructed later)
+				if (secondaryBuild == RobotType.TANK) {
+					
+					for (Direction dir: usefulDirections) {
+						if (rc.canBuildRobot(secondaryBuild, dir)) {
+							rc.buildRobot(secondaryBuild, dir);
+							builtSecondary = true;
+						}
+					}
+				}
+			}
+			
+			
+			// move
 			moved = tryMoveElseBack(goDir);
 			if (!moved) {
 				moved = tryMoveElseBack(goDir);
@@ -341,7 +358,7 @@ public class GardenerBot extends RobotGlobal {
 				float so = GameConstants.GENERAL_SPAWN_OFFSET;
 				MapLocation constructionZone = farmCenter.add(buildDirection, octDiag + 2 + so);
 				rc.setIndicatorDot(constructionZone, 55, 55, 55);
-				boolean builtSecondary = false;
+				
 				if (rc.hasRobotBuildRequirements(secondaryBuild) && !rc.isCircleOccupiedExceptByThisRobot(constructionZone, 1)) {
 					//System.out.println("Moved: " + moved);
 					if (!moved) {
