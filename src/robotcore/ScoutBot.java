@@ -23,7 +23,6 @@ public class ScoutBot extends RobotGlobal {
     }
 
     public static void turn() throws GameActionException {
-    	tryToShake();
     	//Time to be a tree-seeking scout
     	if (roundNum < 100) {
     		//Set to 100 assuming that after that point we're out 
