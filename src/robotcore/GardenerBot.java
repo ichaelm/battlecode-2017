@@ -225,10 +225,10 @@ public class GardenerBot extends RobotGlobal {
         if (mode == FarmingMode.SEARCHING) {
 			amPlanting = false;
 
-			if (rc.getRoundNum() < birthTurn + 20) {
-				RobotType secondaryBuild = peekBuildQueue2();
-		// if secondarybuild is a Tank, attempt to build upon birth (since trees block it from being constructed later)
-				if (secondaryBuild == RobotType.TANK) {
+			RobotType secondaryBuild = peekBuildQueue2();
+			if (secondaryBuild == RobotType.TANK) {
+			// if secondary build is a Tank, attempt to build upon birth (since trees block it from being constructed later)
+				if (rc.getRoundNum() < birthTurn + 50) {
 					
 					for (Direction dir: usefulDirections) {
 						if (rc.canBuildRobot(secondaryBuild, dir)) {
