@@ -112,15 +112,16 @@ public strictfp class RobotGlobal {
     private static GardenerSchedule gardenerSchedule = GardenerSchedule.ONCE_EVERY_N_ROUNDS;
     private static int gardenerScheduleN = -1;
     private static boolean experimental = false;
-    private static final int SINGLE = 1;
-    private static final int TRIAD = 3;
-    private static final int PENTAD = 5;
-    public static int soldierShots = SINGLE;
-    public static boolean friendlyFireOn = true;
-
     private static RobotType[] initialBuildQueue1 = new RobotType[0];
     private static RobotType[] initialBuildQueue2 = new RobotType[0];
     private static RobotType initialDefaultBuild = null;
+
+    // Configuration for Offensive Units
+    public static boolean useTriad = false;
+    public static boolean usePentad = false;
+    public static float triadDist = 3.5f;
+    public static float pentadDist = 2.5f;
+    public static boolean friendlyFireOn = true;
 
     public static void init(RobotController rc) throws GameActionException {
         RobotGlobal.rc = rc;
