@@ -646,18 +646,17 @@ public strictfp class RobotGlobal {
         }
 
         //Debug
-        /*
         MapLocation knownNE = new MapLocation(bounds.getInnerBound(MapBounds.EAST), bounds.getInnerBound(MapBounds.NORTH));
         MapLocation knownSE = new MapLocation(bounds.getInnerBound(MapBounds.EAST), bounds.getInnerBound(MapBounds.SOUTH));
         MapLocation knownNW = new MapLocation(bounds.getInnerBound(MapBounds.WEST), bounds.getInnerBound(MapBounds.NORTH));
         MapLocation knownSW = new MapLocation(bounds.getInnerBound(MapBounds.WEST), bounds.getInnerBound(MapBounds.SOUTH));
-
-        int r = 0; int g = 255; int b = 100;
+		
+        int r = 0; int g = 255; int b = 255;
         rc.setIndicatorLine(knownNE, knownNW, r, g, b);
         rc.setIndicatorLine(knownNE, knownSE, r, g, b);
         rc.setIndicatorLine(knownSW, knownSE, r, g, b);
         rc.setIndicatorLine(knownSW, knownNW, r, g, b);
-        */
+        
 
         return bounds;
 
