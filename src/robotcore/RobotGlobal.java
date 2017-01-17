@@ -244,28 +244,43 @@ public strictfp class RobotGlobal {
         bulletsToAvoid = new BulletInfo[numIters];
         numBulletsToAvoid = 0;
         for (int i = 0; i < numIters; i++) {
-            BulletInfo bullet = nearbyBullets[i];
-            if (willCollideWith(bullet, myLoc, myType.bodyRadius + myType.strideRadius)) {
-                bulletsToAvoid[numBulletsToAvoid] = bullet;
-                numBulletsToAvoid++;
-            }
+        	BulletInfo bullet = nearbyBullets[i];
+        	if (willCollideWith(bullet, myLoc, myType.bodyRadius + myType.strideRadius)) {
+        		bulletsToAvoid[numBulletsToAvoid] = bullet;
+        		numBulletsToAvoid++;
+        	}
         }
     }
 
+    public static void tryToShake() throws GameActionException {
+    	float radius = 1 + myType.bodyRadius;
+    	if (nearbyTrees.length > 0) {
+    		int tryMax = 3;
+    		int tried = 0;
+    		for (TreeInfo t: nearbyTrees) {
+    			if (t.containedBullets < 1) continue;
+    			if (++tried >= tryMax) break;
+    			if (rc.canShake(t.ID)) rc.shake(t.ID);
+    			if (t.location.distanceTo(myLoc) > radius) break;
+    		}
+    	}
+    }
+
+
     public static MapLocation[] getMyArchonLocations() throws GameActionException {
-        int numArchons = rc.readBroadcast(NUM_ARCHONS_CHANNEL);
-        System.out.println("numArchons = " + numArchons);
-        if (numArchons > ARCHON_LOCATION_TABLE_NUM_ENTRIES) {
-            System.out.println("More than 3 archons detected!!!");
-            numArchons = ARCHON_LOCATION_TABLE_NUM_ENTRIES;
-        }
-        MapLocation[] archonLocations = new MapLocation[numArchons];
-        for (int i = 0; i < numArchons; i++) {
-            float x = Float.intBitsToFloat(rc.readBroadcast(ARCHON_LOCATION_TABLE_CHANNEL + (ARCHON_LOCATION_TABLE_ENTRY_SIZE*i)));
-            float y = Float.intBitsToFloat(rc.readBroadcast(ARCHON_LOCATION_TABLE_CHANNEL + (ARCHON_LOCATION_TABLE_ENTRY_SIZE*i) + 1));
-            archonLocations[i] = new MapLocation(x, y);
-        }
-        return archonLocations;
+    	int numArchons = rc.readBroadcast(NUM_ARCHONS_CHANNEL);
+    	System.out.println("numArchons = " + numArchons);
+    	if (numArchons > ARCHON_LOCATION_TABLE_NUM_ENTRIES) {
+    		System.out.println("More than 3 archons detected!!!");
+    		numArchons = ARCHON_LOCATION_TABLE_NUM_ENTRIES;
+    	}
+    	MapLocation[] archonLocations = new MapLocation[numArchons];
+    	for (int i = 0; i < numArchons; i++) {
+    		float x = Float.intBitsToFloat(rc.readBroadcast(ARCHON_LOCATION_TABLE_CHANNEL + (ARCHON_LOCATION_TABLE_ENTRY_SIZE*i)));
+    		float y = Float.intBitsToFloat(rc.readBroadcast(ARCHON_LOCATION_TABLE_CHANNEL + (ARCHON_LOCATION_TABLE_ENTRY_SIZE*i) + 1));
+    		archonLocations[i] = new MapLocation(x, y);
+    	}
+    	return archonLocations;
     }
 
     public static float minDistBetween(MapLocation a, MapLocation[] bs) {
