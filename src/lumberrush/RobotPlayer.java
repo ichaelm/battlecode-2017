@@ -10,8 +10,7 @@ public strictfp class RobotPlayer {
                     // Nothing
             });
             RobotGlobal.setInitialDefaultBuild(RobotType.LUMBERJACK);
-            RobotGlobal.setGardenerSchedule(RobotGlobal.GardenerSchedule.ONCE_EVERY_N_ROUNDS);
-            RobotGlobal.setGardenerScheduleN(200);
+            RobotGlobal.setGardenerSchedule(RobotGlobal.GardenerSchedule.WHEN_FULL);
         } catch (Exception e) {
             System.out.println("Exception during global init");
             e.printStackTrace();
