@@ -326,6 +326,8 @@ public class GardenerBot extends RobotGlobal {
 			for (int i = 0; i < 7; i++) {
 				if (!isTreeAlive[i] && !isTreeBlocked[i]) {
 					isFull = false;
+				} else {
+					rc.setIndicatorDot(farmGeo.getTreePlantingLocs()[i], 0, 0, 0);
 				}
 			}
 		} else {
