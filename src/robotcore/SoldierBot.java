@@ -68,6 +68,7 @@ public class SoldierBot extends RobotGlobal {
 
         if (nearestEnemy != null) {
             goDir = myLoc.directionTo(nearestEnemy.location);
+            if (!friendlyFireOn) friendlyFire(goDir); // if this soldier is to avoid FriendlyFire
         } else if (attackLoc != null) {
             goDir = myLoc.directionTo(attackLoc);
             if (myLoc.distanceTo(attackLoc) < myType.bodyRadius * 2) {
@@ -89,7 +90,7 @@ public class SoldierBot extends RobotGlobal {
         }
 
         if (nearestEnemy != null) {
-            if (rc.canFireSingleShot()) {
+            if (rc.canFireSingleShot() && !dontShoot) { // if this soldier is to avoid FriendlyFire
                 rc.fireSingleShot(myLoc.directionTo(nearestEnemy.location));
             }
         }
