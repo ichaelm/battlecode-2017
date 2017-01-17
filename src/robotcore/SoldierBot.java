@@ -8,7 +8,6 @@ import robotcore.RobotGlobal;
 public class SoldierBot extends RobotGlobal {
 	static Direction goDir;
 	static boolean firstTurn = true;
-	static boolean wander = false;
 	static int goCount = 0;
 	static boolean dontShoot = false;
 
