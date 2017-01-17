@@ -15,6 +15,7 @@ public class GardenerBot extends RobotGlobal {
     static int birthTurn = -1;
     static FarmingMode mode = FarmingMode.SEARCHING;
 	static boolean goBack = false;
+    static boolean builtSecondary = false;
 	static int farmTableEntryNum = -1;
 
 	// Farm geometry
@@ -136,7 +137,23 @@ public class GardenerBot extends RobotGlobal {
         processNearbyTrees();
         boolean moved = false;
         if (mode == FarmingMode.SEARCHING) {
-            // move
+
+			RobotType secondaryBuild = peekBuildQueue2();
+			if (secondaryBuild == RobotType.TANK) {
+			// if secondary build is a Tank, attempt to build upon birth (since trees block it from being constructed later)
+				if (rc.getRoundNum() < birthTurn + 50) {
+					
+					for (Direction dir: usefulDirections) {
+						if (rc.canBuildRobot(secondaryBuild, dir)) {
+							rc.buildRobot(secondaryBuild, dir);
+							builtSecondary = true;
+						}
+					}
+				}
+			}
+			
+			
+			// move
 			moved = tryMoveElseBack(goDir);
 			if (!moved) {
 				moved = tryMoveElseBack(goDir);
