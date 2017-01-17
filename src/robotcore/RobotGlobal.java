@@ -809,6 +809,41 @@ public strictfp class RobotGlobal {
         return false;
     }
 
+    public static boolean hasLineOfSight(MapLocation target) throws GameActionException {
+        MapLocation start = myLoc.add(myLoc.directionTo(target), myType.bodyRadius);
+        MapLocation center = new MapLocation((start.x + target.x) / 2f, (start.y + target.y) / 2f);
+        float r = start.distanceTo(target) / 2f;
+        for (RobotInfo robot : nearbyRobots) {
+            MapLocation itemLoc = robot.location;
+            float itemR = robot.type.bodyRadius;
+            if (center.distanceTo(itemLoc) <= r + itemR) {
+                if (itemLoc.distanceTo(target) <= itemR) {
+                    // This is the target, do nothing
+                } else {
+                    MapLocation[] intersections = Geometry.getCircleLineSegmentIntersections(itemLoc, itemR, start, target);
+                    if (intersections.length > 0) {
+                        return true;
+                    }
+                }
+            }
+        }
+        for (TreeInfo tree : nearbyTrees) {
+            MapLocation itemLoc = tree.location;
+            float itemR = tree.radius;
+            if (center.distanceTo(itemLoc) <= r + itemR) {
+                if (itemLoc.distanceTo(target) <= itemR) {
+                    // This is the target, do nothing
+                } else {
+                    MapLocation[] intersections = Geometry.getCircleLineSegmentIntersections(itemLoc, itemR, start, target);
+                    if (intersections.length > 0) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
     public static int[] readBroadcastArray(int channelStart, int length) throws GameActionException {
         int[] retval = new int[length];
         for (int i = 0; i < length; i++) {
