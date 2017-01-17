@@ -23,8 +23,10 @@ public class TankBot extends RobotGlobal {
 		if (!shoot) {
 			rc.setIndicatorLine(myLoc, target, 255, 0, 0);
 		}
-
-		
+		RobotInfo[] robots = rc.senseNearbyRobots(myType.sensorRadius, myTeam);
+		if (robots.length <= 1) { // if no nearby friendlies, shoot anyway
+			shoot = true;
+		}
 	}
 
 
