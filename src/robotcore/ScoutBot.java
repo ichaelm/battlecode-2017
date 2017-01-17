@@ -129,9 +129,11 @@ public class ScoutBot extends RobotGlobal {
 							myType.bodyRadius + RobotType.LUMBERJACK.bodyRadius + RobotType.LUMBERJACK.strideRadius + GameConstants.LUMBERJACK_STRIKE_RADIUS
 					);
 					// Shoot at the lumberjack
+					/*
 					if (rc.canFireSingleShot()) {
 						rc.fireSingleShot(myLoc.directionTo(targetLumberjack.location));
 					}
+					*/
 				}
 			} else { // Otherwise:
 				if (selectedGardenerLoc != null) { // If an enemy gardener is selected:
