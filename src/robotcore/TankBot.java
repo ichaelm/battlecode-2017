@@ -23,7 +23,7 @@ public class TankBot extends RobotGlobal {
     }
 
     public static void turn() throws GameActionException {
-
+    	tryToShake();
         // Generate a random direction
         Direction dir = randomDirection();
 
