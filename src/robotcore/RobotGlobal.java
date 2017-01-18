@@ -1031,6 +1031,8 @@ public strictfp class RobotGlobal {
             if (center.distanceTo(itemLoc) <= r + itemR) {
                 if (itemLoc.distanceTo(target) <= itemR) {
                     // This is the target, do nothing
+                } else if (itemLoc.distanceTo(myLoc) <= itemR) {
+                    // This is overlapping my center, do nothing
                 } else {
                     MapLocation[] intersections = Geometry.getCircleLineSegmentIntersections(itemLoc, itemR, start, target);
                     if (intersections.length > 0) {
