@@ -142,6 +142,9 @@ public class ArchonBot extends RobotGlobal {
                         if (success) {
                             gardenersBuilt++;
                             rc.broadcast(NUM_GARDENERS_BUILT_CHANNEL, gardenersBuilt);
+                            if (getExperimental() && getFarmTableEntryCount() > 0) {
+                                addBuildQueue1(RobotType.LUMBERJACK);
+                            }
                         }
                     }
                     break;
