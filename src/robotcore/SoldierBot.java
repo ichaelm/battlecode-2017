@@ -19,13 +19,9 @@ public class SoldierBot extends RobotGlobal {
 			 target = nearestEnemy.location;
 		} else return;
 		
-		shoot = hasLineOfSight(target); // if I have line of sight, I want to shoot
+		shoot = hasLineOfSightFF(target); // if I have line of sight, I want to shoot
 		if (!shoot) {
 			rc.setIndicatorLine(myLoc, target, 255, 0, 0);
-		}
-		RobotInfo[] robots = rc.senseNearbyRobots(myType.sensorRadius, myTeam);
-		if (robots.length <= 1) { // if no nearby friendlies, shoot anyway
-			shoot = true;
 		}
 	}
 
@@ -61,7 +57,8 @@ public class SoldierBot extends RobotGlobal {
 
         attackLoc = queryAttackLocation();
         nearestEnemy = getNearestEnemy();
-
+        debugTick(0);
+        
         if (nearestEnemy != null) {
             goDir = myLoc.directionTo(nearestEnemy.location);
             if (!friendlyFireOn) friendlyFire(goDir); // if this soldier is to avoid FriendlyFire
@@ -80,7 +77,7 @@ public class SoldierBot extends RobotGlobal {
         	if (nearestEnemy != null) {
         		if (kite && !moved) {
             		moved = kiteEnemy(nearestEnemy, avoidRadius);
-            		System.out.println("Trying to kite...");
+            		//System.out.println("Trying to kite...");
             	}
         	}
         	else {
