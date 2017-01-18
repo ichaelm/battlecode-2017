@@ -124,6 +124,9 @@ public strictfp class RobotGlobal {
     public static float pentadDist = 2.5f;
     public static boolean friendlyFireOn = true;
     public static boolean prioritizeRobotTrees = false;
+    public static boolean kiteEnemyLumberjacks = true;
+    public static float avoidRadius = 1.1f;
+    public static boolean kite = false;
 
     public static void init(RobotController rc) throws GameActionException {
         RobotGlobal.rc = rc;
@@ -304,7 +307,77 @@ public strictfp class RobotGlobal {
     		}
     	}
     }
+    
+    /**
+    public static boolean kiteEnemy(RobotInfo enemy, float strafeDist) throws GameActionException {
+    	if (enemy.type == RobotType.LUMBERJACK){ // ensure we avoid lumberjack strikes
+    		strafeDist = Math.min(1 + myType.bodyRadius, strafeDist); 
+    	} else { // ensure we are not excluding a circle smaller than this robot
+    		strafeDist = Math.min(myType.bodyRadius, strafeDist); 
+    	}
+    	float exclude = strafeDist + enemy.type.bodyRadius;
+    	MapLocation enemyLoc = enemy.location;
+    	boolean moved = rc.hasMoved();
+    	if (moved) {
+    		System.out.println("Already moved!");
+    		return true;
+    	}
+    	
+    	if (myType.strideRadius < myLoc.distanceTo(enemyLoc) - enemy.type.bodyRadius) { // if too far to kite, move towards enemy like normal
+    		moved = tryMoveElseLeftRight(myLoc.directionTo(enemyLoc));
+    		System.out.println("Not in kiting range!");
+    	}
+    	else{																	 // if in kiting range...
+    		System.out.println("Enemy is within kiting range!");
+    		rc.setIndicatorDot(enemyLoc, 22, 22, 22);
+        	moved = tryMoveElseLeftRightExcludeCircle(myLoc, enemyLoc, exclude); // try to go left or right around
+        	
+        	if (!moved) {
+        		moved = tryMoveElseBackExcludeCircle(myLoc, enemyLoc, exclude); // try to back away
+        	}
+        	if (!moved) {
+        		moved = tryMoveDistFrom(enemyLoc, exclude); // try to get onto the edge of the exclusion zone
+        	}
+    	}
+   
+    	return moved;
+    }
+    */
 
+    public static boolean kiteEnemy(RobotInfo enemy, float strafeDist) throws GameActionException {
+    	boolean moved = rc.hasMoved();
+    	if (moved) {
+    		System.out.println("Already moved!");
+    		return moved;
+    	} 
+    	if (enemy.type == RobotType.LUMBERJACK){ // ensure we avoid lumberjack strikes
+    		strafeDist = Math.min(1, strafeDist); 
+    	}
+    	if (enemy.type == RobotType.ARCHON || enemy.type == RobotType.GARDENER){ // dont kite gardeners or archons
+    		return false; 
+    	}
+    	
+    	float exclude = strafeDist + myType.bodyRadius + enemy.type.bodyRadius;
+    	float curDist = myLoc.distanceTo(enemy.location);
+    	Direction toEnemy = myLoc.directionTo(enemy.location);
+    	
+    	if (curDist > exclude) { // if already outside exclusion zone
+    		MapLocation newLoc = myLoc.add(toEnemy, curDist - exclude);
+    		if (myLoc.distanceTo(newLoc) > myType.strideRadius) {
+    			moved = tryMoveElseLeftRight(toEnemy, myType.strideRadius);
+    		}
+    		moved = tryMoveElseLeftRight(toEnemy, curDist - exclude);
+    	}
+    	else { // if inside exclusion zone
+    		moved = tryMoveElseLeftRight(toEnemy.opposite(), exclude - curDist);
+    		if (!moved) {
+    			moved = tryMoveElseLeftRight(toEnemy.opposite(), myType.strideRadius);
+    		}
+    	}
+    
+    	
+    	return moved;
+    }
 
     public static MapLocation[] getMyArchonLocations() throws GameActionException {
         int numArchons = rc.readBroadcast(NUM_ARCHONS_CHANNEL);

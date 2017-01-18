@@ -71,34 +71,45 @@ public class SoldierBot extends RobotGlobal {
                 sendAttackFinished();
             }
         }
-      
-        boolean moved;
+
+        // moving
+        boolean moved = false;
         if (nearestEnemy == null && attackLoc == null) {
-            moved = tryMoveElseLeftRight(goDir, 15, 2);
+        	moved = tryMoveElseLeftRight(goDir, 15, 2);
         } else {
-            moved = tryMoveElseLeftRight(goDir);
+        	if (nearestEnemy != null) {
+        		if (kite && !moved) {
+            		moved = kiteEnemy(nearestEnemy, avoidRadius);
+            		System.out.println("Trying to kite...");
+            	}
+        	}
+        	else {
+        		moved = tryMoveElseLeftRight(goDir);
+        	}
         }
         if (!moved) {
-            moved = tryMoveElseBack(goDir);
-            if (!moved) {
-                goDir = randomDirection();
-            }
+        	moved = tryMoveElseBack(goDir);
+        	if (!moved) {
+        		goDir = randomDirection();
+        	}
         }
 
-        if (nearestEnemy != null) {
+        // shooting
+        if (nearestEnemy != null) { 
         	Direction atEnemy = myLoc.directionTo(nearestEnemy.location);
-            float dist = nearestEnemy.location.distanceTo(myLoc); 
+        	float dist = nearestEnemy.location.distanceTo(myLoc); 
         	if (shoot) { // if this soldier is to avoid FriendlyFire
         		if (usePentad && rc.canFirePentadShot() && dist < pentadDist) { // if soldier shoots, canFire becomes false
-                	rc.firePentadShot(atEnemy);
-                }
+        			rc.firePentadShot(atEnemy);
+        		}
         		else if (useTriad && rc.canFireTriadShot() && dist < triadDist) {
-                	rc.fireTriadShot(atEnemy);
-                }
+        			rc.fireTriadShot(atEnemy);
+        		}
         		else if (rc.canFireSingleShot()) {
-            		rc.fireSingleShot(atEnemy);
-            	}	
-            }
+        			rc.fireSingleShot(atEnemy);
+        		}	
+        	}
+
         }
 
         firstTurn = false;
