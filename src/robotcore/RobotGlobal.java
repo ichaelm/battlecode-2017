@@ -915,6 +915,7 @@ public strictfp class RobotGlobal {
         }
 
         //Debug
+        /*
         MapLocation knownNE = new MapLocation(bounds.getInnerBound(MapBounds.EAST), bounds.getInnerBound(MapBounds.NORTH));
         MapLocation knownSE = new MapLocation(bounds.getInnerBound(MapBounds.EAST), bounds.getInnerBound(MapBounds.SOUTH));
         MapLocation knownNW = new MapLocation(bounds.getInnerBound(MapBounds.WEST), bounds.getInnerBound(MapBounds.NORTH));
@@ -925,7 +926,7 @@ public strictfp class RobotGlobal {
         rc.setIndicatorLine(knownNE, knownSE, r, g, b);
         rc.setIndicatorLine(knownSW, knownSE, r, g, b);
         rc.setIndicatorLine(knownSW, knownNW, r, g, b);
-        
+        */
 
         return bounds;
 
@@ -995,6 +996,8 @@ public strictfp class RobotGlobal {
     public static final int FARM_TABLE_ENTRY_GARDENER_MASK = 0x2;
     public static final int FARM_TABLE_ENTRY_LUMBERJACK_MASK = 0x4;
     public static final int FARM_TABLE_ENTRY_FULL_MASK = 0x8;
+    public static final int FARM_TABLE_ENTRY_GARDENER_STORE_MASK = 0x10;
+    public static final int FARM_TABLE_ENTRY_LUMBERJACK_STORE_MASK = 0x20;
 
     public static int createFarmTableEntry() throws GameActionException{
         int farmTableCount = rc.readBroadcast(FARM_TABLE_COUNT_CHANNEL);
@@ -1079,7 +1082,15 @@ public strictfp class RobotGlobal {
         int farmTableEntryChannel = FARM_TABLE_CHANNEL + (farmNum * FARM_TABLE_ENTRY_SIZE);
         int flagsChannel = farmTableEntryChannel + 2;
         int flags = rc.readBroadcast(flagsChannel);
+        boolean gardener = (flags & FARM_TABLE_ENTRY_GARDENER_MASK) != 0;
+        boolean lumberjack = (flags & FARM_TABLE_ENTRY_LUMBERJACK_MASK) != 0;
         flags = flags & (FARM_TABLE_ENTRY_EXISTS_MASK | FARM_TABLE_ENTRY_FULL_MASK);
+        if (gardener) {
+            flags = flags | FARM_TABLE_ENTRY_GARDENER_STORE_MASK;
+        }
+        if (lumberjack) {
+            flags = flags | FARM_TABLE_ENTRY_LUMBERJACK_STORE_MASK;
+        }
         rc.broadcast(flagsChannel, flags);
     }
 
@@ -1087,16 +1098,18 @@ public strictfp class RobotGlobal {
         return rc.readBroadcast(FARM_TABLE_COUNT_CHANNEL);
     }
 
-    public static int numFarmTableEntriesFull() throws GameActionException {
+    public static int numFarmsBuildingTrees() throws GameActionException {
         int farmCount = getFarmTableEntryCount();
-        int fullCount = 0;
+        int fullOrDeadCount = 0;
         for (int farmNum = 0; farmNum < farmCount; farmNum++) {
             int flags = readFarmTableEntryFlags(farmNum);
             if ((flags & FARM_TABLE_ENTRY_FULL_MASK) != 0) {
-                fullCount++;
+                fullOrDeadCount++;
+            } else if ((flags & FARM_TABLE_ENTRY_GARDENER_STORE_MASK) == 0) {
+                fullOrDeadCount++;
             }
         }
-        return fullCount;
+        return farmCount - fullOrDeadCount;
     }
 
     public static void addLumberjackJob(MapLocation loc) throws GameActionException {

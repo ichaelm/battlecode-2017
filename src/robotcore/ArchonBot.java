@@ -119,6 +119,10 @@ public class ArchonBot extends RobotGlobal {
             rc.broadcast(locChannel + 1, Float.floatToIntBits(myLoc.y));
         }
 
+        if (isLeader()) {
+            maintainFarmAndLumberjackTables();
+        }
+
         if (iMakeGardeners) {
             Direction gardenerDir;
             float mapCenterX = (knownMapBounds.getInnerBound(MapBounds.EAST) + knownMapBounds.getInnerBound(MapBounds.WEST)) / 2f;
@@ -141,9 +145,8 @@ public class ArchonBot extends RobotGlobal {
                     }
                     break;
                 case WHEN_FULL:
-                    int numFarmsFull = numFarmTableEntriesFull();
-                    int numFarms = getFarmTableEntryCount();
-                    if (numFarms == numFarmsFull) {
+                    int numFarmsBuildingTrees = numFarmsBuildingTrees();
+                    if (numFarmsBuildingTrees == 0) {
                         success = tryHireGardener(gardenerDir);
                         if (success) {
                             gardenersBuilt++;
@@ -152,10 +155,6 @@ public class ArchonBot extends RobotGlobal {
                     }
                     break;
             }
-        }
-
-        if (isLeader()) {
-            maintainFarmAndLumberjackTables();
         }
 
         firstTurn = false;
