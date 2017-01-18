@@ -67,7 +67,7 @@ public class SoldierBot extends RobotGlobal {
             		moved = kiteEnemy(nearestEnemy, avoidRadius);
             		//System.out.println("Trying to kite...");
             	} else {
-                    tryMoveElseLeftRight(goDir, 15, 4);
+                    moved = tryMoveElseLeftRight(goDir, 15, 4);
                 }
         	}
         	else {

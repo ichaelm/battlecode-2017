@@ -104,6 +104,8 @@ public strictfp class RobotGlobal {
     private static RobotInfo nearestEnemyLumberjack = null;
     private static RobotInfo nearestEnemyShooter = null;
     private static RobotInfo nearestEnemyGardener = null;
+    private static RobotInfo nearestEnemyHostile = null;
+    private static RobotInfo nearestEnemyNonHostile = null;
     private static TreeInfo nearestTree = null;
     private static TreeInfo nearestRobotTree = null;
     private static TreeInfo nearestFriendlyTree = null;
@@ -225,6 +227,10 @@ public strictfp class RobotGlobal {
         float minEnemyShooterDist = 99999999;
         nearestEnemyGardener = null;
         float minEnemyGardenerDist = 99999999;
+        nearestEnemyHostile = null;
+        float minEnemyHostileDist = 99999999;
+        nearestEnemyNonHostile = null;
+        float minEnemyNonHostileDist = 99999999;
         int numIters = Math.min(nearbyRobots.length, DESIRED_ROBOTS);
         for (int i = 0; i < numIters; i++) {
             RobotInfo robot = nearbyRobots[i];
@@ -234,20 +240,32 @@ public strictfp class RobotGlobal {
                     nearestEnemy = robot;
                     minEnemyDist = dist;
                 }
-                if (robot.type == RobotType.LUMBERJACK) {
-                    if (dist < minEnemyLumberjackDist) {
-                        nearestEnemyLumberjack = robot;
-                        minEnemyLumberjackDist = dist;
+                if (robot.type == RobotType.LUMBERJACK || robot.type == RobotType.SOLDIER || robot.type == RobotType.TANK || robot.type == RobotType.SCOUT) {
+                    if (dist < minEnemyHostileDist) {
+                        nearestEnemyHostile = robot;
+                        minEnemyHostileDist = dist;
                     }
-                } else if (robot.type == RobotType.SOLDIER || robot.type == RobotType.TANK || robot.type == RobotType.SCOUT) {
-                    if (dist < minEnemyShooterDist) {
-                        nearestEnemyShooter = robot;
-                        minEnemyShooterDist = dist;
+                    if (robot.type == RobotType.LUMBERJACK) {
+                        if (dist < minEnemyLumberjackDist) {
+                            nearestEnemyLumberjack = robot;
+                            minEnemyLumberjackDist = dist;
+                        }
+                    } else {
+                        if (dist < minEnemyShooterDist) {
+                            nearestEnemyShooter = robot;
+                            minEnemyShooterDist = dist;
+                        }
                     }
-                } else if (robot.type == RobotType.GARDENER) {
-                    if (dist < minEnemyGardenerDist) {
-                        nearestEnemyGardener = robot;
-                        minEnemyGardenerDist = dist;
+                } else {
+                    if (dist < minEnemyNonHostileDist) {
+                        nearestEnemyNonHostile = robot;
+                        minEnemyNonHostileDist = dist;
+                    }
+                    if (robot.type == RobotType.GARDENER) {
+                        if (dist < minEnemyGardenerDist) {
+                            nearestEnemyGardener = robot;
+                            minEnemyGardenerDist = dist;
+                        }
                     }
                 }
             }
@@ -438,6 +456,14 @@ public strictfp class RobotGlobal {
 
     public static RobotInfo getNearestEnemyGardener() {
         return nearestEnemyGardener;
+    }
+
+    public static RobotInfo getNearestEnemyHostile() {
+        return nearestEnemyHostile;
+    }
+
+    public static RobotInfo getNearestEnemyNonHostile() {
+        return nearestEnemyNonHostile;
     }
 
     public static TreeInfo getNearestTree() {
@@ -1507,13 +1533,17 @@ public strictfp class RobotGlobal {
     }
 
     public static void updateAttackLocation(MapLocation loc) throws GameActionException {
+        updateAttackLocation(loc, 0);
+    }
+
+    public static void updateAttackLocation(MapLocation loc, int which) throws GameActionException {
         int begin = rc.readBroadcast(ATTACK_LOCATION_QUEUE_BEGIN_CHANNEL);
         int count = rc.readBroadcast(ATTACK_LOCATION_QUEUE_COUNT_CHANNEL);
-        if (count <= 0) {
-            System.out.println("Tried to update attack location when none exists!");
+        if (count <= which) {
+            System.out.println("Tried to update nonexistant attack location!");
             return;
         }
-        int entryIndex = begin;
+        int entryIndex = (begin + which) % ATTACK_LOCATION_QUEUE_NUM_ENTRIES;;
         int entryChannel = ATTACK_LOCATION_QUEUE_CHANNEL + (entryIndex * ATTACK_LOCATION_QUEUE_ENTRY_SIZE);
         int xChannel = entryChannel;
         int yChannel = entryChannel + 1;
@@ -1538,6 +1568,24 @@ public strictfp class RobotGlobal {
         count = count - 1;
         rc.broadcast(ATTACK_LOCATION_QUEUE_COUNT_CHANNEL, count);
         return new MapLocation(x, y);
+    }
+
+    public static int whichAttackLocation(MapLocation loc) throws GameActionException {
+        int begin = rc.readBroadcast(ATTACK_LOCATION_QUEUE_BEGIN_CHANNEL);
+        int count = rc.readBroadcast(ATTACK_LOCATION_QUEUE_COUNT_CHANNEL);
+        for (int i = 0; i < count; i++) {
+            int entryIndex = (begin + i) % ATTACK_LOCATION_QUEUE_NUM_ENTRIES;
+            int entryChannel = ATTACK_LOCATION_QUEUE_CHANNEL + (entryIndex * ATTACK_LOCATION_QUEUE_ENTRY_SIZE);
+            int xChannel = entryChannel;
+            int yChannel = entryChannel + 1;
+            float x = Float.intBitsToFloat(rc.readBroadcast(xChannel));
+            float y = Float.intBitsToFloat(rc.readBroadcast(yChannel));
+            MapLocation foundLoc = new MapLocation(x, y);
+            if (foundLoc.distanceTo(loc) < 4f) {
+                return i;
+            }
+        }
+        return -1;
     }
 
     public static void addDefendLocation(MapLocation loc) throws GameActionException {
@@ -1592,19 +1640,25 @@ public strictfp class RobotGlobal {
     }
 
     public static void updateDefendLocation(MapLocation loc) throws GameActionException {
+        updateDefendLocation(loc, 0);
+    }
+
+    public static void updateDefendLocation(MapLocation loc, int which) throws GameActionException {
         int begin = rc.readBroadcast(DEFEND_LOCATION_QUEUE_BEGIN_CHANNEL);
         int count = rc.readBroadcast(DEFEND_LOCATION_QUEUE_COUNT_CHANNEL);
-        if (count <= 0) {
-            System.out.println("Tried to update defend location when none exists!");
+        if (count <= which) {
+            System.out.println("Tried to update nonexistant defend location!");
             return;
         }
-        int entryIndex = begin;
+        int entryIndex = (begin + which) % DEFEND_LOCATION_QUEUE_NUM_ENTRIES;;
         int entryChannel = DEFEND_LOCATION_QUEUE_CHANNEL + (entryIndex * DEFEND_LOCATION_QUEUE_ENTRY_SIZE);
         int xChannel = entryChannel;
         int yChannel = entryChannel + 1;
         rc.broadcast(xChannel, Float.floatToIntBits(loc.x));
         rc.broadcast(yChannel, Float.floatToIntBits(loc.y));
     }
+
+
 
     public static MapLocation popDefendLocation() throws GameActionException {
         int begin = rc.readBroadcast(DEFEND_LOCATION_QUEUE_BEGIN_CHANNEL);
@@ -1623,6 +1677,24 @@ public strictfp class RobotGlobal {
         count = count - 1;
         rc.broadcast(DEFEND_LOCATION_QUEUE_COUNT_CHANNEL, count);
         return new MapLocation(x, y);
+    }
+
+    public static int whichDefendLocation(MapLocation loc) throws GameActionException {
+        int begin = rc.readBroadcast(DEFEND_LOCATION_QUEUE_BEGIN_CHANNEL);
+        int count = rc.readBroadcast(DEFEND_LOCATION_QUEUE_COUNT_CHANNEL);
+        for (int i = 0; i < count; i++) {
+            int entryIndex = (begin + i) % DEFEND_LOCATION_QUEUE_NUM_ENTRIES;
+            int entryChannel = DEFEND_LOCATION_QUEUE_CHANNEL + (entryIndex * DEFEND_LOCATION_QUEUE_ENTRY_SIZE);
+            int xChannel = entryChannel;
+            int yChannel = entryChannel + 1;
+            float x = Float.intBitsToFloat(rc.readBroadcast(xChannel));
+            float y = Float.intBitsToFloat(rc.readBroadcast(yChannel));
+            MapLocation foundLoc = new MapLocation(x, y);
+            if (foundLoc.distanceTo(loc) < 4f) {
+                return i;
+            }
+        }
+        return -1;
     }
 
     public static void sendScoutMode(ScoutMode mode, boolean override) throws GameActionException {
