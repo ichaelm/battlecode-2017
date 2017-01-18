@@ -11,6 +11,7 @@ public strictfp class RobotPlayer {
             });
             RobotGlobal.setInitialDefaultBuild(RobotType.LUMBERJACK);
             RobotGlobal.setGardenerSchedule(RobotGlobal.GardenerSchedule.WHEN_FULL);
+            RobotGlobal.prioritizeRobotTrees = true;
         } catch (Exception e) {
             System.out.println("Exception during global init");
             e.printStackTrace();

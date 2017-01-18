@@ -118,9 +118,19 @@ public class ScoutBot extends RobotGlobal {
 							myType.bodyRadius + RobotType.LUMBERJACK.bodyRadius + RobotType.LUMBERJACK.strideRadius + GameConstants.LUMBERJACK_STRIKE_RADIUS
 					);
 					// Shoot at the gardener
-					if (rc.canFireSingleShot()) {
-						rc.fireSingleShot(myLoc.directionTo(selectedGardenerLoc));
-					}
+					Direction atEnemy = myLoc.directionTo(selectedGardenerInfo.location);
+		            float dist = selectedGardenerInfo.location.distanceTo(myLoc); 
+	        	
+	        		if (usePentad && rc.canFirePentadShot() && dist < pentadDist) { // if soldier shoots, canFire becomes false
+	                	rc.firePentadShot(atEnemy);
+	                }
+	        		else if (useTriad && rc.canFireTriadShot() && dist < triadDist) {
+	                	rc.fireTriadShot(atEnemy);
+	                }
+	        		else if (rc.canFireSingleShot()) {
+	            		rc.fireSingleShot(atEnemy);
+	            	}	
+		            
 				} else {
 					// Move so that the lumberjack can't hit me, but towards it
 					tryMoveDistFrom(
@@ -178,9 +188,19 @@ public class ScoutBot extends RobotGlobal {
 						}
 					}
 					// Shoot at the gardener
-					if (rc.canFireSingleShot()) {
-						rc.fireSingleShot(myLoc.directionTo(selectedGardenerLoc));
-					}
+					Direction atEnemy = myLoc.directionTo(selectedGardenerLoc);
+		            float dist = selectedGardenerLoc.distanceTo(myLoc); 
+	        	
+	        		if (usePentad && rc.canFirePentadShot() && dist < pentadDist) { // if soldier shoots, canFire becomes false
+	                	rc.firePentadShot(atEnemy);
+	                }
+	        		else if (useTriad && rc.canFireTriadShot() && dist < triadDist) {
+	                	rc.fireTriadShot(atEnemy);
+	                }
+	        		else if (rc.canFireSingleShot()) {
+	            		rc.fireSingleShot(atEnemy);
+	            	}	
+		            
 				} else { // Otherwise:
 					MapLocation invasionLoc = queryAttackLocation();
 					if (invasionLoc != null) { // If there is a target archon location:
