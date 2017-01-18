@@ -43,11 +43,19 @@ public class LumberjackBot extends RobotGlobal {
         boolean attacked = false;
         boolean treeInRange = false;
         Direction treeDir = null;
+        boolean robotTreeInRange = false;
+        Direction robotTreeDir = null;
         TreeInfo nearestTree = getNearestUnfriendlyTree();
         if (nearestTree != null) {
             float distToTree = myLoc.distanceTo(nearestTree.location);
             treeDir = myLoc.directionTo(nearestTree.location);
             treeInRange = distToTree <= myType.bodyRadius + myType.strideRadius + nearestTree.radius;
+        }
+        TreeInfo nearestRobotTree = getNearestRobotTree();
+        if (nearestRobotTree != null) {
+            float distToRobotTree = myLoc.distanceTo(nearestRobotTree.location);
+            robotTreeDir = myLoc.directionTo(nearestRobotTree.location);
+            robotTreeInRange = distToRobotTree <= myType.bodyRadius + myType.strideRadius + nearestRobotTree.radius;
         }
 
         // Decide on mode
@@ -58,7 +66,15 @@ public class LumberjackBot extends RobotGlobal {
                 attacked = true;
             }
             if (!attacked) {
-                if (treeInRange) {
+                if (robotTreeInRange) {
+                    if (rc.canShake(nearestRobotTree.ID)) {
+                        rc.shake(nearestRobotTree.ID);
+                    }
+                    if (rc.canChop(nearestRobotTree.ID)) {
+                        rc.chop(nearestRobotTree.ID);
+                        attacked = true;
+                    }
+                } else if (treeInRange) {
                     if (rc.canShake(nearestTree.ID)) {
                         rc.shake(nearestTree.ID);
                     }
@@ -85,7 +101,15 @@ public class LumberjackBot extends RobotGlobal {
                     }
                 }
                 if (!attacked) {
-                    if (treeInRange) {
+                    if (robotTreeInRange) {
+                        if (rc.canShake(nearestRobotTree.ID)) {
+                            rc.shake(nearestRobotTree.ID);
+                        }
+                        if (rc.canChop(nearestRobotTree.ID)) {
+                            rc.chop(nearestRobotTree.ID);
+                            attacked = true;
+                        }
+                    } else if (treeInRange) {
                         if (rc.canShake(nearestTree.ID)) {
                             rc.shake(nearestTree.ID);
                         }
@@ -112,18 +136,16 @@ public class LumberjackBot extends RobotGlobal {
                     }
                 }
                 if (!attacked) {
-                    if (treeInRange) {
-                    	TreeInfo nRT = getNearestRobotTree();
-                        if (nRT != null && prioritizeRobotTrees) {
-                        	if (rc.canChop(nRT.ID)) {
-                                rc.chop(nRT.ID);
-                                attacked = true;
-                            }
-                        	else if (!moved) {
-                        		moved = tryMoveElseLeftRight(myLoc.directionTo(nRT.location));
-                        	}
+                    if (robotTreeInRange) {
+                        if (rc.canShake(nearestRobotTree.ID)) {
+                            rc.shake(nearestRobotTree.ID);
                         }
-                    	if (rc.canShake(nearestTree.ID)) {
+                        if (rc.canChop(nearestRobotTree.ID)) {
+                            rc.chop(nearestRobotTree.ID);
+                            attacked = true;
+                        }
+                    } else if (treeInRange) {
+                        if (rc.canShake(nearestTree.ID)) {
                             rc.shake(nearestTree.ID);
                         }
                         if (rc.canChop(nearestTree.ID)) {
@@ -132,11 +154,18 @@ public class LumberjackBot extends RobotGlobal {
                         }
                     }
                 }
-                MapLocation invadeLoc = queryAttackLocation();
-                Direction invadeDir = myLoc.directionTo(invadeLoc);
-                moved = tryMoveElseLeftRight(invadeDir);
-                if (!moved) {
-                    moved = tryMoveElseBack(invadeDir);
+                if (prioritizeRobotTrees && nearestRobotTree != null) {
+                    moved = tryMoveElseLeftRight(myLoc.directionTo(nearestRobotTree.location));
+                    if (!moved) {
+                        moved = tryMoveElseBack(myLoc.directionTo(nearestRobotTree.location));
+                    }
+                } else {
+                    MapLocation invadeLoc = queryAttackLocation();
+                    Direction invadeDir = myLoc.directionTo(invadeLoc);
+                    moved = tryMoveElseLeftRight(invadeDir);
+                    if (!moved) {
+                        moved = tryMoveElseBack(invadeDir);
+                    }
                 }
             }
         }
