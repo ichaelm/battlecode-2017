@@ -48,7 +48,7 @@ public class SoldierBot extends RobotGlobal {
         if (nearestEnemy != null) {
             goDir = myLoc.directionTo(nearestEnemy.location);
             if (!friendlyFireOn) {
-                shoot = hasLineOfSightFF(nearestEnemy.location);
+                shoot = hasLineOfSight(nearestEnemy.location);
             }
         } else if (attackLoc != null) {
             goDir = myLoc.directionTo(attackLoc);

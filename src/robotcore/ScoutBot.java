@@ -48,7 +48,7 @@ public class ScoutBot extends RobotGlobal {
         		//Only shoot 50% of the time
         		if (Math.random() < 0.5) {
 	        		Direction enemyDirection = myLoc.directionTo(nearestEnemy.location);
-	                if (rc.canFireSingleShot()) {
+	                if (rc.canFireSingleShot() && (friendlyFireOn || hasLineOfSight(nearestEnemy.location))) {
 	                    rc.fireSingleShot(enemyDirection);
 	                }
         		}
@@ -132,7 +132,7 @@ public class ScoutBot extends RobotGlobal {
 	        		else if (useTriad && rc.canFireTriadShot() && dist < triadDist) {
 	                	rc.fireTriadShot(atEnemy);
 	                }
-	        		else if (rc.canFireSingleShot()) {
+	        		else if (rc.canFireSingleShot() && (friendlyFireOn || hasLineOfSight(selectedGardenerInfo.location))) {
 	            		rc.fireSingleShot(atEnemy);
 	            	}	
 		            
@@ -144,7 +144,7 @@ public class ScoutBot extends RobotGlobal {
 					);
 					// Shoot at the lumberjack
 					/*
-					if (rc.canFireSingleShot()) {
+					if (rc.canFireSingleShot() && (friendlyFireOn || hasLineOfSight(targetLumberjack.location))) {
 						rc.fireSingleShot(myLoc.directionTo(targetLumberjack.location));
 					}
 					*/
@@ -202,7 +202,7 @@ public class ScoutBot extends RobotGlobal {
 	        		else if (useTriad && rc.canFireTriadShot() && dist < triadDist) {
 	                	rc.fireTriadShot(atEnemy);
 	                }
-	        		else if (rc.canFireSingleShot()) {
+	        		else if (rc.canFireSingleShot() && (friendlyFireOn || hasLineOfSight(selectedGardenerLoc))) {
 	            		rc.fireSingleShot(atEnemy);
 	            	}	
 		            
