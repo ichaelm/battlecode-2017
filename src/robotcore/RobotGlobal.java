@@ -940,6 +940,7 @@ public strictfp class RobotGlobal {
                 } else {
                     MapLocation[] intersections = Geometry.getCircleLineSegmentIntersections(itemLoc, itemR, start, target);
                     if (intersections.length > 0) {
+                        rc.setIndicatorLine(myLoc, target, 255, 0, 0);
                         return false;
                     }
                 }

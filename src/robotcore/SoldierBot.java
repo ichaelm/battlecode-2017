@@ -14,14 +14,9 @@ public class SoldierBot extends RobotGlobal {
 	static MapLocation attackLoc = null;
 
 	public static void friendlyFire(Direction d) throws GameActionException { // determines whether or not friendly fire will occur
-		MapLocation target = null; 
 		if (nearestEnemy != null) {
-			 target = nearestEnemy.location;
-		} else return;
-		
-		shoot = hasLineOfSightFF(target); // if I have line of sight, I want to shoot
-		if (!shoot) {
-			rc.setIndicatorLine(myLoc, target, 255, 0, 0);
+            MapLocation target = nearestEnemy.location;
+            shoot = hasLineOfSightFF(target); // if I have line of sight, I want to shoot
 		}
 	}
 

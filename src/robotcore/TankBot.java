@@ -14,18 +14,13 @@ public class TankBot extends RobotGlobal {
 	static boolean friendlyFireOn = true;
 
 	public static void friendlyFire(Direction d) throws GameActionException { // determines whether or not friendly fire will occur
-		MapLocation target = null; 
 		if (nearestEnemy != null) {
-			 target = nearestEnemy.location;
-		} else return;
-		
-		shoot = hasLineOfSight(target); // if I have line of sight, I want to shoot
-		if (!shoot) {
-			rc.setIndicatorLine(myLoc, target, 255, 0, 0);
-		}
-		RobotInfo[] robots = rc.senseNearbyRobots(myType.sensorRadius, myTeam);
-		if (robots.length <= 1) { // if no nearby friendlies, shoot anyway
-			shoot = true;
+            MapLocation target = nearestEnemy.location;
+            shoot = hasLineOfSight(target); // if I have line of sight, I want to shoot
+            RobotInfo[] robots = rc.senseNearbyRobots(myType.sensorRadius, myTeam);
+            if (robots.length <= 1) { // if no nearby friendlies, shoot anyway
+                shoot = true;
+            }
 		}
 	}
 
