@@ -120,6 +120,7 @@ public strictfp class RobotGlobal {
     private static GardenerSchedule gardenerSchedule = GardenerSchedule.ONCE_EVERY_N_ROUNDS;
     private static int gardenerScheduleN = -1;
     private static boolean experimental = false;
+    private static boolean lateLumberjacks = false;
     private static RobotType[] initialBuildQueue1 = new RobotType[0];
     private static RobotType[] initialBuildQueue2 = new RobotType[0];
     private static RobotType initialDefaultBuild = null;
@@ -1698,6 +1699,14 @@ public strictfp class RobotGlobal {
 
     public static boolean getExperimental() {
         return experimental;
+    }
+
+    public static boolean getLateLumberjacks() {
+        return lateLumberjacks;
+    }
+
+    public static void setLateLumberjacks(boolean lateLumberjacks) {
+        RobotGlobal.lateLumberjacks = lateLumberjacks;
     }
 
     /*

@@ -1,4 +1,4 @@
-package soldierrush1s1so_noFF_exp;
+package soldierrush1s1so_noFF_latelj;
 
 import battlecode.common.GameActionException;
 import battlecode.common.RobotController;
@@ -16,7 +16,7 @@ public strictfp class RobotPlayer {
             RobotGlobal.setInitialDefaultBuild(RobotType.SOLDIER);
             RobotGlobal.setGardenerSchedule(RobotGlobal.GardenerSchedule.WHEN_FULL);
             RobotGlobal.friendlyFireOn = false;
-            RobotGlobal.setExperimental(true);
+            RobotGlobal.setLateLumberjacks(true);
         } catch (Exception e) {
             System.out.println("Exception during global init");
             e.printStackTrace();

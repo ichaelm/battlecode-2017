@@ -178,7 +178,7 @@ public class GardenerBot extends RobotGlobal {
             	if(farm != null) {
             		farmGeo = farm;
             		mode = FarmingMode.FARMING;
-            		if (!getExperimental()) {
+            		if (!getLateLumberjacks()) {
 						addBuildQueue1(RobotType.LUMBERJACK);
 					}
 				}
