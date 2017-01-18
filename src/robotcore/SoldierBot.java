@@ -13,14 +13,6 @@ public class SoldierBot extends RobotGlobal {
 	static RobotInfo nearestEnemy = null; 
 	static MapLocation attackLoc = null;
 
-	public static void friendlyFire(Direction d) throws GameActionException { // determines whether or not friendly fire will occur
-		if (nearestEnemy != null) {
-            MapLocation target = nearestEnemy.location;
-            shoot = hasLineOfSightFF(target); // if I have line of sight, I want to shoot
-		}
-	}
-
-
     public static void loop() {
         while (true) {
             try {
@@ -56,7 +48,9 @@ public class SoldierBot extends RobotGlobal {
         
         if (nearestEnemy != null) {
             goDir = myLoc.directionTo(nearestEnemy.location);
-            if (!friendlyFireOn) friendlyFire(goDir); // if this soldier is to avoid FriendlyFire
+            if (!friendlyFireOn) {
+                shoot = hasLineOfSightFF(nearestEnemy.location);
+            }
         } else if (attackLoc != null) {
             goDir = myLoc.directionTo(attackLoc);
             if (myLoc.distanceTo(attackLoc) < myType.bodyRadius * 2) {
