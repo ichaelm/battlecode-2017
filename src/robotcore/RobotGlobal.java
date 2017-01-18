@@ -55,7 +55,13 @@ public strictfp class RobotGlobal {
     public static final int ATTACK_LOCATION_QUEUE_LENGTH = ATTACK_LOCATION_QUEUE_ENTRY_SIZE * ATTACK_LOCATION_QUEUE_NUM_ENTRIES;
     public static final int ATTACK_LOCATION_QUEUE_BEGIN_CHANNEL = ATTACK_LOCATION_QUEUE_CHANNEL + ATTACK_LOCATION_QUEUE_LENGTH;
     public static final int ATTACK_LOCATION_QUEUE_COUNT_CHANNEL = ATTACK_LOCATION_QUEUE_BEGIN_CHANNEL + 1;
-    public static final int NEW_SCOUT_MODE_CHANNEL = ATTACK_LOCATION_QUEUE_COUNT_CHANNEL + 1;
+    public static final int DEFEND_LOCATION_QUEUE_CHANNEL = ATTACK_LOCATION_QUEUE_COUNT_CHANNEL + 1;
+    public static final int DEFEND_LOCATION_QUEUE_ENTRY_SIZE = 2;
+    public static final int DEFEND_LOCATION_QUEUE_NUM_ENTRIES = 5;
+    public static final int DEFEND_LOCATION_QUEUE_LENGTH = DEFEND_LOCATION_QUEUE_ENTRY_SIZE * DEFEND_LOCATION_QUEUE_NUM_ENTRIES;
+    public static final int DEFEND_LOCATION_QUEUE_BEGIN_CHANNEL = DEFEND_LOCATION_QUEUE_CHANNEL + DEFEND_LOCATION_QUEUE_LENGTH;
+    public static final int DEFEND_LOCATION_QUEUE_COUNT_CHANNEL = DEFEND_LOCATION_QUEUE_BEGIN_CHANNEL + 1;
+    public static final int NEW_SCOUT_MODE_CHANNEL = DEFEND_LOCATION_QUEUE_COUNT_CHANNEL + 1;
     public static final int OVERRIDE_SCOUT_MODE_CHANNEL = NEW_SCOUT_MODE_CHANNEL + 1;
 
     // Performance constants
@@ -1490,6 +1496,91 @@ public strictfp class RobotGlobal {
         rc.broadcast(ATTACK_LOCATION_QUEUE_BEGIN_CHANNEL, begin);
         count = count - 1;
         rc.broadcast(ATTACK_LOCATION_QUEUE_COUNT_CHANNEL, count);
+        return new MapLocation(x, y);
+    }
+
+    public static void addDefendLocation(MapLocation loc) throws GameActionException {
+        int begin = rc.readBroadcast(DEFEND_LOCATION_QUEUE_BEGIN_CHANNEL);
+        int count = rc.readBroadcast(DEFEND_LOCATION_QUEUE_COUNT_CHANNEL);
+        if (count >= DEFEND_LOCATION_QUEUE_NUM_ENTRIES) {
+            System.out.println("Defend location queue overflow!");
+            return;
+        }
+        int entryIndex = (begin + count) % DEFEND_LOCATION_QUEUE_NUM_ENTRIES;
+        int entryChannel = DEFEND_LOCATION_QUEUE_CHANNEL + (entryIndex * DEFEND_LOCATION_QUEUE_ENTRY_SIZE);
+        int xChannel = entryChannel;
+        int yChannel = entryChannel + 1;
+        rc.broadcast(xChannel, Float.floatToIntBits(loc.x));
+        rc.broadcast(yChannel, Float.floatToIntBits(loc.y));
+        count++;
+        rc.broadcast(DEFEND_LOCATION_QUEUE_COUNT_CHANNEL, count);
+    }
+
+    public static void addDefendLocationFirst(MapLocation loc) throws GameActionException {
+        int begin = rc.readBroadcast(DEFEND_LOCATION_QUEUE_BEGIN_CHANNEL);
+        int count = rc.readBroadcast(DEFEND_LOCATION_QUEUE_COUNT_CHANNEL);
+        if (count >= DEFEND_LOCATION_QUEUE_NUM_ENTRIES) {
+            System.out.println("Defend location queue overflow!");
+            return;
+        }
+        begin = ((begin - 1) + DEFEND_LOCATION_QUEUE_NUM_ENTRIES) % DEFEND_LOCATION_QUEUE_NUM_ENTRIES;
+        count = (count + 1) % DEFEND_LOCATION_QUEUE_NUM_ENTRIES;
+        int entryIndex = begin;
+        int entryChannel = DEFEND_LOCATION_QUEUE_CHANNEL + (entryIndex * DEFEND_LOCATION_QUEUE_ENTRY_SIZE);
+        int xChannel = entryChannel;
+        int yChannel = entryChannel + 1;
+        rc.broadcast(xChannel, Float.floatToIntBits(loc.x));
+        rc.broadcast(yChannel, Float.floatToIntBits(loc.y));
+        rc.broadcast(DEFEND_LOCATION_QUEUE_BEGIN_CHANNEL, begin);
+        rc.broadcast(DEFEND_LOCATION_QUEUE_COUNT_CHANNEL, count);
+    }
+
+    public static MapLocation peekDefendLocation() throws GameActionException {
+        int begin = rc.readBroadcast(DEFEND_LOCATION_QUEUE_BEGIN_CHANNEL);
+        int count = rc.readBroadcast(DEFEND_LOCATION_QUEUE_COUNT_CHANNEL);
+        if (count <= 0) {
+            return null;
+        }
+        int entryIndex = begin;
+        int entryChannel = DEFEND_LOCATION_QUEUE_CHANNEL + (entryIndex * DEFEND_LOCATION_QUEUE_ENTRY_SIZE);
+        int xChannel = entryChannel;
+        int yChannel = entryChannel + 1;
+        float x = Float.intBitsToFloat(rc.readBroadcast(xChannel));
+        float y = Float.intBitsToFloat(rc.readBroadcast(yChannel));
+        return new MapLocation(x, y);
+    }
+
+    public static void updateDefendLocation(MapLocation loc) throws GameActionException {
+        int begin = rc.readBroadcast(DEFEND_LOCATION_QUEUE_BEGIN_CHANNEL);
+        int count = rc.readBroadcast(DEFEND_LOCATION_QUEUE_COUNT_CHANNEL);
+        if (count <= 0) {
+            System.out.println("Tried to update defend location when none exists!");
+            return;
+        }
+        int entryIndex = begin;
+        int entryChannel = DEFEND_LOCATION_QUEUE_CHANNEL + (entryIndex * DEFEND_LOCATION_QUEUE_ENTRY_SIZE);
+        int xChannel = entryChannel;
+        int yChannel = entryChannel + 1;
+        rc.broadcast(xChannel, Float.floatToIntBits(loc.x));
+        rc.broadcast(yChannel, Float.floatToIntBits(loc.y));
+    }
+
+    public static MapLocation popDefendLocation() throws GameActionException {
+        int begin = rc.readBroadcast(DEFEND_LOCATION_QUEUE_BEGIN_CHANNEL);
+        int count = rc.readBroadcast(DEFEND_LOCATION_QUEUE_COUNT_CHANNEL);
+        if (count <= 0) {
+            return null;
+        }
+        int entryIndex = begin;
+        int entryChannel = DEFEND_LOCATION_QUEUE_CHANNEL + (entryIndex * DEFEND_LOCATION_QUEUE_ENTRY_SIZE);
+        int xChannel = entryChannel;
+        int yChannel = entryChannel + 1;
+        float x = Float.intBitsToFloat(rc.readBroadcast(xChannel));
+        float y = Float.intBitsToFloat(rc.readBroadcast(yChannel));
+        begin = (begin + 1) % DEFEND_LOCATION_QUEUE_NUM_ENTRIES;
+        rc.broadcast(DEFEND_LOCATION_QUEUE_BEGIN_CHANNEL, begin);
+        count = count - 1;
+        rc.broadcast(DEFEND_LOCATION_QUEUE_COUNT_CHANNEL, count);
         return new MapLocation(x, y);
     }
 
