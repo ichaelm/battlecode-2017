@@ -669,6 +669,43 @@ public strictfp class RobotGlobal {
         return false;
     }
 
+    public static boolean tryBuildRobot(RobotType type, Direction dir) throws GameActionException {
+        return tryBuildRobot(type, dir, 15, 11);
+    }
+
+    public static boolean tryBuildRobot(RobotType type, Direction dir, float degreeOffset, int checksPerSide) throws GameActionException {
+        // First, try intended direction
+        if (rc.canBuildRobot(type, dir)) {
+            rc.buildRobot(type, dir);
+            return true;
+        }
+
+        // Now try a bunch of similar angles
+        int currentCheck = 1;
+
+        while(currentCheck<=checksPerSide) {
+            // Try the offset of the left side
+            Direction newDir = dir.rotateLeftDegrees(degreeOffset*currentCheck);
+            if (rc.canBuildRobot(type, newDir)) {
+                rc.buildRobot(type, newDir);
+                return true;
+            }
+
+            // Try the offset on the right side
+            newDir = dir.rotateRightDegrees(degreeOffset*currentCheck);
+            if (rc.canBuildRobot(type, newDir)) {
+                rc.buildRobot(type, newDir);
+                return true;
+            }
+
+            // No move performed, try slightly further
+            currentCheck++;
+        }
+
+        // A move never happened, so return false.
+        return false;
+    }
+
     public static boolean tryMoveElseBackExcludeCircle(MapLocation loc, MapLocation excludeLoc, float excludeR) throws GameActionException {
         return tryMoveElseBackExcludeCircle(myLoc.directionTo(loc), myLoc.distanceTo(loc), excludeLoc, excludeR);
     }

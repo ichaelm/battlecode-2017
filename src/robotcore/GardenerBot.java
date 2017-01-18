@@ -137,6 +137,8 @@ public class GardenerBot extends RobotGlobal {
 
         processNearbyTrees();
         boolean moved = false;
+
+
         if (mode == FarmingMode.SEARCHING) {
 
 			RobotType secondaryBuild = peekBuildQueue2();
@@ -182,27 +184,16 @@ public class GardenerBot extends RobotGlobal {
             }
         }
 
-        if (mode == FarmingMode.FARMING) {
+		RobotType priorityBuild = peekBuildQueue1();
+		RobotType secondaryBuild = peekBuildQueue2();
+		float skippedCost = 0;
 
-			countTrees();
-        	// Plant a plant if needed
-        	
-        	farmGeo.drawFarm(rc);
-
-			RobotType priorityBuild = peekBuildQueue1();
-			RobotType secondaryBuild = peekBuildQueue2();
-			float skippedCost = 0;
-
-            if (goBack) {
-                if (!moved){ // if not in center, goback to center
-                    moved = tryMoveExact(farmGeo.getFarmCenter());
-                    goBack = !moved;
-                }
-            } else if (priorityBuild != null) {
-                // Build a unit if possible
-                float so = GameConstants.GENERAL_SPAWN_OFFSET;
-                rc.setIndicatorDot(farmGeo.getBuildLoc(), 55, 55, 55);
-                boolean builtPriority = false;
+		if (priorityBuild != null) {
+			// Build a unit if possible
+			boolean builtPriority = false;
+			float so = GameConstants.GENERAL_SPAWN_OFFSET;
+			if (farmGeo != null) {
+				rc.setIndicatorDot(farmGeo.getBuildLoc(), 55, 55, 55);
 				if (rc.hasRobotBuildRequirements(priorityBuild) && !rc.isCircleOccupiedExceptByThisRobot(farmGeo.getConstructionZone(), 1)) {
 					//System.out.println("Moved: " + moved);
 					if (!moved) {
@@ -217,9 +208,33 @@ public class GardenerBot extends RobotGlobal {
 						}
 					}
 				}
-				if (!builtPriority) {
-					skippedCost += priorityBuild.bulletCost;
+			} else {
+				if (rc.hasRobotBuildRequirements(priorityBuild)) {
+					boolean success = tryBuildRobot(priorityBuild, randomDirection());
+					if (success) {
+						popBuildQueue1();
+						builtPriority = true;
+					}
 				}
+			}
+
+			if (!builtPriority) {
+				skippedCost += priorityBuild.bulletCost;
+			}
+		}
+
+		if (mode == FarmingMode.FARMING) {
+
+			countTrees();
+        	// Plant a plant if needed
+        	
+        	farmGeo.drawFarm(rc);
+
+            if (goBack) {
+                if (!moved){ // if not in center, goback to center
+                    moved = tryMoveExact(farmGeo.getFarmCenter());
+                    goBack = !moved;
+                }
             } else {
             	boolean builtTree = false;
 				boolean haveBullets = teamBullets > GameConstants.BULLET_TREE_COST + skippedCost;
