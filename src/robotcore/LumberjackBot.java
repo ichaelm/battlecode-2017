@@ -5,6 +5,8 @@ import robotcore.RobotGlobal;
 
 public class LumberjackBot extends RobotGlobal {
 
+    static Direction goDir;
+    static boolean firstTurn = true;
     private static int farmNum = -1;
 
     public static void loop() {
@@ -25,6 +27,9 @@ public class LumberjackBot extends RobotGlobal {
     }
 
     public static void turn() throws GameActionException {
+        if (firstTurn) {
+            goDir = randomDirection();
+        }
         processNearbyRobots();
         processNearbyBullets();
         processNearbyTrees();
@@ -161,14 +166,23 @@ public class LumberjackBot extends RobotGlobal {
                     }
                 } else {
                     MapLocation invadeLoc = queryAttackLocation();
-                    Direction invadeDir = myLoc.directionTo(invadeLoc);
-                    moved = tryMoveElseLeftRight(invadeDir);
-                    if (!moved) {
-                        moved = tryMoveElseBack(invadeDir);
+                    if (invadeLoc != null) {
+                        Direction invadeDir = myLoc.directionTo(invadeLoc);
+                        moved = tryMoveElseLeftRight(invadeDir);
+                        if (!moved) {
+                            moved = tryMoveElseBack(invadeDir);
+                        }
+                    } else {
+                        moved = tryMoveElseBack(goDir);
+                        if (!moved) {
+                            goDir = randomDirection();
+                        }
                     }
                 }
             }
         }
+
+        firstTurn = false;
 
         // Clock.yield() makes the robot wait until the next turn, then it will perform this loop again
         Clock.yield();
