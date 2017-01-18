@@ -1,4 +1,4 @@
-package soldierrush;
+package soldierrushmultishot;
 
 import battlecode.common.GameActionException;
 import battlecode.common.RobotController;
@@ -15,6 +15,8 @@ public strictfp class RobotPlayer {
             RobotGlobal.setInitialDefaultBuild(RobotType.SOLDIER);
             RobotGlobal.setGardenerSchedule(RobotGlobal.GardenerSchedule.WHEN_FULL);
             RobotGlobal.friendlyFireOn = true;
+            RobotGlobal.useTriad = true;
+            RobotGlobal.usePentad = true;
             
         } catch (Exception e) {
             System.out.println("Exception during global init");
