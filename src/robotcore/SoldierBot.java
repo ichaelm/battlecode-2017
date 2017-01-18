@@ -9,7 +9,6 @@ public class SoldierBot extends RobotGlobal {
 	static Direction goDir;
 	static boolean firstTurn = true;
 	static int goCount = 0;
-	static boolean shoot = true;
 	static RobotInfo nearestEnemy = null; 
 	static MapLocation attackLoc = null;
 
@@ -36,7 +35,7 @@ public class SoldierBot extends RobotGlobal {
         if (firstTurn) {
             goDir = randomDirection();
         }
-        shoot = true;
+        boolean shoot = true;
         
         tryToShake();
         processNearbyRobots();
