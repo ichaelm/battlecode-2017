@@ -18,6 +18,9 @@ public strictfp class RobotPlayer {
             RobotGlobal.useTriad = true;
             RobotGlobal.usePentad = true;
             RobotGlobal.kite = true;
+            RobotGlobal.kiteSoldiers = false;
+            RobotGlobal.kiteScouts = false;
+            RobotGlobal.kiteTanks = true;
         } catch (Exception e) {
             System.out.println("Exception during global init");
             e.printStackTrace();
