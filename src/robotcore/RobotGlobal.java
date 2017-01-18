@@ -121,6 +121,7 @@ public strictfp class RobotGlobal {
     private static int gardenerScheduleN = -1;
     private static boolean experimental = false;
     private static boolean lateLumberjacks = false;
+    private static boolean scoutWhenFull = false;
     private static RobotType[] initialBuildQueue1 = new RobotType[0];
     private static RobotType[] initialBuildQueue2 = new RobotType[0];
     private static RobotType initialDefaultBuild = null;
@@ -1707,6 +1708,14 @@ public strictfp class RobotGlobal {
 
     public static void setLateLumberjacks(boolean lateLumberjacks) {
         RobotGlobal.lateLumberjacks = lateLumberjacks;
+    }
+
+    public static boolean getScoutWhenFull() {
+        return scoutWhenFull;
+    }
+
+    public static void setScoutWhenFull(boolean scoutWhenFull) {
+        RobotGlobal.scoutWhenFull = scoutWhenFull;
     }
 
     /*
