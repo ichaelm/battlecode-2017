@@ -16,11 +16,7 @@ public class TankBot extends RobotGlobal {
 	public static void friendlyFire(Direction d) throws GameActionException { // determines whether or not friendly fire will occur
 		if (nearestEnemy != null) {
             MapLocation target = nearestEnemy.location;
-            shoot = hasLineOfSight(target); // if I have line of sight, I want to shoot
-            RobotInfo[] robots = rc.senseNearbyRobots(myType.sensorRadius, myTeam);
-            if (robots.length <= 1) { // if no nearby friendlies, shoot anyway
-                shoot = true;
-            }
+            shoot = hasLineOfSightFF(target); // if I have line of sight, I want to shoot
 		}
 	}
 
