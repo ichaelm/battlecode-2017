@@ -8,6 +8,8 @@ public class ScoutBot extends RobotGlobal {
 	static ScoutMode mode = null;
 	static MapLocation selectedGardenerLoc = null;
 	static MapLocation selectedCampingTreeLoc = null;
+	static Direction goDir;
+	static boolean firstTurn = true;
 
     public static void loop() {
         while (true) {
@@ -27,6 +29,9 @@ public class ScoutBot extends RobotGlobal {
     }
 
     public static void turn() throws GameActionException {
+		if (firstTurn) {
+			goDir = randomDirection();
+		}
     	mode = queryScoutMode(mode);
     	if (mode == ScoutMode.COLLECT) {
     		
@@ -202,24 +207,29 @@ public class ScoutBot extends RobotGlobal {
 	            	}	
 		            
 				} else { // Otherwise:
-					MapLocation invasionLoc = queryAttackLocation();
-					if (invasionLoc != null) { // If there is a target archon location:
-						// Move towards the target archon location
+					MapLocation invasionLoc = peekAttackLocation();
+					if (invasionLoc != null) { // If there is a target location:
+						// Move towards the target location
 						boolean moved = tryMoveElseLeftRight(myLoc.directionTo(invasionLoc));
 						if (!moved) {
 							tryMoveElseBack(myLoc.directionTo(invasionLoc));
 						}
-						if (myLoc.distanceTo(invasionLoc) < myType.bodyRadius * 2) { // If I am at the target archon location:
+						if (myLoc.distanceTo(invasionLoc) < 4) { // If I am at the target archon location:
 							// We already know there are no gardeners here
-							sendAttackFinished(); // Broadcast the target location clear signal
+							popAttackLocation(); // Broadcast the target location clear signal
 						}
 					} else { // Otherwise
-						// TODO: unimplemented
+						boolean moved = tryMoveElseBack(goDir);
+						if (!moved) {
+							goDir = randomDirection();
+						}
 					}
 				}
 			}
     		            
     	}
+
+    	firstTurn = false;
     	
         // Clock.yield() makes the robot wait until the next turn, then it will perform this loop again
         Clock.yield();

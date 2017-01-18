@@ -165,7 +165,7 @@ public class LumberjackBot extends RobotGlobal {
                         moved = tryMoveElseBack(myLoc.directionTo(nearestRobotTree.location));
                     }
                 } else {
-                    MapLocation invadeLoc = queryAttackLocation();
+                    MapLocation invadeLoc = peekAttackLocation();
                     if (invadeLoc != null) {
                         Direction invadeDir = myLoc.directionTo(invadeLoc);
                         moved = tryMoveElseLeftRight(invadeDir);

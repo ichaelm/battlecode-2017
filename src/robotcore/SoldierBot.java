@@ -41,7 +41,7 @@ public class SoldierBot extends RobotGlobal {
         processNearbyRobots();
         processNearbyBullets();
 
-        attackLoc = queryAttackLocation();
+        attackLoc = peekAttackLocation();
         nearestEnemy = getNearestEnemy();
         debugTick(0);
         
@@ -53,7 +53,7 @@ public class SoldierBot extends RobotGlobal {
         } else if (attackLoc != null) {
             goDir = myLoc.directionTo(attackLoc);
             if (myLoc.distanceTo(attackLoc) < myType.bodyRadius * 2) {
-                sendAttackFinished();
+                popAttackLocation();
             }
         }
 

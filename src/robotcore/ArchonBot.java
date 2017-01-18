@@ -56,17 +56,8 @@ public class ArchonBot extends RobotGlobal {
                 initializeBuildQueue1();
                 initializeBuildQueue2();
                 initializeDefaultBuild();
-                sendAttackLocation(enemyInitialArchonLocations[0]);
-            }
-            if (popAttackFinished()) {
-                int attackNum = rc.readBroadcast(ATTACK_LOCATION_NUM_CHANNEL);
-                attackNum++;
-                if (attackNum < enemyInitialArchonLocations.length) {
-                    MapLocation attackLoc = enemyInitialArchonLocations[attackNum];
-                    sendAttackLocation(attackLoc);
-                    rc.broadcast(ATTACK_LOCATION_NUM_CHANNEL, attackNum);
-                } else {
-                    sendAttackLocation(null);
+                for (MapLocation attackLoc : enemyInitialArchonLocations) {
+                    addAttackLocation(attackLoc);
                 }
             }
             sendScoutMode(ScoutMode.HARASS, false);

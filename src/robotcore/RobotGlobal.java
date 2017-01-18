@@ -49,12 +49,13 @@ public strictfp class RobotGlobal {
     public static final int GLOBAL_DEFAULT_BUILD_CHANNEL = BUILD_QUEUE_2_COUNT_CHANNEL + 1;
     public static final int NUM_GARDENERS_BUILT_CHANNEL = GLOBAL_DEFAULT_BUILD_CHANNEL + 1;
     public static final int WHICH_ARCHON_MAKES_GARDENERS_CHANNEL = NUM_GARDENERS_BUILT_CHANNEL + 1;
-    public static final int ATTACK_LOCATION_X_CHANNEL = WHICH_ARCHON_MAKES_GARDENERS_CHANNEL + 1;
-    public static final int ATTACK_LOCATION_Y_CHANNEL = ATTACK_LOCATION_X_CHANNEL + 1;
-    public static final int ATTACK_LOCATION_EXISTS_CHANNEL = ATTACK_LOCATION_Y_CHANNEL + 1;
-    public static final int ATTACK_FINISHED_CHANNEL = ATTACK_LOCATION_EXISTS_CHANNEL + 1;
-    public static final int ATTACK_LOCATION_NUM_CHANNEL = ATTACK_FINISHED_CHANNEL + 1;
-    public static final int NEW_SCOUT_MODE_CHANNEL = ATTACK_LOCATION_NUM_CHANNEL + 1;
+    public static final int ATTACK_LOCATION_QUEUE_CHANNEL = WHICH_ARCHON_MAKES_GARDENERS_CHANNEL + 1;
+    public static final int ATTACK_LOCATION_QUEUE_ENTRY_SIZE = 2;
+    public static final int ATTACK_LOCATION_QUEUE_NUM_ENTRIES = 5;
+    public static final int ATTACK_LOCATION_QUEUE_LENGTH = ATTACK_LOCATION_QUEUE_ENTRY_SIZE * ATTACK_LOCATION_QUEUE_NUM_ENTRIES;
+    public static final int ATTACK_LOCATION_QUEUE_BEGIN_CHANNEL = ATTACK_LOCATION_QUEUE_CHANNEL + ATTACK_LOCATION_QUEUE_LENGTH;
+    public static final int ATTACK_LOCATION_QUEUE_COUNT_CHANNEL = ATTACK_LOCATION_QUEUE_BEGIN_CHANNEL + 1;
+    public static final int NEW_SCOUT_MODE_CHANNEL = ATTACK_LOCATION_QUEUE_COUNT_CHANNEL + 1;
     public static final int OVERRIDE_SCOUT_MODE_CHANNEL = NEW_SCOUT_MODE_CHANNEL + 1;
 
     // Performance constants
@@ -1407,35 +1408,89 @@ public strictfp class RobotGlobal {
         }
     }
 
-    public static void sendAttackLocation(MapLocation loc) throws GameActionException {
-        if (loc == null) {
-            rc.broadcast(ATTACK_LOCATION_EXISTS_CHANNEL, 0);
-        } else {
-            rc.broadcast(ATTACK_LOCATION_EXISTS_CHANNEL, 1);
-            rc.broadcast(ATTACK_LOCATION_X_CHANNEL, Float.floatToIntBits(loc.x));
-            rc.broadcast(ATTACK_LOCATION_Y_CHANNEL, Float.floatToIntBits(loc.y));
+    public static void addAttackLocation(MapLocation loc) throws GameActionException {
+        int begin = rc.readBroadcast(ATTACK_LOCATION_QUEUE_BEGIN_CHANNEL);
+        int count = rc.readBroadcast(ATTACK_LOCATION_QUEUE_COUNT_CHANNEL);
+        if (count >= ATTACK_LOCATION_QUEUE_NUM_ENTRIES) {
+            System.out.println("Attack location queue overflow!");
+            return;
         }
+        int entryIndex = (begin + count) % ATTACK_LOCATION_QUEUE_NUM_ENTRIES;
+        int entryChannel = ATTACK_LOCATION_QUEUE_CHANNEL + (entryIndex * ATTACK_LOCATION_QUEUE_ENTRY_SIZE);
+        int xChannel = entryChannel;
+        int yChannel = entryChannel + 1;
+        rc.broadcast(xChannel, Float.floatToIntBits(loc.x));
+        rc.broadcast(yChannel, Float.floatToIntBits(loc.y));
+        count++;
+        rc.broadcast(ATTACK_LOCATION_QUEUE_COUNT_CHANNEL, count);
     }
 
-    public static MapLocation queryAttackLocation() throws GameActionException {
-        boolean attackLocExists = rc.readBroadcast(ATTACK_LOCATION_EXISTS_CHANNEL) > 0;
-        if (attackLocExists) {
-            float x = Float.intBitsToFloat(rc.readBroadcast(ATTACK_LOCATION_X_CHANNEL));
-            float y = Float.intBitsToFloat(rc.readBroadcast(ATTACK_LOCATION_Y_CHANNEL));
-            return new MapLocation(x, y);
-        } else {
+    public static void addAttackLocationFirst(MapLocation loc) throws GameActionException {
+        int begin = rc.readBroadcast(ATTACK_LOCATION_QUEUE_BEGIN_CHANNEL);
+        int count = rc.readBroadcast(ATTACK_LOCATION_QUEUE_COUNT_CHANNEL);
+        if (count >= ATTACK_LOCATION_QUEUE_NUM_ENTRIES) {
+            System.out.println("Attack location queue overflow!");
+            return;
+        }
+        begin = ((begin - 1) + ATTACK_LOCATION_QUEUE_NUM_ENTRIES) % ATTACK_LOCATION_QUEUE_NUM_ENTRIES;
+        count = (count + 1) % ATTACK_LOCATION_QUEUE_NUM_ENTRIES;
+        int entryIndex = begin;
+        int entryChannel = ATTACK_LOCATION_QUEUE_CHANNEL + (entryIndex * ATTACK_LOCATION_QUEUE_ENTRY_SIZE);
+        int xChannel = entryChannel;
+        int yChannel = entryChannel + 1;
+        rc.broadcast(xChannel, Float.floatToIntBits(loc.x));
+        rc.broadcast(yChannel, Float.floatToIntBits(loc.y));
+        rc.broadcast(ATTACK_LOCATION_QUEUE_BEGIN_CHANNEL, begin);
+        rc.broadcast(ATTACK_LOCATION_QUEUE_COUNT_CHANNEL, count);
+    }
+
+    public static MapLocation peekAttackLocation() throws GameActionException {
+        int begin = rc.readBroadcast(ATTACK_LOCATION_QUEUE_BEGIN_CHANNEL);
+        int count = rc.readBroadcast(ATTACK_LOCATION_QUEUE_COUNT_CHANNEL);
+        if (count <= 0) {
             return null;
         }
+        int entryIndex = begin;
+        int entryChannel = ATTACK_LOCATION_QUEUE_CHANNEL + (entryIndex * ATTACK_LOCATION_QUEUE_ENTRY_SIZE);
+        int xChannel = entryChannel;
+        int yChannel = entryChannel + 1;
+        float x = Float.intBitsToFloat(rc.readBroadcast(xChannel));
+        float y = Float.intBitsToFloat(rc.readBroadcast(yChannel));
+        return new MapLocation(x, y);
     }
 
-    public static void sendAttackFinished() throws GameActionException {
-        rc.broadcast(ATTACK_FINISHED_CHANNEL, 1);
+    public static void updateAttackLocation(MapLocation loc) throws GameActionException {
+        int begin = rc.readBroadcast(ATTACK_LOCATION_QUEUE_BEGIN_CHANNEL);
+        int count = rc.readBroadcast(ATTACK_LOCATION_QUEUE_COUNT_CHANNEL);
+        if (count <= 0) {
+            System.out.println("Tried to update attack location when none exists!");
+            return;
+        }
+        int entryIndex = begin;
+        int entryChannel = ATTACK_LOCATION_QUEUE_CHANNEL + (entryIndex * ATTACK_LOCATION_QUEUE_ENTRY_SIZE);
+        int xChannel = entryChannel;
+        int yChannel = entryChannel + 1;
+        rc.broadcast(xChannel, Float.floatToIntBits(loc.x));
+        rc.broadcast(yChannel, Float.floatToIntBits(loc.y));
     }
 
-    public static boolean popAttackFinished() throws GameActionException {
-        boolean finished = rc.readBroadcast(ATTACK_FINISHED_CHANNEL) > 0;
-        rc.broadcast(ATTACK_FINISHED_CHANNEL, 0);
-        return finished;
+    public static MapLocation popAttackLocation() throws GameActionException {
+        int begin = rc.readBroadcast(ATTACK_LOCATION_QUEUE_BEGIN_CHANNEL);
+        int count = rc.readBroadcast(ATTACK_LOCATION_QUEUE_COUNT_CHANNEL);
+        if (count <= 0) {
+            return null;
+        }
+        int entryIndex = begin;
+        int entryChannel = ATTACK_LOCATION_QUEUE_CHANNEL + (entryIndex * ATTACK_LOCATION_QUEUE_ENTRY_SIZE);
+        int xChannel = entryChannel;
+        int yChannel = entryChannel + 1;
+        float x = Float.intBitsToFloat(rc.readBroadcast(xChannel));
+        float y = Float.intBitsToFloat(rc.readBroadcast(yChannel));
+        begin = (begin + 1) % ATTACK_LOCATION_QUEUE_NUM_ENTRIES;
+        rc.broadcast(ATTACK_LOCATION_QUEUE_BEGIN_CHANNEL, begin);
+        count = count - 1;
+        rc.broadcast(ATTACK_LOCATION_QUEUE_COUNT_CHANNEL, count);
+        return new MapLocation(x, y);
     }
 
     public static void sendScoutMode(ScoutMode mode, boolean override) throws GameActionException {

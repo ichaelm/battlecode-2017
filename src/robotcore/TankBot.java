@@ -43,7 +43,7 @@ public class TankBot extends RobotGlobal {
         processNearbyTrees();
         tryToShake();
 
-        attackLoc = queryAttackLocation();
+        attackLoc = peekAttackLocation();
         nearestEnemy = getNearestEnemy();
         
         boolean moved = false;
@@ -66,7 +66,7 @@ public class TankBot extends RobotGlobal {
             goDir = myLoc.directionTo(attackLoc);
             if (treeInRange) { rc.setIndicatorDot(nearestTree.location, 100, 100, 100);} 	// Indicate nearest tree
             if (myLoc.distanceTo(attackLoc) < myType.bodyRadius * 2) {
-                sendAttackFinished();
+                popAttackLocation();
             }
         }
       
