@@ -127,6 +127,11 @@ public strictfp class RobotGlobal {
     public static boolean kiteEnemyLumberjacks = true;
     public static float avoidRadius = 1.1f;
     public static boolean kite = false;
+    public static boolean kiteSoldiers = false;
+    public static boolean kiteScouts = false;
+    public static boolean kiteTanks = false;
+    
+    
 
     public static void init(RobotController rc) throws GameActionException {
         RobotGlobal.rc = rc;
@@ -317,6 +322,15 @@ public strictfp class RobotGlobal {
     	} 
     	if (enemy.type == RobotType.LUMBERJACK){ // ensure we avoid lumberjack strikes
     		strafeDist = Math.min(1.5f, strafeDist); 
+    	}
+    	if (enemy.type == RobotType.SOLDIER){ // ensure we avoid lumberjack strikes
+    		if (!kiteSoldiers) return false;
+    	}
+    	if (enemy.type == RobotType.SCOUT){ // ensure we avoid lumberjack strikes
+    		if (!kiteScouts) return false;
+    	}
+    	if (enemy.type == RobotType.TANK){ // ensure we avoid lumberjack strikes
+    		if (!kiteTanks) return false;
     	}
     	if (enemy.type == RobotType.ARCHON || enemy.type == RobotType.GARDENER){ // dont kite gardeners or archons
     		return false; 
