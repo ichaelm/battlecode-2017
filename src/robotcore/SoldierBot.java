@@ -19,13 +19,9 @@ public class SoldierBot extends RobotGlobal {
 			 target = nearestEnemy.location;
 		} else return;
 		
-		shoot = hasLineOfSight(target); // if I have line of sight, I want to shoot
+		shoot = hasLineOfSightFF(target); // if I have line of sight, I want to shoot
 		if (!shoot) {
 			rc.setIndicatorLine(myLoc, target, 255, 0, 0);
-		}
-		RobotInfo[] robots = rc.senseNearbyRobots(myType.sensorRadius, myTeam);
-		if (robots.length <= 1) { // if no nearby friendlies, shoot anyway
-			shoot = true;
 		}
 	}
 
@@ -61,7 +57,8 @@ public class SoldierBot extends RobotGlobal {
 
         attackLoc = queryAttackLocation();
         nearestEnemy = getNearestEnemy();
-
+        debugTick(0);
+        
         if (nearestEnemy != null) {
             goDir = myLoc.directionTo(nearestEnemy.location);
             if (!friendlyFireOn) friendlyFire(goDir); // if this soldier is to avoid FriendlyFire
@@ -71,34 +68,45 @@ public class SoldierBot extends RobotGlobal {
                 sendAttackFinished();
             }
         }
-      
-        boolean moved;
+
+        // moving
+        boolean moved = false;
         if (nearestEnemy == null && attackLoc == null) {
-            moved = tryMoveElseLeftRight(goDir, 15, 2);
+        	moved = tryMoveElseLeftRight(goDir, 15, 2);
         } else {
-            moved = tryMoveElseLeftRight(goDir);
+        	if (nearestEnemy != null) {
+        		if (kite && !moved) {
+            		moved = kiteEnemy(nearestEnemy, avoidRadius);
+            		//System.out.println("Trying to kite...");
+            	}
+        	}
+        	else {
+        		moved = tryMoveElseLeftRight(goDir);
+        	}
         }
         if (!moved) {
-            moved = tryMoveElseBack(goDir);
-            if (!moved) {
-                goDir = randomDirection();
-            }
+        	moved = tryMoveElseBack(goDir);
+        	if (!moved) {
+        		goDir = randomDirection();
+        	}
         }
 
-        if (nearestEnemy != null) {
+        // shooting
+        if (nearestEnemy != null) { 
         	Direction atEnemy = myLoc.directionTo(nearestEnemy.location);
-            float dist = nearestEnemy.location.distanceTo(myLoc); 
+        	float dist = nearestEnemy.location.distanceTo(myLoc); 
         	if (shoot) { // if this soldier is to avoid FriendlyFire
         		if (usePentad && rc.canFirePentadShot() && dist < pentadDist) { // if soldier shoots, canFire becomes false
-                	rc.firePentadShot(atEnemy);
-                }
+        			rc.firePentadShot(atEnemy);
+        		}
         		else if (useTriad && rc.canFireTriadShot() && dist < triadDist) {
-                	rc.fireTriadShot(atEnemy);
-                }
+        			rc.fireTriadShot(atEnemy);
+        		}
         		else if (rc.canFireSingleShot()) {
-            		rc.fireSingleShot(atEnemy);
-            	}	
-            }
+        			rc.fireSingleShot(atEnemy);
+        		}	
+        	}
+
         }
 
         firstTurn = false;

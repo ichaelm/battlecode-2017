@@ -1,4 +1,4 @@
-package soldierrush_noFF;
+package soldierrush_noFF_kiting;
 
 import battlecode.common.GameActionException;
 import battlecode.common.RobotController;
@@ -17,7 +17,7 @@ public strictfp class RobotPlayer {
             RobotGlobal.friendlyFireOn = false;
             RobotGlobal.useTriad = true;
             RobotGlobal.usePentad = true;
-            RobotGlobal.kite = false;
+            RobotGlobal.kite = true;
         } catch (Exception e) {
             System.out.println("Exception during global init");
             e.printStackTrace();

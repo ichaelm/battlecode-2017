@@ -120,10 +120,13 @@ public strictfp class RobotGlobal {
     // Configuration for Offensive Units
     public static boolean useTriad = false;
     public static boolean usePentad = false;
-    public static float triadDist = 3.5f;
+    public static float triadDist = 3.0f;
     public static float pentadDist = 2.5f;
     public static boolean friendlyFireOn = true;
     public static boolean prioritizeRobotTrees = false;
+    public static boolean kiteEnemyLumberjacks = true;
+    public static float avoidRadius = 1.1f;
+    public static boolean kite = false;
 
     public static void init(RobotController rc) throws GameActionException {
         RobotGlobal.rc = rc;
@@ -304,7 +307,73 @@ public strictfp class RobotGlobal {
     		}
     	}
     }
+    
+    public static boolean kiteEnemy(RobotInfo enemy, float strafeDist) throws GameActionException {
+    	debugTick(1);
+    	boolean moved = rc.hasMoved();
+    	if (moved) {
+    		System.out.println("Already moved!");
+    		return moved;
+    	} 
+    	if (enemy.type == RobotType.LUMBERJACK){ // ensure we avoid lumberjack strikes
+    		strafeDist = Math.min(1.5f, strafeDist); 
+    	}
+    	if (enemy.type == RobotType.ARCHON || enemy.type == RobotType.GARDENER){ // dont kite gardeners or archons
+    		return false; 
+    	}
+    	debugTick(2);
+    	float exclude = strafeDist + myType.bodyRadius + enemy.type.bodyRadius;
+    	float curDist = myLoc.distanceTo(enemy.location);
+    	Direction toEnemy = myLoc.directionTo(enemy.location);
+    	float stride = myType.strideRadius;
 
+    	float difference = Math.abs(curDist - exclude);
+
+    	if (stride < difference) { // if I cannot move beyond the border line...
+    		if (curDist > exclude) { // if already outside exclusion zone, strafe to the side
+    			debugTick(3);
+    			if (rc.canMove(toEnemy.rotateLeftDegrees(90), stride)) { // try Left
+    				moved = tryMoveElseLeftRight(toEnemy.rotateLeftDegrees(90), stride);
+    			}
+    			else if (rc.canMove(toEnemy.rotateRightDegrees(90), stride)) { // try Right
+    				moved = tryMoveElseLeftRight(toEnemy.rotateRightDegrees(90), stride);
+    			}
+    			else {
+    				return false;
+    			}
+
+    		}
+    		else { // if inside exclusion zone
+    			debugTick(4);
+    			// simply move out.
+    			moved = tryMoveElseLeftRight(toEnemy.opposite(), stride);
+    		}
+    	}
+    	else { // if I can reach beyond the border line...
+    		if (curDist > exclude) { // if already outside exclusion zone
+    			debugTick(5);
+    			if (rc.canMove(toEnemy.rotateLeftDegrees(90), stride)) { // try Left
+    				moved = tryMoveElseLeftRight(toEnemy.rotateLeftDegrees(90), stride);
+    			}
+    			else if (rc.canMove(toEnemy.rotateRightDegrees(90), stride)) { // try Right
+    				moved = tryMoveElseLeftRight(toEnemy.rotateRightDegrees(90), stride);
+    			}
+    			else {
+    				return false;
+    			}
+    		}
+    		else { // if inside exclusion zone
+    			debugTick(6);
+    			moved = tryMoveElseLeftRight(toEnemy.opposite(), exclude - curDist);
+    			if (!moved) {
+    				moved = tryMoveElseLeftRight(toEnemy.opposite(), stride);
+    			}
+    		}
+    	}
+    	
+    	debugTick(7);
+    	return moved;
+    }
 
     public static MapLocation[] getMyArchonLocations() throws GameActionException {
         int numArchons = rc.readBroadcast(NUM_ARCHONS_CHANNEL);
@@ -852,6 +921,31 @@ public strictfp class RobotGlobal {
             }
         }
         return false;
+    }
+    
+    // This ignores trees and enemy robots
+    public static boolean hasLineOfSightFF(MapLocation target) throws GameActionException {
+        MapLocation start = myLoc.add(myLoc.directionTo(target), myType.bodyRadius);
+        MapLocation center = new MapLocation((start.x + target.x) / 2f, (start.y + target.y) / 2f);
+        float r = start.distanceTo(target) / 2f;
+        for (RobotInfo robot : nearbyRobots) {
+        	if (robot.team == rc.getTeam().opponent()){
+        		continue;
+        	}
+            MapLocation itemLoc = robot.location;
+            float itemR = robot.type.bodyRadius;
+            if (center.distanceTo(itemLoc) <= r + itemR) {
+                if (itemLoc.distanceTo(target) <= itemR) {
+                    // This is the target, do nothing
+                } else {
+                    MapLocation[] intersections = Geometry.getCircleLineSegmentIntersections(itemLoc, itemR, start, target);
+                    if (intersections.length > 0) {
+                        return false;
+                    }
+                }
+            }
+        }
+        return true;
     }
 
     public static boolean hasLineOfSight(MapLocation target) throws GameActionException {
