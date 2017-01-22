@@ -1,9 +1,9 @@
-package new_soldierrush1s1so_noFF_latelj_swf_multishot;
+package sprint_player;
 
 import battlecode.common.GameActionException;
 import battlecode.common.RobotController;
 import battlecode.common.RobotType;
-import robotcore.*;
+import sprint_robotcore.*;
 
 public strictfp class RobotPlayer {
     public static void run(RobotController rc) throws GameActionException {
@@ -27,22 +27,22 @@ public strictfp class RobotPlayer {
 
         switch (RobotGlobal.myType) {
             case ARCHON:
-                NewArchonBot.loop();
+                ArchonBot.loop();
                 break;
             case GARDENER:
-                NewGardenerBot.loop();
+                GardenerBot.loop();
                 break;
             case SOLDIER:
-                NewSoldierBot.loop();
+                SoldierBot.loop();
                 break;
             case LUMBERJACK:
-                NewLumberjackBot.loop();
+                LumberjackBot.loop();
                 break;
             case SCOUT:
-                NewScoutBot.loop();
+                ScoutBot.loop();
                 break;
             case TANK:
-                NewTankBot.loop();
+                TankBot.loop();
                 break;
         }
 	}
