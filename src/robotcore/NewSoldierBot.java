@@ -50,8 +50,9 @@ public class NewSoldierBot extends RobotGlobal {
             if (kite) {
                 moved = kiteEnemy(nearestHostile, avoidRadius);
             } else {
-                moved = tryMoveElseLeftRight(atHostile, 15, 4);
+                moved = tryMoveElseLeftRight(atHostile, 15, 8);
             }
+            atHostile = myLoc.directionTo(nearestHostile.location);
 
             // Shoot at it if close enough
             float dist = nearestHostile.location.distanceTo(myLoc);
@@ -62,7 +63,7 @@ public class NewSoldierBot extends RobotGlobal {
                 else if (useTriad && rc.canFireTriadShot() && dist < triadDist) {
                     rc.fireTriadShot(atHostile);
                 }
-                else if (rc.canFireSingleShot() && dist < 4.5f) { // TODO: factor out
+                else if (rc.canFireSingleShot() && dist < 3.5f) { // TODO: factor out
                     rc.fireSingleShot(atHostile);
                 }
             }

@@ -131,8 +131,8 @@ public strictfp class RobotGlobal {
     // Configuration for Offensive Units
     public static boolean useTriad = false;
     public static boolean usePentad = false;
-    public static float triadDist = 3.0f;
-    public static float pentadDist = 2.5f;
+    public static float triadDist = 2.75f;
+    public static float pentadDist = 2.1f;
     public static boolean friendlyFireOn = true;
     public static boolean prioritizeRobotTrees = false;
     public static boolean kiteEnemyLumberjacks = true;
