@@ -21,6 +21,7 @@ public class TankBot extends RobotGlobal {
             }
             try {
                 turn();
+                Clock.yield();
             } catch (Exception e) {
                 System.out.println("Tank: exception during turn");
                 e.printStackTrace();
@@ -125,8 +126,5 @@ public class TankBot extends RobotGlobal {
         }
 
         firstTurn = false;
-
-        // Clock.yield() makes the robot wait until the next turn, then it will perform this loop again
-        Clock.yield();
     }
 }

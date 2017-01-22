@@ -35,6 +35,7 @@ public class GardenerBot extends RobotGlobal {
             }
             try {
                 turn();
+                Clock.yield();
             } catch (Exception e) {
                 System.out.println("Gardener: exception during turn");
                 e.printStackTrace();
@@ -383,7 +384,6 @@ public class GardenerBot extends RobotGlobal {
 		}
 
         debugTick(7);
-        Clock.yield();
     }
 
 	
