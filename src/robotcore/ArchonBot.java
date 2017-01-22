@@ -121,7 +121,7 @@ public class ArchonBot extends RobotGlobal {
             MapLocation knownMapCenter = new MapLocation(mapCenterX, mapCenterY);
             gardenerDir = myLoc.directionTo(knownMapCenter);
 
-            RobotGlobal.GardenerSchedule gardenerSchedule = getGardenerSchedule();
+            GardenerSchedule gardenerSchedule = getGardenerSchedule();
             int gardenersBuilt = rc.readBroadcast(NUM_GARDENERS_BUILT_CHANNEL);
             boolean success;
             switch (gardenerSchedule) {
@@ -151,6 +151,29 @@ public class ArchonBot extends RobotGlobal {
                         }
                     }
                     break;
+            }
+        }
+
+        processNearbyRobots();
+
+        RobotInfo nearestHostile = getNearestEnemyHostile();
+        RobotInfo nearestNonHostile = getNearestEnemyNonHostile();
+
+        // Update attack and defend locations
+        if (nearestHostile != null) {
+            int whichDefendLoc = whichDefendLocation(nearestHostile.location);
+            if (whichDefendLoc >= 0) {
+                updateDefendLocation(nearestHostile.location, whichDefendLoc);
+            } else {
+                addDefendLocationFirst(nearestHostile.location);
+            }
+        }
+        if (nearestNonHostile != null) {
+            int whichAttackLoc = whichAttackLocation(nearestNonHostile.location);
+            if (whichAttackLoc >= 0) {
+                updateAttackLocation(nearestNonHostile.location, whichAttackLoc);
+            } else {
+                addAttackLocationFirst(nearestNonHostile.location);
             }
         }
 

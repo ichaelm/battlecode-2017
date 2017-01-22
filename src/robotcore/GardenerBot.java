@@ -359,6 +359,29 @@ public class GardenerBot extends RobotGlobal {
 			writeFarmTableEntry(farmTableEntryNum, myLoc, true, false, isFull);
 		}
 
+		processNearbyRobots();
+
+		RobotInfo nearestHostile = getNearestEnemyHostile();
+		RobotInfo nearestNonHostile = getNearestEnemyNonHostile();
+
+		// Update attack and defend locations
+		if (nearestHostile != null) {
+			int whichDefendLoc = whichDefendLocation(nearestHostile.location);
+			if (whichDefendLoc >= 0) {
+				updateDefendLocation(nearestHostile.location, whichDefendLoc);
+			} else {
+				addDefendLocationFirst(nearestHostile.location);
+			}
+		}
+		if (nearestNonHostile != null) {
+			int whichAttackLoc = whichAttackLocation(nearestNonHostile.location);
+			if (whichAttackLoc >= 0) {
+				updateAttackLocation(nearestNonHostile.location, whichAttackLoc);
+			} else {
+				addAttackLocationFirst(nearestNonHostile.location);
+			}
+		}
+
         debugTick(7);
         Clock.yield();
     }

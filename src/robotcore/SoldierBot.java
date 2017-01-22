@@ -6,11 +6,8 @@ import robotcore.RobotGlobal;
 
 
 public class SoldierBot extends RobotGlobal {
-	static Direction goDir;
-	static boolean firstTurn = true;
-	static int goCount = 0;
-	static RobotInfo nearestEnemy = null; 
-	static MapLocation attackLoc = null;
+    static Direction goDir;
+    static boolean firstTurn = true;
 
     public static void loop() {
         while (true) {
@@ -28,75 +25,91 @@ public class SoldierBot extends RobotGlobal {
             }
         }
     }
-    
-    
-    
+
+
+
     public static void turn() throws GameActionException {
         if (firstTurn) {
             goDir = randomDirection();
         }
-        boolean shoot = true;
-        
+
         tryToShake();
         processNearbyRobots();
         processNearbyBullets();
 
-        attackLoc = peekAttackLocation();
-        nearestEnemy = getNearestEnemy();
+        MapLocation attackLoc = peekAttackLocation();
+        MapLocation defendLoc = peekDefendLocation();
+        RobotInfo nearestHostile = getNearestEnemyHostile();
+        RobotInfo nearestNonHostile = getNearestEnemyNonHostile();
+        boolean moved = false;
         debugTick(0);
-        
-        if (nearestEnemy != null) {
-            goDir = myLoc.directionTo(nearestEnemy.location);
-            if (!friendlyFireOn) {
-                shoot = hasLineOfSight(nearestEnemy.location);
+
+        if (nearestHostile != null) { // If there is a nearby hostile enemy
+            // Move towards it or kite it
+            Direction atHostile = myLoc.directionTo(nearestHostile.location);
+            if (kite) {
+                moved = kiteEnemy(nearestHostile, avoidRadius);
+            } else {
+                moved = tryMoveElseLeftRight(atHostile, 15, 8);
             }
-        } else if (attackLoc != null) {
-            goDir = myLoc.directionTo(attackLoc);
+            atHostile = myLoc.directionTo(nearestHostile.location);
+
+            // Shoot at it if close enough
+            float dist = nearestHostile.location.distanceTo(myLoc);
+            if (friendlyFireOn || hasLineOfSight(nearestHostile.location)) { // if this soldier is to avoid FriendlyFire
+                if (usePentad && rc.canFirePentadShot() && dist < pentadDist) { // if soldier shoots, canFire becomes false
+                    rc.firePentadShot(atHostile);
+                }
+                else if (useTriad && rc.canFireTriadShot() && dist < triadDist) {
+                    rc.fireTriadShot(atHostile);
+                }
+                else if (rc.canFireSingleShot() && dist < 3.5f) { // TODO: factor out
+                    rc.fireSingleShot(atHostile);
+                }
+            }
+
+        } else if (defendLoc != null) { // Otherwise, if there is a location to defend
+            // Move towards it
+            Direction defendDir = myLoc.directionTo(defendLoc);
+            moved = tryMoveElseLeftRight(defendDir, 15, 4);
+
+            // If I'm close to the defend target, I already know there's no hostile, so pop it
+            if (myLoc.distanceTo(defendLoc) < myType.bodyRadius * 2) {
+                popDefendLocation();
+            }
+        } else if (attackLoc != null) { // Otherwise, if there is a location to attack
+            // Move towards it
+            Direction attackDir = myLoc.directionTo(attackLoc);
+            moved = tryMoveElseLeftRight(attackDir, 15, 4);
+
+            // If I'm close to the attack target, I already know there's no non-hostile, so pop it
             if (myLoc.distanceTo(attackLoc) < myType.bodyRadius * 2) {
                 popAttackLocation();
             }
+        } else { // Otherwise, bounce around
+            moved = tryMoveElseBack(goDir);
+            if (!moved) {
+                goDir = randomDirection();
+                moved = tryMoveElseBack(goDir);
+            }
         }
 
-        // moving
-        boolean moved = false;
-        if (nearestEnemy == null && attackLoc == null) {
-        	moved = tryMoveElseLeftRight(goDir, 15, 2);
-        } else {
-        	if (nearestEnemy != null) {
-        		if (kite) {
-            		moved = kiteEnemy(nearestEnemy, avoidRadius);
-            		//System.out.println("Trying to kite...");
-            	} else {
-                    moved = tryMoveElseLeftRight(goDir, 15, 4);
-                }
-        	}
-        	else {
-        		moved = tryMoveElseLeftRight(goDir);
-        	}
+        // Update attack and defend locations
+        if (nearestHostile != null) {
+            int whichDefendLoc = whichDefendLocation(nearestHostile.location);
+            if (whichDefendLoc >= 0) {
+                updateDefendLocation(nearestHostile.location, whichDefendLoc);
+            } else {
+                addDefendLocationFirst(nearestHostile.location);
+            }
         }
-        if (!moved) {
-        	moved = tryMoveElseBack(goDir);
-        	if (!moved) {
-        		goDir = randomDirection();
-        	}
-        }
-
-        // shooting
-        if (nearestEnemy != null) { 
-        	Direction atEnemy = myLoc.directionTo(nearestEnemy.location);
-        	float dist = nearestEnemy.location.distanceTo(myLoc); 
-        	if (shoot) { // if this soldier is to avoid FriendlyFire
-        		if (usePentad && rc.canFirePentadShot() && dist < pentadDist) { // if soldier shoots, canFire becomes false
-        			rc.firePentadShot(atEnemy);
-        		}
-        		else if (useTriad && rc.canFireTriadShot() && dist < triadDist) {
-        			rc.fireTriadShot(atEnemy);
-        		}
-        		else if (rc.canFireSingleShot()) {
-        			rc.fireSingleShot(atEnemy);
-        		}	
-        	}
-
+        if (nearestNonHostile != null) {
+            int whichAttackLoc = whichAttackLocation(nearestNonHostile.location);
+            if (whichAttackLoc >= 0) {
+                updateAttackLocation(nearestNonHostile.location, whichAttackLoc);
+            } else {
+                addAttackLocationFirst(nearestNonHostile.location);
+            }
         }
 
         firstTurn = false;
@@ -104,7 +117,7 @@ public class SoldierBot extends RobotGlobal {
         // Clock.yield() makes the robot wait until the next turn, then it will perform this loop again
         Clock.yield();
     }
-    
+
     void doesNothing(){
    	 /*
        int moveMode = 0; // 0 is approach, 1 is kite lumberjack, 2 is run from lumberjack
@@ -144,6 +157,6 @@ public class SoldierBot extends RobotGlobal {
        }
    	  */
 
-   }
-    
+    }
+
 }

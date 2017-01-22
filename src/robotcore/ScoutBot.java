@@ -1,7 +1,6 @@
 package robotcore;
 
 import battlecode.common.*;
-import robotcore.RobotGlobal;
 
 public class ScoutBot extends RobotGlobal {
 
@@ -207,16 +206,14 @@ public class ScoutBot extends RobotGlobal {
 	            	}	
 		            
 				} else { // Otherwise:
-					MapLocation invasionLoc = peekAttackLocation();
-					if (invasionLoc != null) { // If there is a target location:
+					MapLocation attackLoc = peekAttackLocation();
+					if (attackLoc != null) { // If there is a target location:
 						// Move towards the target location
-						boolean moved = tryMoveElseLeftRight(myLoc.directionTo(invasionLoc));
-						if (!moved) {
-							tryMoveElseBack(myLoc.directionTo(invasionLoc));
-						}
-						if (myLoc.distanceTo(invasionLoc) < 4) { // If I am at the target archon location:
+						boolean moved = tryMoveElseLeftRight(myLoc.directionTo(attackLoc));
+						if (myLoc.distanceTo(attackLoc) < 4) { // If I am at the target location:
 							// We already know there are no gardeners here
-							popAttackLocation(); // Broadcast the target location clear signal
+							// Pop this one and add it to the end, to cycle
+							addAttackLocation(popAttackLocation());
 						}
 					} else { // Otherwise
 						boolean moved = tryMoveElseBack(goDir);
@@ -228,6 +225,27 @@ public class ScoutBot extends RobotGlobal {
 			}
     		            
     	}
+
+		RobotInfo nearestHostile = getNearestEnemyHostile();
+		RobotInfo nearestNonHostile = getNearestEnemyNonHostile();
+
+		// Update attack and defend locations
+		if (nearestHostile != null) {
+			int whichDefendLoc = whichDefendLocation(nearestHostile.location);
+			if (whichDefendLoc >= 0) {
+				updateDefendLocation(nearestHostile.location, whichDefendLoc);
+			} else {
+				addDefendLocationFirst(nearestHostile.location);
+			}
+		}
+		if (nearestNonHostile != null) {
+			int whichAttackLoc = whichAttackLocation(nearestNonHostile.location);
+			if (whichAttackLoc >= 0) {
+				updateAttackLocation(nearestNonHostile.location, whichAttackLoc);
+			} else {
+				addAttackLocationFirst(nearestNonHostile.location);
+			}
+		}
 
     	firstTurn = false;
     	

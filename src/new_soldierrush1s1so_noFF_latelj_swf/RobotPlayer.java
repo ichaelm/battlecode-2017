@@ -25,22 +25,22 @@ public strictfp class RobotPlayer {
 
         switch (RobotGlobal.myType) {
             case ARCHON:
-                NewArchonBot.loop();
+                ArchonBot.loop();
                 break;
             case GARDENER:
-                NewGardenerBot.loop();
+                GardenerBot.loop();
                 break;
             case SOLDIER:
-                NewSoldierBot.loop();
+                SoldierBot.loop();
                 break;
             case LUMBERJACK:
-                NewLumberjackBot.loop();
+                LumberjackBot.loop();
                 break;
             case SCOUT:
-                NewScoutBot.loop();
+                ScoutBot.loop();
                 break;
             case TANK:
-                NewTankBot.loop();
+                TankBot.loop();
                 break;
         }
 	}

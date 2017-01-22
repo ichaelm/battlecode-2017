@@ -1,7 +1,6 @@
 package robotcore;
 
 import battlecode.common.*;
-import robotcore.RobotGlobal;
 
 public class LumberjackBot extends RobotGlobal {
 
@@ -165,12 +164,21 @@ public class LumberjackBot extends RobotGlobal {
                         moved = tryMoveElseBack(myLoc.directionTo(nearestRobotTree.location));
                     }
                 } else {
+                    MapLocation defendLoc = peekDefendLocation();
                     MapLocation invadeLoc = peekAttackLocation();
-                    if (invadeLoc != null) {
+                    if (defendLoc != null) {
+                        Direction defendDir = myLoc.directionTo(defendLoc);
+                        moved = tryMoveElseLeftRight(defendDir);
+                        // If I'm close to the defend target, I already know there's no hostile, so pop it
+                        if (myLoc.distanceTo(defendLoc) < myType.bodyRadius * 2) {
+                            popDefendLocation();
+                        }
+                    } else if (invadeLoc != null) {
                         Direction invadeDir = myLoc.directionTo(invadeLoc);
                         moved = tryMoveElseLeftRight(invadeDir);
-                        if (!moved) {
-                            moved = tryMoveElseBack(invadeDir);
+                        // If I'm close to the attack target, I already know there's no non-hostile, so pop it
+                        if (myLoc.distanceTo(invadeLoc) < myType.bodyRadius * 2) {
+                            popAttackLocation();
                         }
                     } else {
                         moved = tryMoveElseBack(goDir);

@@ -1,7 +1,6 @@
 package robotcore;
 
 import battlecode.common.*;
-import robotcore.RobotGlobal;
 
 
 public class TankBot extends RobotGlobal {
@@ -101,6 +100,27 @@ public class TankBot extends RobotGlobal {
         		else if (rc.canFireSingleShot()) {
             		rc.fireSingleShot(atEnemy);
             	}	
+            }
+        }
+
+        RobotInfo nearestHostile = getNearestEnemyHostile();
+        RobotInfo nearestNonHostile = getNearestEnemyNonHostile();
+
+        // Update attack and defend locations
+        if (nearestHostile != null) {
+            int whichDefendLoc = whichDefendLocation(nearestHostile.location);
+            if (whichDefendLoc >= 0) {
+                updateDefendLocation(nearestHostile.location, whichDefendLoc);
+            } else {
+                addDefendLocationFirst(nearestHostile.location);
+            }
+        }
+        if (nearestNonHostile != null) {
+            int whichAttackLoc = whichAttackLocation(nearestNonHostile.location);
+            if (whichAttackLoc >= 0) {
+                updateAttackLocation(nearestNonHostile.location, whichAttackLoc);
+            } else {
+                addAttackLocationFirst(nearestNonHostile.location);
             }
         }
 
