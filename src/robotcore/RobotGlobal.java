@@ -98,6 +98,7 @@ public strictfp class RobotGlobal {
     public static float nearbyBulletRadius;
     public static boolean neverUpdated;
     public static MapBounds knownMapBounds;
+    public static float vpCost = 7.5f;
 
     // Results of further processing
     private static RobotInfo nearestEnemy = null;
@@ -174,6 +175,7 @@ public strictfp class RobotGlobal {
         victoryPoints = rc.getTeamVictoryPoints();
         treeCount = rc.getTreeCount();
         teamBullets = rc.getTeamBullets();
+        vpCost = 7.5f + rc.getRoundNum() * (12.5f / 3000.0f);
 
         updateNearbyRobots();
         updateNearbyTrees();

@@ -6,6 +6,17 @@ public class ArchonBot extends RobotGlobal {
     static int archonOrder = -1;
     static boolean firstTurn = true;
 
+    
+    public static void VP() throws GameActionException {
+    	int VPtoWin = GameConstants.VICTORY_POINTS_TO_WIN - victoryPoints;
+    	
+    	if(teamBullets >= vpCost * VPtoWin) rc.donate(vpCost * VPtoWin);
+        if(rc.getRoundLimit() - rc.getRoundNum() < 2) {
+        	rc.donate(teamBullets);
+        }
+    }
+    
+    
     public static void loop() {
         while (true) {
             try {
@@ -25,10 +36,7 @@ public class ArchonBot extends RobotGlobal {
     }
 
     public static void turn() throws GameActionException {
-        if(teamBullets >= 10000) rc.donate(10000);
-        if(rc.getRoundLimit() - rc.getRoundNum() < 2) {
-        	rc.donate(teamBullets);
-        }
+        VP();
 
         // Archon count and leader selection
         if (isLeader()) {
