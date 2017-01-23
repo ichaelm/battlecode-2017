@@ -9,10 +9,37 @@ public class TankBot extends RobotGlobal {
 	static int goCount = 0;
 	static RobotInfo nearestEnemy = null; 
 	static MapLocation attackLoc = null;
-	static boolean friendlyFireOn = true;
-	static boolean wasAttacking = true;
+	static boolean friendlyFireOn = false;
+	static boolean wasAttacking = false;
+	static int attackRound = 0;
 	
+	
+	public static Direction offsetTarget(MapLocation target) { // gives a random angle offset for shooting
+		float offsetDistMax = 2.5f;
+		MapLocation newTarget = null;
+		while (newTarget == null) {
+			int s = 1;
+			if (Math.random() > 0.5) {
+				s = -1;
 
+			try{
+				Direction dir = myLoc.directionTo(target);
+				dir = dir.rotateLeftDegrees(90*s);
+				float offsetDist = (float) (Math.random()*offsetDistMax);
+				
+				newTarget = target.add(dir, offsetDist);
+				
+			} catch (Exception e) {
+				System.out.println("blah: " + e.getMessage());
+				e.getMessage();
+			}
+		}
+		
+		}
+		rc.setIndicatorDot(newTarget, 225, 100, 0);
+		return myLoc.directionTo(newTarget);
+	}
+	
     public static void loop() {
         while (true) {
             try {
@@ -32,22 +59,25 @@ public class TankBot extends RobotGlobal {
     }
     
     
-    
     public static void turn() throws GameActionException {
         if (firstTurn) {
             goDir = randomDirection();
         }
         boolean shoot = true;
-        
+
         processNearbyRobots();
         processNearbyBullets();
         processNearbyTrees();
         tryToShake();
-        
+
         if (attackLoc == peekAttackLocation()){
         	wasAttacking = true;
-        } else { wasAttacking = false; }
-        	
+        	attackRound ++;
+        } else { 
+        	wasAttacking = false;
+        	attackRound = 0;
+        }
+
         attackLoc = peekAttackLocation();
         nearestEnemy = getNearestEnemy();
         
@@ -71,48 +101,57 @@ public class TankBot extends RobotGlobal {
         }
 
         if (nearestEnemy != null) {
-            goDir = myLoc.directionTo(nearestEnemy.location);
-            if (!friendlyFireOn) {
-                shoot = hasLineOfSightFF(nearestEnemy.location); // if this tank is to avoid FriendlyFire
-            }
-        } else if (attackLoc != null) {
+        	goDir = myLoc.directionTo(nearestEnemy.location);
+        	if (!friendlyFireOn) {
+        		shoot = hasLineOfSightFF(nearestEnemy.location); // if this tank is to avoid FriendlyFire
+        	}
+        } else if (attackLoc != null) { // firing line code
         	/*
             goDir = myLoc.directionTo(attackLoc);
             if (treeInRange) { rc.setIndicatorDot(nearestTree.location, 100, 100, 100);} 	// Indicate nearest tree
-            */
-            
+        	 */
         	
+        	float attackRadius = attackCircleStart + (attackRound * attackCircleChange); // Radius for the firing line
+        	MapLocation firingLineSpot = attackLoc.add(attackLoc.directionTo(myLoc), attackRadius); // Location on the line 
+        	goDir = myLoc.directionTo(firingLineSpot);
         	
-            if (myLoc.distanceTo(attackLoc) < myType.bodyRadius * 2) {
-                popAttackLocation();
-            }
+        	rc.setIndicatorDot(attackLoc, 255, 0, 0);
+
+        	if (myLoc.distanceTo(attackLoc) < myType.bodyRadius * 2) {
+        		popAttackLocation();
+        	}
+        	
+        	Direction shootAt = offsetTarget(attackLoc);
+        	if (rc.canFireSingleShot()) {
+        		rc.fireSingleShot(shootAt);
+        	}	
         }
-      
+
         if (nearestEnemy == null && attackLoc == null) {
-            if (treeInRange) { 			// Body-attack the nearest tree
-            	rc.setIndicatorDot(nearestTree.location, 100, 100, 100);
-            	moved = rc.canMove(treeDir);
-            	if (moved) rc.move(treeDir);
-            	else moved = false;
-            }
-            else moved = tryMoveElseLeftRight(goDir, 15, 2);
+        	if (treeInRange) { 			// Body-attack the nearest tree
+        		rc.setIndicatorDot(nearestTree.location, 100, 100, 100);
+        		moved = rc.canMove(treeDir);
+        		if (moved) rc.move(treeDir);
+        		else moved = false;
+        	}
+        	else moved = tryMoveElseLeftRight(goDir, 15, 2);
         } else {
-            moved = tryMoveElseLeftRight(goDir);
+        	moved = tryMoveElseLeftRight(goDir);
         }
         if (!moved) {
-            moved = tryMoveElseBack(goDir);
-            if (!moved) {
-                goDir = randomDirection();
-            }
+        	moved = tryMoveElseBack(goDir);
+        	if (!moved) {
+        		goDir = randomDirection();
+        	}
         }
 
         if (nearestEnemy != null) {
         	Direction atEnemy = myLoc.directionTo(nearestEnemy.location);
-            float dist = nearestEnemy.location.distanceTo(myLoc); 
+        	float dist = nearestEnemy.location.distanceTo(myLoc); 
         	if (shoot) { // if this Tank is to avoid FriendlyFire
         		if (usePentad && rc.canFirePentadShot() && dist < pentadDist + 1) { // if Tank shoots, canFire becomes false
-                	rc.firePentadShot(atEnemy);
-                }
+        			rc.firePentadShot(atEnemy);
+        		}
         		else if (useTriad && rc.canFireTriadShot() && dist < triadDist + 1) {
                 	rc.fireTriadShot(atEnemy);
                 }

@@ -142,6 +142,8 @@ public strictfp class RobotGlobal {
     public static boolean kiteSoldiers = false;
     public static boolean kiteScouts = false;
     public static boolean kiteTanks = false;
+    public static float attackCircleStart = 15f;
+    public static float attackCircleChange = -0.1f;
     
     
 
