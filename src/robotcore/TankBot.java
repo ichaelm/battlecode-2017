@@ -15,31 +15,56 @@ public class TankBot extends RobotGlobal {
 	
 	
 	public static Direction offsetTarget(MapLocation target) { // gives a random angle offset for shooting
+		debugTick(6);
 		float offsetDistMax = 2.5f;
 		MapLocation newTarget = null;
+		int c = 0;
+		debugTick(7);
 		while (newTarget == null) {
-			int s = 1;
-			if (Math.random() > 0.5) {
-				s = -1;
-
+			c++;
+			debugTick(7+c);
 			try{
 				Direction dir = myLoc.directionTo(target);
-				dir = dir.rotateLeftDegrees(90*s);
-				float offsetDist = (float) (Math.random()*offsetDistMax);
 				
+				if (c > 5) {
+					dir = myLoc.directionTo(target);
+					newTarget = target;
+					break;
+				}
+
+				if (Math.random() > 0.5) dir = dir.rotateLeftDegrees(90);
+				else dir = dir.rotateRightDegrees(90);
+				
+				float offsetDist = (float) (Math.random()*offsetDistMax);
+
 				newTarget = target.add(dir, offsetDist);
+				
+
 				
 			} catch (Exception e) {
 				System.out.println("blah: " + e.getMessage());
 				e.getMessage();
 			}
+
 		}
-		
-		}
+		debugTick(15);
 		rc.setIndicatorDot(newTarget, 225, 100, 0);
 		return myLoc.directionTo(newTarget);
 	}
-	
+	/**
+	public static MapLocation newAttackLocation() throws GameActionException {
+		MapLocation prev = attackLoc;
+		MapLocation curr = attackLoc;
+		while (prev.equals(curr)){
+			curr = popAttackLocation();
+			if (curr == null){
+				return null;
+			}
+		}
+		
+		return curr;
+	}
+	**/
     public static void loop() {
         while (true) {
             try {
@@ -69,15 +94,21 @@ public class TankBot extends RobotGlobal {
         processNearbyBullets();
         processNearbyTrees();
         tryToShake();
-
-        if (attackLoc == peekAttackLocation()){
-        	wasAttacking = true;
-        	attackRound ++;
+        debugTick(1);
+        
+        if (attackLoc != null) {
+        	if (attackLoc.equals(peekAttackLocation())){
+            	wasAttacking = true;
+            	attackRound ++;
+            } else { 
+            	wasAttacking = false;
+            	attackRound = 0;
+            }
         } else { 
         	wasAttacking = false;
         	attackRound = 0;
         }
-
+        
         attackLoc = peekAttackLocation();
         nearestEnemy = getNearestEnemy();
         
@@ -89,6 +120,8 @@ public class TankBot extends RobotGlobal {
         Direction treeDir = null;
         TreeInfo nearestTree = getNearestUnfriendlyTree();
         TreeInfo nearestRobotTree = getNearestRobotTree();
+        
+        debugTick(2);
         if (nearestTree != null) {
             float distToTree = myLoc.distanceTo(nearestTree.location);
             treeDir = myLoc.directionTo(nearestTree.location);
@@ -106,40 +139,60 @@ public class TankBot extends RobotGlobal {
         		shoot = hasLineOfSightFF(nearestEnemy.location); // if this tank is to avoid FriendlyFire
         	}
         } else if (attackLoc != null) { // firing line code
-        	/*
-            goDir = myLoc.directionTo(attackLoc);
-            if (treeInRange) { rc.setIndicatorDot(nearestTree.location, 100, 100, 100);} 	// Indicate nearest tree
-        	 */
+        	debugTick(3);
+        	//System.out.println("attRound: " + attackRound);
+        	float attackRadius = attackCircleStart - (attackRound * attackCircleChange); // Radius for the firing line
         	
-        	float attackRadius = attackCircleStart + (attackRound * attackCircleChange); // Radius for the firing line
+        	debugTick(4);
+        	
         	MapLocation firingLineSpot = attackLoc.add(attackLoc.directionTo(myLoc), attackRadius); // Location on the line 
+        	rc.setIndicatorDot(firingLineSpot, 222, 222, 222);
         	goDir = myLoc.directionTo(firingLineSpot);
+        	
+        	debugTick(5);
         	
         	rc.setIndicatorDot(attackLoc, 255, 0, 0);
 
-        	if (myLoc.distanceTo(attackLoc) < myType.bodyRadius * 2) {
-        		popAttackLocation();
-        	}
+        	if (!rc.hasMoved()) { moved = tryMoveElseBack(myLoc.directionTo(firingLineSpot)); }
         	
         	Direction shootAt = offsetTarget(attackLoc);
-        	if (rc.canFireSingleShot()) {
+        	debugTick(12);
+        	if (rc.canFireSingleShot() && shoot) {
         		rc.fireSingleShot(shootAt);
-        	}	
+        	}
+        	debugTick(16);
+        	if (myLoc.distanceTo(attackLoc) < myType.sensorRadius) {
+        		//newAttackLocation();
+        		popAttackLocation();
+        		
+        	}
+        	if (attackRound > 100) { // if bombardment has been long enough, switch targets
+        		//newAttackLocation();
+        		attackLoc = null;
+        	}
+        	
         }
 
         if (nearestEnemy == null && attackLoc == null) {
         	if (treeInRange) { 			// Body-attack the nearest tree
         		rc.setIndicatorDot(nearestTree.location, 100, 100, 100);
-        		moved = rc.canMove(treeDir);
-        		if (moved) rc.move(treeDir);
+        		
+        		if (!moved && rc.canMove(treeDir)) rc.move(treeDir);
         		else moved = false;
         	}
-        	else moved = tryMoveElseLeftRight(goDir, 15, 2);
+        	else {
+        		if (!moved) {
+        			moved = tryMoveElseLeftRight(goDir, 15, 2);
+        		}
+        	}
         } else {
-        	moved = tryMoveElseLeftRight(goDir);
+        	if (!moved) {
+    			moved = tryMoveElseLeftRight(goDir, 15, 2);
+    		}
         }
         if (!moved) {
         	moved = tryMoveElseBack(goDir);
+        	
         	if (!moved) {
         		goDir = randomDirection();
         	}
@@ -148,6 +201,7 @@ public class TankBot extends RobotGlobal {
         if (nearestEnemy != null) {
         	Direction atEnemy = myLoc.directionTo(nearestEnemy.location);
         	float dist = nearestEnemy.location.distanceTo(myLoc); 
+        	if (nearestEnemy.type.bodyRadius > 1) dist --; // this prevents tanks from avoiding pentads on tanks and archons
         	if (shoot) { // if this Tank is to avoid FriendlyFire
         		if (usePentad && rc.canFirePentadShot() && dist < pentadDist + 1) { // if Tank shoots, canFire becomes false
         			rc.firePentadShot(atEnemy);
@@ -160,7 +214,7 @@ public class TankBot extends RobotGlobal {
             	}	
             }
         }
-
+        
         RobotInfo nearestHostile = getNearestEnemyHostile();
         RobotInfo nearestNonHostile = getNearestEnemyNonHostile();
 
@@ -181,7 +235,7 @@ public class TankBot extends RobotGlobal {
                 addAttackLocationFirst(nearestNonHostile.location);
             }
         }
-
+        
         firstTurn = false;
     }
 }
