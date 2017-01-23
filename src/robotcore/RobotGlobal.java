@@ -143,8 +143,7 @@ public strictfp class RobotGlobal {
     public static boolean kiteScouts = false;
     public static boolean kiteTanks = false;
     public static float attackCircleStart = 15f;
-    public static float attackCircleChange = -0.1f;
-    
+    public static float attackCircleChange = 0.125f;
     
 
     public static void init(RobotController rc) throws GameActionException {
@@ -1074,6 +1073,15 @@ public strictfp class RobotGlobal {
             }
         }
         return true;
+    }
+    
+    public static void VP() throws GameActionException { // Donation strategy
+    	int VPtoWin = GameConstants.VICTORY_POINTS_TO_WIN - victoryPoints;
+    	
+    	if(teamBullets >= vpCost * VPtoWin) rc.donate(vpCost * VPtoWin);
+        if(rc.getRoundLimit() - rc.getRoundNum() < 2) {
+        	rc.donate(teamBullets);
+        }
     }
 
     public static int[] readBroadcastArray(int channelStart, int length) throws GameActionException {

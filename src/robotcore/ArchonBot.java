@@ -6,17 +6,6 @@ public class ArchonBot extends RobotGlobal {
     static int archonOrder = -1;
     static boolean firstTurn = true;
 
-    
-    public static void VP() throws GameActionException {
-    	int VPtoWin = GameConstants.VICTORY_POINTS_TO_WIN - victoryPoints;
-    	
-    	if(teamBullets >= vpCost * VPtoWin) rc.donate(vpCost * VPtoWin);
-        if(rc.getRoundLimit() - rc.getRoundNum() < 2) {
-        	rc.donate(teamBullets);
-        }
-    }
-    
-    
     public static void loop() {
         while (true) {
             try {
