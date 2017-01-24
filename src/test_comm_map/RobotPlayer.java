@@ -7,13 +7,10 @@ public strictfp class RobotPlayer {
     public static void run(RobotController rc) throws GameActionException {
         try {
             RobotGlobal.init(rc);
-            CommMap.setRC(rc);
-            CommMap.sendOrigin(rc.getLocation());
+            RobotGlobal.CommMap.sendOrigin(rc.getLocation());
 
             while (true) {
                 RobotGlobal.update();
-
-                CommMap.refresh(RobotGlobal.knownMapBounds);
 
             /*
             CommMap.Cell c = CommMap.queryCell(0,0);
@@ -74,7 +71,7 @@ public strictfp class RobotPlayer {
             int[] RobotGlobal.myHexCoord = CommMap.nearestHexCoord(RobotGlobal.myLoc);
             CommMap.HexCoord.Iterator it = CommMap.hexFullIterator(RobotGlobal.myHexCoord.a, RobotGlobal.myHexCoord.b, (int)(RobotGlobal.myType.sensorRadius / CommMap.CELL_RESOLUTION));
             */
-                int[] hexBounds = CommMap.circleHexBounds(RobotGlobal.myLoc, 10);
+                int[] hexBounds = RobotGlobal.CommMap.circleHexBounds(RobotGlobal.myLoc, 10);
 
                 int total = 0;
                 int totalInside = 0;
@@ -111,7 +108,7 @@ public strictfp class RobotPlayer {
                 for (int a = minA; a <= maxA; a++) {
                     for (int b = minB; b <= maxB; b++) {
                         //if ((a + b >= minSum) && (a + b <= maxSum)) {
-                        MapLocation loc = CommMap.hexCoordToLoc(a, b);
+                        MapLocation loc = RobotGlobal.CommMap.hexCoordToLoc(a, b);
                         if (loc.distanceTo(RobotGlobal.myLoc) <= 10) {
                             rc.setIndicatorDot(loc, 255, 0, 0);
                             totalInside++;
@@ -123,13 +120,13 @@ public strictfp class RobotPlayer {
 
                 Clock.yield();
 
-                CommMap.HexCoord.Iterator it = CommMap.hexPerimeterIterator(RobotGlobal.myHexCoord.a, RobotGlobal.myHexCoord.b, (int) (10 / CommMap.CELL_RESOLUTION));
+                HexCoord.Iterator it = HexCoord.hexPerimeterIterator(RobotGlobal.myHexCoord.a, RobotGlobal.myHexCoord.b, (int) (10 / RobotGlobal.CommMap.CELL_RESOLUTION));
 
                 Clock.yield();
 
                 while (it.hasNext()) {
-                    CommMap.HexCoord hc = it.next();
-                    MapLocation loc = CommMap.hexCoordToLoc(hc.a, hc.b);
+                    HexCoord hc = it.next();
+                    MapLocation loc = RobotGlobal.CommMap.hexCoordToLoc(hc.a, hc.b);
                     if (loc.distanceTo(RobotGlobal.myLoc) <= 10) {
                         rc.setIndicatorDot(loc, 255, 0, 0);
                     }
@@ -150,7 +147,7 @@ public strictfp class RobotPlayer {
                 for (int a = minA; a <= maxA; a++) {
                     for (int b = Math.max(minB, (minSum - a)); b <= maxB && b <= (maxSum - a); b++) {
                         //if ((a + b >= minSum) && (a + b <= maxSum)) {
-                        MapLocation loc = CommMap.hexCoordToLoc(a, b);
+                        MapLocation loc = RobotGlobal.CommMap.hexCoordToLoc(a, b);
                         if (loc.distanceTo(RobotGlobal.myLoc) <= 10) {
                             rc.setIndicatorDot(loc, 255, 0, 0);
                             totalInside++;

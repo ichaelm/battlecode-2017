@@ -12,9 +12,204 @@ Gardener priorities:
 
 public strictfp class RobotGlobal {
 
-    public enum GardenerSchedule {ONCE_EVERY_N_ROUNDS, WHEN_FULL};
+    public static class CommMap {
 
-    public enum ScoutMode {HARASS, COLLECT};
+        // member variables
+
+        private static MapLocation commMapOrigin;
+
+        // geometry constants
+
+        public static final float CELL_RADIUS = 1f;
+        public static final float CELL_RESOLUTION = 2f;
+        public static final Direction aDir = Direction.getEast(); // Algorithm depends on aDir being east!!!
+        public static final Direction bDir = Direction.getEast().rotateLeftDegrees(60);
+
+        // bitmasks
+
+        private static final int MAP_CELL_EXPLORED_MASK = 0x80000000;
+        private static final int MAP_CELL_CLEAR_MASK = 0x40000000;
+
+        // whole map operations
+
+        public static void sendOrigin(MapLocation origin) throws GameActionException {
+            CommMap.commMapOrigin = origin;
+            rc.broadcast(MAP_ORIGIN_X_CHANNEL, Float.floatToIntBits(origin.x));
+            rc.broadcast(MAP_ORIGIN_Y_CHANNEL, Float.floatToIntBits(origin.y));
+        }
+
+        public static void queryOrigin() throws GameActionException {
+            float x = Float.intBitsToFloat(rc.readBroadcast(MAP_ORIGIN_X_CHANNEL));
+            float y = Float.intBitsToFloat(rc.readBroadcast(MAP_ORIGIN_Y_CHANNEL));
+            commMapOrigin = new MapLocation(x, y);
+        }
+
+        // channel math utilities
+
+        private static int wrapA(int a) {
+            return ((a % MAP_SIZE_A) + MAP_SIZE_A) % MAP_SIZE_A;
+        }
+
+        private static int wrapB(int b) {
+            return ((b % MAP_SIZE_B) + MAP_SIZE_B) % MAP_SIZE_B;
+        }
+
+        private static int hexCoordToEntryIndex(int a, int b) {
+            int wrappedA = wrapA(a);
+            int wrappedB = wrapB(b);
+            return (wrappedB * MAP_SIZE_A) + wrappedA;
+        }
+
+        private static int unwrapB(int wrappedB) {
+            int minB = minBOnKnownMap();
+            int minBquotient = Math.floorDiv(minB, MAP_SIZE_B);
+            wrappedB += (minBquotient * MAP_SIZE_B);
+            if (wrappedB < minB) {
+                wrappedB += MAP_SIZE_B;
+            }
+            return wrappedB;
+        }
+
+        private static int unwrapAGivenB(int wrappedA, int b) {
+            int minA = minAOnKnownMapGivenB(b);
+            int minAquotient = Math.floorDiv(minA, MAP_SIZE_A);
+            wrappedA += (minAquotient * MAP_SIZE_A);
+            if (wrappedA < minA) {
+                wrappedA += MAP_SIZE_A;
+            }
+            return wrappedA;
+        }
+
+        private static HexCoord entryIndexToHexCoord(int entryIndex) {
+            int wrappedB = entryIndex / MAP_SIZE_A;
+            int wrappedA = entryIndex % MAP_SIZE_A;
+            int b = unwrapB(wrappedB);
+            int a = unwrapAGivenB(wrappedA, b);
+            return new HexCoord(a, b);
+        }
+
+        // coordinate math utilities
+
+        public static boolean hexCoordOverlapsKnownMap(int a, int b) {
+            return b <= maxBOnKnownMap() && a <= maxAOnKnownMapGivenB(b);
+        }
+
+        public static int maxBOnKnownMap() {
+            float maxBExact = ((knownMapBounds.getInnerBound(MapBounds.NORTH) - commMapOrigin.y) + CELL_RADIUS) / (bDir.getDeltaY(CELL_RESOLUTION));
+            return (int)Math.floor(maxBExact);
+        }
+
+        public static int minBOnKnownMap() {
+            float minBExact = ((knownMapBounds.getInnerBound(MapBounds.SOUTH) - commMapOrigin.y) - CELL_RADIUS) / (bDir.getDeltaY(CELL_RESOLUTION));
+            return (int)Math.ceil(minBExact);
+        }
+
+        public static int maxAOnKnownMapGivenB(int b) {
+            b = unwrapB(b);
+            MapLocation start = commMapOrigin.add(bDir, b);
+            float maxAExact = ((knownMapBounds.getInnerBound(MapBounds.EAST) - start.x) + CELL_RADIUS) / CELL_RESOLUTION;
+            return (int)Math.floor(maxAExact);
+        }
+
+        public static int minAOnKnownMapGivenB(int b) {
+            b = unwrapB(b);
+            MapLocation start = commMapOrigin.add(bDir, b);
+            float minAExact = ((knownMapBounds.getInnerBound(MapBounds.WEST) - start.x) - CELL_RADIUS) / CELL_RESOLUTION;
+            return (int)Math.ceil(minAExact);
+        }
+
+        public static MapLocation hexCoordToLoc(int a, int b) {
+            return commMapOrigin.add(aDir, a * CELL_RESOLUTION).add(bDir, b * CELL_RESOLUTION);
+        }
+
+        public static float[] exactHexCoord(MapLocation loc) {
+            float bExact = (loc.y - commMapOrigin.y) / bDir.getDeltaY(CELL_RESOLUTION);
+            float aExact = (loc.x - (commMapOrigin.x + bDir.getDeltaX(bExact * CELL_RESOLUTION))) / aDir.getDeltaX(CELL_RESOLUTION);
+            return new float[]{aExact, bExact};
+        }
+
+        public static HexCoord nearestHexCoord(MapLocation loc) {
+            float[] exactCoord = exactHexCoord(loc);
+            int aFloor = (int)Math.floor(exactCoord[0]);
+            int aCeil = (int)Math.ceil(exactCoord[0]);
+            int bFloor = (int)Math.floor(exactCoord[1]);
+            int bCeil = (int)Math.ceil(exactCoord[1]);
+            HexCoord[] coords = new HexCoord[]{
+                    new HexCoord(aFloor, bFloor),
+                    new HexCoord(aFloor, bCeil),
+                    new HexCoord(aCeil, bFloor),
+                    new HexCoord(aCeil, bCeil),
+            };
+            float[] dists = new float[]{
+                    loc.distanceTo(hexCoordToLoc(aFloor, bFloor)),
+                    loc.distanceTo(hexCoordToLoc(aFloor, bCeil)),
+                    loc.distanceTo(hexCoordToLoc(aCeil, bFloor)),
+                    loc.distanceTo(hexCoordToLoc(aCeil, bCeil))
+            };
+            float minDist = 9999999;
+            HexCoord minDistCoord = null;
+            for (int i = 0; i < 4; i++) {
+                float dist = dists[i];
+                if (dist < minDist) {
+                    minDist = dist;
+                    minDistCoord = coords[i];
+                }
+            }
+            return minDistCoord;
+        }
+
+        public static int[] circleHexBounds(MapLocation loc, float r) {
+            r = r * 1.15470053838f;
+            float[] exactHexCoord = exactHexCoord(loc);
+            float minAExact = exactHexCoord[0] - (r / CELL_RESOLUTION);
+            float maxAExact = exactHexCoord[0] + (r / CELL_RESOLUTION);
+            float minBExact = exactHexCoord[1] - (r / CELL_RESOLUTION);
+            float maxBExact = exactHexCoord[1] + (r / CELL_RESOLUTION);
+            float minSumExact = exactHexCoord[0] + exactHexCoord[1] - (r / CELL_RESOLUTION);
+            float maxSumExact = exactHexCoord[0] + exactHexCoord[1] + (r / CELL_RESOLUTION);
+            int minA = (int)Math.ceil(minAExact);
+            int maxA = (int)Math.floor(maxAExact);
+            int minB = (int)Math.ceil(minBExact);
+            int maxB = (int)Math.floor(maxBExact);
+            int minSum = (int)Math.ceil(minSumExact);
+            int maxSum = (int)Math.floor(maxSumExact);
+            return new int[]{minA, maxA, minB, maxB, minSum, maxSum};
+        }
+
+        // Cell interface
+
+        public static Cell queryNearestCell(MapLocation loc) throws GameActionException {
+            HexCoord coord = nearestHexCoord(loc);
+            return queryCell(coord.a, coord.b);
+        }
+
+        public static Cell queryCell(int a, int b) throws GameActionException {
+            MapLocation loc = hexCoordToLoc(a, b);
+            int entryIndex = hexCoordToEntryIndex(a, b);
+            int entryChannel = MAP_CHANNEL + (entryIndex * MAP_ENTRY_SIZE);
+            int flags = rc.readBroadcast(entryChannel);
+            boolean explored = (flags & MAP_CELL_EXPLORED_MASK) != 0;
+            boolean clear = (flags & MAP_CELL_CLEAR_MASK) != 0;
+            return new Cell(a, b, loc, explored, clear);
+        }
+
+        public static void sendCell(Cell cell) throws GameActionException {
+            int entryIndex = hexCoordToEntryIndex(cell.a, cell.b);
+            int entryChannel = MAP_CHANNEL + (entryIndex * MAP_ENTRY_SIZE);
+            int flags = 0;
+            if (cell.isExplored()) {
+                flags = flags | MAP_CELL_EXPLORED_MASK;
+            }
+            if (cell.isClear()) {
+                flags = flags | MAP_CELL_CLEAR_MASK;
+            }
+            rc.broadcast(entryChannel, flags);
+        }
+    }
+
+    public enum GardenerSchedule {ONCE_EVERY_N_ROUNDS, WHEN_FULL}
+
+    public enum ScoutMode {HARASS, COLLECT}
 
     public static RobotController rc;
 
@@ -63,6 +258,14 @@ public strictfp class RobotGlobal {
     public static final int DEFEND_LOCATION_QUEUE_COUNT_CHANNEL = DEFEND_LOCATION_QUEUE_BEGIN_CHANNEL + 1;
     public static final int NEW_SCOUT_MODE_CHANNEL = DEFEND_LOCATION_QUEUE_COUNT_CHANNEL + 1;
     public static final int OVERRIDE_SCOUT_MODE_CHANNEL = NEW_SCOUT_MODE_CHANNEL + 1;
+    private static final int MAP_ORIGIN_X_CHANNEL = OVERRIDE_SCOUT_MODE_CHANNEL + 1;
+    private static final int MAP_ORIGIN_Y_CHANNEL = MAP_ORIGIN_X_CHANNEL + 1;
+    private static final int MAP_CHANNEL = MAP_ORIGIN_Y_CHANNEL + 1;
+    private static final int MAP_ENTRY_SIZE = 1;
+    private static final int MAP_SIZE_A = 51;
+    private static final int MAP_SIZE_B = 59;
+    private static final int MAP_NUM_ENTRIES = MAP_SIZE_A * MAP_SIZE_B;
+    private static final int MAP_LENGTH = MAP_ENTRY_SIZE * MAP_NUM_ENTRIES;
 
     // Performance constants
     public static final int DESIRED_ROBOTS = 20;
@@ -84,7 +287,7 @@ public strictfp class RobotGlobal {
 
     // Round by round info
     public static MapLocation myLoc;
-    public static CommMap.HexCoord myHexCoord;
+    public static HexCoord myHexCoord;
     public static float myHealth;
     public static int robotCount;
     public static int roundNum;
@@ -128,8 +331,8 @@ public strictfp class RobotGlobal {
     private static RobotType[] initialBuildQueue1 = new RobotType[0];
     private static RobotType[] initialBuildQueue2 = new RobotType[0];
     private static RobotType initialDefaultBuild = null;
-    private static CommMap.HexCoord lastScoutHexCoord;
-    private static CommMap.HexCoord[] toScoutCoordBuffer = new CommMap.HexCoord[20];
+    private static HexCoord lastScoutHexCoord;
+    private static HexCoord[] toScoutCoordBuffer = new HexCoord[20];
     private static int toScoutCoordBufferStart = 0;
     private static int toScoutCoordBufferCount = 0;
 
@@ -167,7 +370,6 @@ public strictfp class RobotGlobal {
 
     public static void update() throws GameActionException {
         myLoc = rc.getLocation();
-        myHexCoord = CommMap.nearestHexCoord(myLoc);
         myHealth = rc.getHealth();
         robotCount = rc.getRobotCount();
         int newRoundNum = rc.getRoundNum();
@@ -187,6 +389,9 @@ public strictfp class RobotGlobal {
 
         knownMapBounds = getMapBounds();
         updateMapBounds(knownMapBounds);
+
+        CommMap.queryOrigin();
+        myHexCoord = CommMap.nearestHexCoord(myLoc);
 
         numDebugBytecodes = 0;
         debugTripped = false;
@@ -332,7 +537,7 @@ public strictfp class RobotGlobal {
         }
     }
 
-    private static void toScoutCoordBuffer_add(CommMap.HexCoord elem) {
+    private static void toScoutCoordBuffer_add(HexCoord elem) {
         int index = (toScoutCoordBufferStart + toScoutCoordBufferCount) % toScoutCoordBuffer.length;
         toScoutCoordBuffer[index] = elem;
         if (toScoutCoordBufferCount >= toScoutCoordBuffer.length) {
@@ -342,11 +547,11 @@ public strictfp class RobotGlobal {
         }
     }
 
-    private static CommMap.HexCoord toScoutCoordBuffer_peek() {
+    private static HexCoord toScoutCoordBuffer_peek() {
         return toScoutCoordBuffer[toScoutCoordBufferStart];
     }
 
-    private static CommMap.HexCoord toScoutCoordBuffer_pop() {
+    private static HexCoord toScoutCoordBuffer_pop() {
         if (toScoutCoordBufferCount <= 0) {
             return null;
         }
@@ -371,7 +576,7 @@ public strictfp class RobotGlobal {
                     MapLocation loc = CommMap.hexCoordToLoc(a, b);
                     if (loc.distanceTo(RobotGlobal.myLoc) <= myType.sensorRadius - 1) {
                         if (rc.onTheMap(loc)) {
-                            CommMap.Cell c = CommMap.queryCell(a, b);
+                            Cell c = CommMap.queryCell(a, b);
                             if (c.isExplored()) {
                                 rc.setIndicatorDot(loc, 0, 0, 255);
                             } else {
@@ -393,13 +598,13 @@ public strictfp class RobotGlobal {
             }
         } else if (!myHexCoord.equals(lastScoutHexCoord)) {
             Direction dir = CommMap.hexCoordToLoc(lastScoutHexCoord.a, lastScoutHexCoord.b).directionTo(CommMap.hexCoordToLoc(myHexCoord.a, myHexCoord.b));
-            CommMap.HexCoord.ArcIterator it = CommMap.hexArcIterator(myHexCoord.a, myHexCoord.b, maxSteps, dir);
+            HexCoord.ArcIterator it = HexCoord.hexArcIterator(myHexCoord.a, myHexCoord.b, maxSteps, dir);
             while (it.hasNext()) {
-                CommMap.HexCoord hc = it.next();
+                HexCoord hc = it.next();
                 MapLocation loc = CommMap.hexCoordToLoc(hc.a, hc.b);
                 if (loc.distanceTo(RobotGlobal.myLoc) <= myType.sensorRadius - 1) {
                     if (rc.onTheMap(loc)) {
-                        CommMap.Cell c = CommMap.queryCell(hc.a, hc.b);
+                        Cell c = CommMap.queryCell(hc.a, hc.b);
                         if (c.isExplored()) {
                             rc.setIndicatorDot(loc, 0, 0, 255);
                         } else {
@@ -421,12 +626,12 @@ public strictfp class RobotGlobal {
             }
         }
         lastScoutHexCoord = myHexCoord;
-        CommMap.HexCoord leftoverCoord = toScoutCoordBuffer_pop();
+        HexCoord leftoverCoord = toScoutCoordBuffer_pop();
         if (leftoverCoord != null) {
             MapLocation loc = CommMap.hexCoordToLoc(leftoverCoord.a, leftoverCoord.b);
             if (loc.distanceTo(RobotGlobal.myLoc) <= myType.sensorRadius - 1) {
                 if (rc.onTheMap(loc)) {
-                    CommMap.Cell c = CommMap.queryCell(leftoverCoord.a, leftoverCoord.b);
+                    Cell c = CommMap.queryCell(leftoverCoord.a, leftoverCoord.b);
                     if (c.isExplored()) {
                         rc.setIndicatorDot(loc, 0, 0, 255);
                     } else {
