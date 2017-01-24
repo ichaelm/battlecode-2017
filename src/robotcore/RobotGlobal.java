@@ -84,6 +84,7 @@ public strictfp class RobotGlobal {
 
     // Round by round info
     public static MapLocation myLoc;
+    public static CommMap.HexCoord myHexCoord;
     public static float myHealth;
     public static int robotCount;
     public static int roundNum;
@@ -127,6 +128,10 @@ public strictfp class RobotGlobal {
     private static RobotType[] initialBuildQueue1 = new RobotType[0];
     private static RobotType[] initialBuildQueue2 = new RobotType[0];
     private static RobotType initialDefaultBuild = null;
+    private static CommMap.HexCoord lastScoutHexCoord;
+    private static CommMap.HexCoord[] toScoutCoordBuffer = new CommMap.HexCoord[20];
+    private static int toScoutCoordBufferStart = 0;
+    private static int toScoutCoordBufferCount = 0;
 
     // Configuration for Offensive Units
     public static boolean useTriad = false;
@@ -162,6 +167,7 @@ public strictfp class RobotGlobal {
 
     public static void update() throws GameActionException {
         myLoc = rc.getLocation();
+        myHexCoord = CommMap.nearestHexCoord(myLoc);
         myHealth = rc.getHealth();
         robotCount = rc.getRobotCount();
         int newRoundNum = rc.getRoundNum();
@@ -323,6 +329,122 @@ public strictfp class RobotGlobal {
         		bulletsToAvoid[numBulletsToAvoid] = bullet;
         		numBulletsToAvoid++;
         	}
+        }
+    }
+
+    private static void toScoutCoordBuffer_add(CommMap.HexCoord elem) {
+        int index = (toScoutCoordBufferStart + toScoutCoordBufferCount) % toScoutCoordBuffer.length;
+        toScoutCoordBuffer[index] = elem;
+        if (toScoutCoordBufferCount >= toScoutCoordBuffer.length) {
+            toScoutCoordBufferStart = (toScoutCoordBufferStart + 1) % toScoutCoordBuffer.length;
+        } else {
+            toScoutCoordBufferCount++;
+        }
+    }
+
+    private static CommMap.HexCoord toScoutCoordBuffer_peek() {
+        return toScoutCoordBuffer[toScoutCoordBufferStart];
+    }
+
+    private static CommMap.HexCoord toScoutCoordBuffer_pop() {
+        if (toScoutCoordBufferCount <= 0) {
+            return null;
+        }
+        toScoutCoordBufferCount--;
+        int index = toScoutCoordBufferStart;
+        toScoutCoordBufferStart = (toScoutCoordBufferStart + 1) % toScoutCoordBuffer.length;
+        return toScoutCoordBuffer[index];
+    }
+
+    public static void scoutHex() throws GameActionException {
+        int maxSteps = (int)Math.floor(((myType.sensorRadius - 1) / (2f /*/ 1.15470053838f*/)) /*+ 1.15470053838f*/);
+        if (lastScoutHexCoord == null) {
+            int minA = myHexCoord.a - maxSteps;
+            int maxA = myHexCoord.a + maxSteps;
+            int minB = myHexCoord.b - maxSteps;
+            int maxB = myHexCoord.b + maxSteps;
+            int minSum = myHexCoord.a + myHexCoord.b - maxSteps;
+            int maxSum = myHexCoord.a + myHexCoord.b + maxSteps;
+
+            for (int a = minA; a <= maxA; a++) {
+                for (int b = Math.max(minB, (minSum - a)); b <= maxB && b <= (maxSum - a); b++) {
+                    MapLocation loc = CommMap.hexCoordToLoc(a, b);
+                    if (loc.distanceTo(RobotGlobal.myLoc) <= myType.sensorRadius - 1) {
+                        if (rc.onTheMap(loc)) {
+                            CommMap.Cell c = CommMap.queryCell(a, b);
+                            if (c.isExplored()) {
+                                rc.setIndicatorDot(loc, 0, 0, 255);
+                            } else {
+                                c.setExplored(true);
+                                if (rc.senseTreeAtLocation(loc) == null) {
+                                    rc.setIndicatorDot(loc, 0, 255, 0);
+                                    c.setClear(true);
+                                } else {
+                                    rc.setIndicatorDot(loc, 255, 0, 0);
+                                    c.setClear(false);
+                                }
+                                CommMap.sendCell(c);
+                            }
+                        }
+                    } else {
+                        rc.setIndicatorDot(loc, 255, 255, 255);
+                    }
+                }
+            }
+        } else if (!myHexCoord.equals(lastScoutHexCoord)) {
+            Direction dir = CommMap.hexCoordToLoc(lastScoutHexCoord.a, lastScoutHexCoord.b).directionTo(CommMap.hexCoordToLoc(myHexCoord.a, myHexCoord.b));
+            CommMap.HexCoord.ArcIterator it = CommMap.hexArcIterator(myHexCoord.a, myHexCoord.b, maxSteps, dir);
+            while (it.hasNext()) {
+                CommMap.HexCoord hc = it.next();
+                MapLocation loc = CommMap.hexCoordToLoc(hc.a, hc.b);
+                if (loc.distanceTo(RobotGlobal.myLoc) <= myType.sensorRadius - 1) {
+                    if (rc.onTheMap(loc)) {
+                        CommMap.Cell c = CommMap.queryCell(hc.a, hc.b);
+                        if (c.isExplored()) {
+                            rc.setIndicatorDot(loc, 0, 0, 255);
+                        } else {
+                            c.setExplored(true);
+                            if (rc.senseTreeAtLocation(loc) == null) {
+                                rc.setIndicatorDot(loc, 0, 255, 0);
+                                c.setClear(true);
+                            } else {
+                                rc.setIndicatorDot(loc, 255, 0, 0);
+                                c.setClear(false);
+                            }
+                            CommMap.sendCell(c);
+                        }
+                    }
+                } else {
+                    rc.setIndicatorDot(loc, 255, 255, 255);
+                    toScoutCoordBuffer_add(hc);
+                }
+            }
+        }
+        lastScoutHexCoord = myHexCoord;
+        CommMap.HexCoord leftoverCoord = toScoutCoordBuffer_pop();
+        if (leftoverCoord != null) {
+            MapLocation loc = CommMap.hexCoordToLoc(leftoverCoord.a, leftoverCoord.b);
+            if (loc.distanceTo(RobotGlobal.myLoc) <= myType.sensorRadius - 1) {
+                if (rc.onTheMap(loc)) {
+                    CommMap.Cell c = CommMap.queryCell(leftoverCoord.a, leftoverCoord.b);
+                    if (c.isExplored()) {
+                        rc.setIndicatorDot(loc, 0, 0, 255);
+                    } else {
+                        c.setExplored(true);
+                        if (rc.senseTreeAtLocation(loc) == null) {
+                            rc.setIndicatorDot(loc, 0, 255, 0);
+                            c.setClear(true);
+                        } else {
+                            rc.setIndicatorDot(loc, 255, 0, 0);
+                            c.setClear(false);
+                        }
+                        CommMap.sendCell(c);
+                    }
+                }
+            } else {
+                rc.setIndicatorDot(loc, 255, 255, 255);
+                toScoutCoordBuffer_add(leftoverCoord);
+            }
         }
     }
 
