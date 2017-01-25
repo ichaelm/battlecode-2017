@@ -93,7 +93,7 @@ public class LumberjackBot extends RobotGlobal {
                 // do farm job
                 MapLocation farmLoc = readFarmTableEntryLocation(farmNum);
                 writeFarmTableEntry(farmNum, farmLoc, false, true);
-                Direction farmDir = myLoc.directionTo(farmLoc);
+                //Direction farmDir = myLoc.directionTo(farmLoc);
                 if (enemyInRange) {
                     if (rc.canStrike()) {
                         rc.strike();
@@ -113,12 +113,14 @@ public class LumberjackBot extends RobotGlobal {
                         }
                     }
                 }
-                if (treeInRange && nearestTree.location.distanceTo(farmLoc) - nearestTree.radius < 5.75f) {
+                if (robotTreeInRange && nearestRobotTree.location.distanceTo(farmLoc) - nearestRobotTree.radius < 5.05f) {
+                    moved = tryMoveElseBack(robotTreeDir);
+                } else if (treeInRange && nearestTree.location.distanceTo(farmLoc) - nearestTree.radius < 5.05f) {
                     moved = tryMoveElseBack(treeDir);
                 } else {
-                    moved = tryMoveDistFrom(farmLoc, 4.75f);
+                    moved = tryMoveDistFrom(farmLoc, 4.05f);
                     if (!moved) {
-                        moved = tryMoveDistFrom(farmLoc, 4.75f);
+                        moved = tryMoveDistFrom(farmLoc, 4.05f);
                     }
                 }
             } else {
