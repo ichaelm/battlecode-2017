@@ -526,6 +526,27 @@ public strictfp class RobotGlobal {
             }
         }
     }
+    
+    public static RobotInfo[] nearbyFriendlyGardeners() {
+    	RobotInfo[] allFriendly = rc.senseNearbyRobots(myType.sensorRadius, myTeam);
+    	RobotInfo[] fg = new RobotInfo[allFriendly.length];
+    	if (allFriendly.length < 1) return null;
+    	
+    	int fgCount = 0;
+    	for (RobotInfo r: fg) {
+    		if (r.type == RobotType.GARDENER) {
+    			fg[fgCount] = r;
+    			fgCount ++;
+    		}
+    		else {
+    			if (r == null) {
+    				break;
+    			}
+    		}
+    	}
+    	
+    	return fg;
+    }
 
     public static void processNearbyBullets() throws GameActionException {
         int numIters = Math.min(nearbyBullets.length, DESIRED_BULLETS);
