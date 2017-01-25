@@ -118,6 +118,9 @@ public class ArchonBot extends RobotGlobal {
             float mapCenterY = (knownMapBounds.getInnerBound(MapBounds.NORTH) + knownMapBounds.getInnerBound(MapBounds.SOUTH)) / 2f;
             MapLocation knownMapCenter = new MapLocation(mapCenterX, mapCenterY);
             gardenerDir = myLoc.directionTo(knownMapCenter);
+            if (gardenerDir == null) {
+                gardenerDir = randomDirection();
+            }
 
             GardenerSchedule gardenerSchedule = getGardenerSchedule();
             int gardenersBuilt = rc.readBroadcast(NUM_GARDENERS_BUILT_CHANNEL);
