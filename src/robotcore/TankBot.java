@@ -14,7 +14,7 @@ public class TankBot extends RobotGlobal {
 	static int attackRound = 0;
 	
 	
-	public static Direction offsetTarget(MapLocation target) { // gives a random angle offset for shooting
+	public static Direction offsetTarget(MapLocation target) throws GameActionException { // gives a random angle offset for shooting
 		debugTick(6);
 		float offsetDistMax = 2.5f;
 		MapLocation newTarget = null;
@@ -85,15 +85,16 @@ public class TankBot extends RobotGlobal {
     
     
     public static void turn() throws GameActionException {
+		VP();
+		processNearbyRobots();
+		processNearbyBullets();
+		processNearbyTrees();
+		tryToShake();
         if (firstTurn) {
             goDir = randomDirection();
         }
         boolean shoot = true;
 
-        processNearbyRobots();
-        processNearbyBullets();
-        processNearbyTrees();
-        tryToShake();
         debugTick(1);
         
         if (attackLoc != null) {

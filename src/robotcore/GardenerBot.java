@@ -123,17 +123,18 @@ public class GardenerBot extends RobotGlobal {
 
     public static void turn() throws GameActionException {
     	VP();
+		processNearbyRobots();
+		processNearbyBullets();
+		processNearbyTrees();
+		tryToShake();
     	
     	if (birthTurn < 0) {
             birthTurn = roundNum;
             goDir = randomDirection();
         }
 
-        processNearbyBullets();
-
         RobotType currentBuildOrder = getGlobalDefaultBuild();
 
-        processNearbyTrees();
         boolean moved = false;
 
 
@@ -356,8 +357,6 @@ public class GardenerBot extends RobotGlobal {
 		} else {
 			writeFarmTableEntry(farmTableEntryNum, myLoc, true, false, isFull);
 		}
-
-		processNearbyRobots();
 
 		RobotInfo nearestHostile = getNearestEnemyHostile();
 		RobotInfo nearestNonHostile = getNearestEnemyNonHostile();

@@ -27,13 +27,14 @@ public class LumberjackBot extends RobotGlobal {
     }
 
     public static void turn() throws GameActionException {
-        if (firstTurn) {
-            goDir = randomDirection();
-        }
+        VP();
         processNearbyRobots();
         processNearbyBullets();
         processNearbyTrees();
         tryToShake();
+        if (firstTurn) {
+            goDir = randomDirection();
+        }
         
         RobotInfo nearestEnemy = getNearestEnemy();
         boolean enemyInRange = false;
@@ -72,17 +73,11 @@ public class LumberjackBot extends RobotGlobal {
             }
             if (!attacked) {
                 if (robotTreeInRange) {
-                    if (rc.canShake(nearestRobotTree.ID)) {
-                        rc.shake(nearestRobotTree.ID);
-                    }
                     if (rc.canChop(nearestRobotTree.ID)) {
                         rc.chop(nearestRobotTree.ID);
                         attacked = true;
                     }
                 } else if (treeInRange) {
-                    if (rc.canShake(nearestTree.ID)) {
-                        rc.shake(nearestTree.ID);
-                    }
                     if (rc.canChop(nearestTree.ID)) {
                         rc.chop(nearestTree.ID);
                         attacked = true;
@@ -107,17 +102,11 @@ public class LumberjackBot extends RobotGlobal {
                 }
                 if (!attacked) {
                     if (robotTreeInRange) {
-                        if (rc.canShake(nearestRobotTree.ID)) {
-                            rc.shake(nearestRobotTree.ID);
-                        }
                         if (rc.canChop(nearestRobotTree.ID)) {
                             rc.chop(nearestRobotTree.ID);
                             attacked = true;
                         }
                     } else if (treeInRange) {
-                        if (rc.canShake(nearestTree.ID)) {
-                            rc.shake(nearestTree.ID);
-                        }
                         if (rc.canChop(nearestTree.ID)) {
                             rc.chop(nearestTree.ID);
                             attacked = true;
@@ -142,17 +131,11 @@ public class LumberjackBot extends RobotGlobal {
                 }
                 if (!attacked) {
                     if (robotTreeInRange) {
-                        if (rc.canShake(nearestRobotTree.ID)) {
-                            rc.shake(nearestRobotTree.ID);
-                        }
                         if (rc.canChop(nearestRobotTree.ID)) {
                             rc.chop(nearestRobotTree.ID);
                             attacked = true;
                         }
                     } else if (treeInRange) {
-                        if (rc.canShake(nearestTree.ID)) {
-                            rc.shake(nearestTree.ID);
-                        }
                         if (rc.canChop(nearestTree.ID)) {
                             rc.chop(nearestTree.ID);
                             attacked = true;

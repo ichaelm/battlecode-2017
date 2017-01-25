@@ -26,6 +26,10 @@ public class ArchonBot extends RobotGlobal {
 
     public static void turn() throws GameActionException {
         VP();
+        processNearbyRobots();
+        processNearbyBullets();
+        processNearbyTrees();
+        tryToShake();
 
         // Archon count and leader selection
         if (isLeader()) {
@@ -154,8 +158,6 @@ public class ArchonBot extends RobotGlobal {
                     break;
             }
         }
-
-        processNearbyRobots();
 
         RobotInfo nearestHostile = getNearestEnemyHostile();
         RobotInfo nearestNonHostile = getNearestEnemyNonHostile();

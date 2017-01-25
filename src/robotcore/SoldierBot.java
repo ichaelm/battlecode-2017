@@ -30,13 +30,14 @@ public class SoldierBot extends RobotGlobal {
 
 
     public static void turn() throws GameActionException {
+        VP();
+        processNearbyRobots();
+        processNearbyBullets();
+        processNearbyTrees();
+        tryToShake();
         if (firstTurn) {
             goDir = randomDirection();
         }
-
-        tryToShake();
-        processNearbyRobots();
-        processNearbyBullets();
 
         MapLocation attackLoc = peekAttackLocation();
         MapLocation defendLoc = peekDefendLocation();

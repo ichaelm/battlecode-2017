@@ -29,6 +29,11 @@ public class ScoutBot extends RobotGlobal {
     }
 
     public static void turn() throws GameActionException {
+		VP();
+		processNearbyRobots();
+		processNearbyBullets();
+		processNearbyTrees();
+		tryToShake();
 		if (firstTurn) {
 			goDir = randomDirection();
 		}
@@ -41,7 +46,6 @@ public class ScoutBot extends RobotGlobal {
         	}
         	
         	//React to enemy nearby
-        	processNearbyRobots();
         	RobotInfo nearestEnemy = getNearestEnemy();
         	
         	if (nearestEnemy != null) {
@@ -60,7 +64,6 @@ public class ScoutBot extends RobotGlobal {
             }
         	
         	//Check if there's a tree nearby
-        	processNearbyTrees();
         	TreeInfo nearestTree = getNearestTree();
         	
         	if (nearestTree != null) {
@@ -68,11 +71,6 @@ public class ScoutBot extends RobotGlobal {
         		if (nearestTree.getContainedBullets() > 0) {
         			Direction treeDirection = myLoc.directionTo(nearestTree.location);
         			tryMoveElseLeftRight(treeDirection);
-        			
-        			if (rc.canShake(nearestTree.ID)) {
-            			rc.shake(nearestTree.ID);
-            			System.out.println("Shook tree: " + nearestTree.ID);
-            		}
         		} else {
         			//Move in the chosen direction
     	        	if (!tryMoveElseLeftRight(currentDirection)) {
@@ -92,9 +90,6 @@ public class ScoutBot extends RobotGlobal {
 	        	}
         	}
     	} else if (mode == ScoutMode.HARASS) {
-    		processNearbyRobots();
-    		processNearbyTrees();
-    		processNearbyBullets();
 
 			RobotInfo targetLumberjack = getNearestEnemyLumberjack();
 			RobotInfo selectedGardenerInfo = null;
