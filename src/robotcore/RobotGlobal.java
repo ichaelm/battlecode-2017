@@ -302,6 +302,7 @@ public strictfp class RobotGlobal {
     public static float nearbyBulletRadius;
     public static boolean neverUpdated;
     public static MapBounds knownMapBounds;
+    public static float vpCost = 7.5f;
 
     // Results of further processing
     private static RobotInfo nearestEnemy = null;
@@ -349,7 +350,8 @@ public strictfp class RobotGlobal {
     public static boolean kiteSoldiers = false;
     public static boolean kiteScouts = false;
     public static boolean kiteTanks = false;
-    
+    public static float attackCircleStart = 15f;
+    public static float attackCircleChange = 0.125f;
     
 
     public static void init(RobotController rc) throws GameActionException {
@@ -382,6 +384,7 @@ public strictfp class RobotGlobal {
         victoryPoints = rc.getTeamVictoryPoints();
         treeCount = rc.getTreeCount();
         teamBullets = rc.getTeamBullets();
+        vpCost = 7.5f + rc.getRoundNum() * (12.5f / 3000.0f);
 
         updateNearbyRobots();
         updateNearbyTrees();
@@ -1397,6 +1400,15 @@ public strictfp class RobotGlobal {
             }
         }
         return true;
+    }
+    
+    public static void VP() throws GameActionException { // Donation strategy
+    	int VPtoWin = GameConstants.VICTORY_POINTS_TO_WIN - victoryPoints;
+    	
+    	if(teamBullets >= vpCost * VPtoWin) rc.donate(vpCost * VPtoWin);
+        if(rc.getRoundLimit() - rc.getRoundNum() < 2) {
+        	rc.donate(teamBullets);
+        }
     }
 
     public static int[] readBroadcastArray(int channelStart, int length) throws GameActionException {

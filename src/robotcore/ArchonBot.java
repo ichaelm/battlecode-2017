@@ -25,10 +25,7 @@ public class ArchonBot extends RobotGlobal {
     }
 
     public static void turn() throws GameActionException {
-        if(teamBullets >= 10000) rc.donate(10000);
-        if(rc.getRoundLimit() - rc.getRoundNum() < 2) {
-        	rc.donate(teamBullets);
-        }
+        VP();
 
         // Archon count and leader selection
         if (isLeader()) {

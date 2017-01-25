@@ -43,7 +43,9 @@ public class SoldierBot extends RobotGlobal {
         RobotInfo nearestHostile = getNearestEnemyHostile();
         RobotInfo nearestNonHostile = getNearestEnemyNonHostile();
         boolean moved = false;
+        boolean shoot = true;
         debugTick(0);
+        
 
         if (nearestHostile != null) { // If there is a nearby hostile enemy
             // Move towards it or kite it
@@ -55,9 +57,12 @@ public class SoldierBot extends RobotGlobal {
             }
             atHostile = myLoc.directionTo(nearestHostile.location);
 
+            if (!friendlyFireOn) {
+        		shoot = hasLineOfSightFF(nearestHostile.location); // if this soldier is to avoid FriendlyFire
+        	}
             // Shoot at it if close enough
             float dist = nearestHostile.location.distanceTo(myLoc);
-            if (friendlyFireOn || hasLineOfSight(nearestHostile.location)) { // if this soldier is to avoid FriendlyFire
+            if (shoot) { // if this soldier is to avoid FriendlyFire
                 if (usePentad && rc.canFirePentadShot() && dist < pentadDist) { // if soldier shoots, canFire becomes false
                     rc.firePentadShot(atHostile);
                 }
