@@ -16,7 +16,7 @@ public strictfp class RobotGlobal {
 
         // member variables
 
-        private static MapLocation commMapOrigin;
+        private static MapLocation commMapOrigin = new MapLocation(0, 0);
 
         // geometry constants
 
@@ -32,10 +32,21 @@ public strictfp class RobotGlobal {
 
         // whole map operations
 
-        public static void sendOrigin(MapLocation origin) throws GameActionException {
+        /*
+        public static void initializeMap(MapLocation origin) throws GameActionException {
             CommMap.commMapOrigin = origin;
-            rc.broadcast(MAP_ORIGIN_X_CHANNEL, Float.floatToIntBits(origin.x));
-            rc.broadcast(MAP_ORIGIN_Y_CHANNEL, Float.floatToIntBits(origin.y));
+            boolean started = rc.readBroadcast(MAP_STARTED_CHANNEL) != 0;
+            if (started) {
+                System.out.println("Map was initialized twice!");
+            } else {
+                rc.broadcast(MAP_STARTED_CHANNEL, 1);
+                rc.broadcast(MAP_ORIGIN_X_CHANNEL, Float.floatToIntBits(origin.x));
+                rc.broadcast(MAP_ORIGIN_Y_CHANNEL, Float.floatToIntBits(origin.y));
+            }
+        }
+
+        public static boolean queryInitialized() throws GameActionException {
+            return rc.readBroadcast(MAP_STARTED_CHANNEL) != 0;
         }
 
         public static void queryOrigin() throws GameActionException {
@@ -43,6 +54,7 @@ public strictfp class RobotGlobal {
             float y = Float.intBitsToFloat(rc.readBroadcast(MAP_ORIGIN_Y_CHANNEL));
             commMapOrigin = new MapLocation(x, y);
         }
+        */
 
         // channel math utilities
 
@@ -258,7 +270,8 @@ public strictfp class RobotGlobal {
     public static final int DEFEND_LOCATION_QUEUE_COUNT_CHANNEL = DEFEND_LOCATION_QUEUE_BEGIN_CHANNEL + 1;
     public static final int NEW_SCOUT_MODE_CHANNEL = DEFEND_LOCATION_QUEUE_COUNT_CHANNEL + 1;
     public static final int OVERRIDE_SCOUT_MODE_CHANNEL = NEW_SCOUT_MODE_CHANNEL + 1;
-    private static final int MAP_ORIGIN_X_CHANNEL = OVERRIDE_SCOUT_MODE_CHANNEL + 1;
+    private static final int MAP_STARTED_CHANNEL = OVERRIDE_SCOUT_MODE_CHANNEL + 1;
+    private static final int MAP_ORIGIN_X_CHANNEL = MAP_STARTED_CHANNEL + 1;
     private static final int MAP_ORIGIN_Y_CHANNEL = MAP_ORIGIN_X_CHANNEL + 1;
     private static final int MAP_CHANNEL = MAP_ORIGIN_Y_CHANNEL + 1;
     private static final int MAP_ENTRY_SIZE = 1;
@@ -271,6 +284,7 @@ public strictfp class RobotGlobal {
     public static final int DESIRED_ROBOTS = 20;
     public static final int DESIRED_TREES = 20;
     public static final int DESIRED_BULLETS = 20;
+    public static final int MAX_TREE_ID = 1000;
     
     // Scout variables
     public static Direction currentDirection;
@@ -317,6 +331,7 @@ public strictfp class RobotGlobal {
     private static TreeInfo lowestFriendlyTree = null;
     private static BulletInfo[] bulletsToAvoid = new BulletInfo[0];
     private static int numBulletsToAvoid = 0;
+    private static boolean[] idSeen = new boolean[MAX_TREE_ID + 1];
 
     // Special stored values
     private static boolean circleClockwise = true;
@@ -331,6 +346,7 @@ public strictfp class RobotGlobal {
     private static RobotType[] initialBuildQueue1 = new RobotType[0];
     private static RobotType[] initialBuildQueue2 = new RobotType[0];
     private static RobotType initialDefaultBuild = null;
+    private static boolean useCoordMap = false;
     private static HexCoord lastScoutHexCoord;
     private static HexCoord[] toScoutCoordBuffer = new HexCoord[20];
     private static int toScoutCoordBufferStart = 0;
@@ -390,7 +406,6 @@ public strictfp class RobotGlobal {
         knownMapBounds = getMapBounds();
         updateMapBounds(knownMapBounds);
 
-        CommMap.queryOrigin();
         myHexCoord = CommMap.nearestHexCoord(myLoc);
 
         numDebugBytecodes = 0;
@@ -521,6 +536,35 @@ public strictfp class RobotGlobal {
                     }
                 }
             }
+            /*
+            if (!idSeen[tree.getID()]) {
+                idSeen[tree.getID()] = true;
+                float r = tree.radius + CommMap.CELL_RADIUS;
+                int[] hexBounds = CommMap.circleHexBounds(tree.location, r);
+                int minA = hexBounds[0];
+                int maxA = hexBounds[1];
+                int minB = hexBounds[2];
+                int maxB = hexBounds[3];
+                int minSum = hexBounds[4];
+                int maxSum = hexBounds[5];
+                for (int a = minA; a <= maxA; a++) {
+                    int minBForA = Math.max(minB, (minSum - a));
+                    int maxBForA = Math.min(maxB, (maxSum - a));
+                    for (int b = minBForA; b <= maxBForA; b++) {
+                        MapLocation loc = CommMap.hexCoordToLoc(a, b);
+                        rc.setIndicatorDot(loc, 0, 255, 0);
+                        if (loc.distanceTo(tree.location) <= r) {
+                            Cell c = CommMap.queryCell(a, b);
+                            if (c.isClear()) {
+                                c.setClear(false);
+                                CommMap.sendCell(c);
+                                rc.setIndicatorDot(loc, 255, 0, 0);
+                            }
+                        }
+                    }
+                }
+            }
+            */
         }
     }
 
@@ -570,24 +614,19 @@ public strictfp class RobotGlobal {
             int maxB = myHexCoord.b + maxSteps;
             int minSum = myHexCoord.a + myHexCoord.b - maxSteps;
             int maxSum = myHexCoord.a + myHexCoord.b + maxSteps;
-
+            float searchR = myType.sensorRadius - 1;
             for (int a = minA; a <= maxA; a++) {
-                for (int b = Math.max(minB, (minSum - a)); b <= maxB && b <= (maxSum - a); b++) {
+                int minBForA = Math.max(minB, (minSum - a));
+                int maxBForA = Math.min(maxB, (maxSum - a));
+                for (int b = minBForA; b <= maxBForA; b++) {
                     MapLocation loc = CommMap.hexCoordToLoc(a, b);
-                    if (loc.distanceTo(RobotGlobal.myLoc) <= myType.sensorRadius - 1) {
+                    if (loc.distanceTo(myLoc) <= searchR) {
                         if (rc.onTheMap(loc)) {
                             Cell c = CommMap.queryCell(a, b);
                             if (c.isExplored()) {
                                 rc.setIndicatorDot(loc, 0, 0, 255);
                             } else {
                                 c.setExplored(true);
-                                if (rc.senseTreeAtLocation(loc) == null) {
-                                    rc.setIndicatorDot(loc, 0, 255, 0);
-                                    c.setClear(true);
-                                } else {
-                                    rc.setIndicatorDot(loc, 255, 0, 0);
-                                    c.setClear(false);
-                                }
                                 CommMap.sendCell(c);
                             }
                         }
@@ -2115,6 +2154,14 @@ public strictfp class RobotGlobal {
 
     public static void setScoutWhenFull(boolean scoutWhenFull) {
         RobotGlobal.scoutWhenFull = scoutWhenFull;
+    }
+
+    public static boolean getUseCoordMap() {
+        return useCoordMap;
+    }
+
+    public static void setUseCoordMap(boolean useCoordMap) {
+        RobotGlobal.useCoordMap = useCoordMap;
     }
 
     /*

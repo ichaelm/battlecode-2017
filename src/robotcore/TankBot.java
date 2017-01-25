@@ -36,8 +36,7 @@ public class TankBot extends RobotGlobal {
             goDir = randomDirection();
         }
         boolean shoot = true;
-        
-        tryToShake();
+
         processNearbyRobots();
         processNearbyBullets();
         processNearbyTrees();

@@ -7,7 +7,6 @@ public strictfp class RobotPlayer {
     public static void run(RobotController rc) throws GameActionException {
         try {
             RobotGlobal.init(rc);
-            RobotGlobal.CommMap.sendOrigin(rc.getLocation());
 
             while (true) {
                 RobotGlobal.update();

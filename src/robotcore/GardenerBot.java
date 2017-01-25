@@ -131,7 +131,6 @@ public class GardenerBot extends RobotGlobal {
             birthTurn = roundNum;
             goDir = randomDirection();
         }
-
         processNearbyBullets();
 
         RobotType currentBuildOrder = getGlobalDefaultBuild();

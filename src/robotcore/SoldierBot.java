@@ -37,6 +37,7 @@ public class SoldierBot extends RobotGlobal {
         tryToShake();
         processNearbyRobots();
         processNearbyBullets();
+        processNearbyTrees();
 
         MapLocation attackLoc = peekAttackLocation();
         MapLocation defendLoc = peekDefendLocation();

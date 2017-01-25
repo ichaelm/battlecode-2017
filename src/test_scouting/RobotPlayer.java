@@ -8,14 +8,6 @@ public strictfp class RobotPlayer {
         try {
             boolean leader = false;
             RobotGlobal.init(rc);
-            int x = rc.readBroadcast(9999);
-            if (x == 0) {
-                leader = true;
-                rc.broadcast(9999, 1);
-            }
-            if (leader) {
-                RobotGlobal.CommMap.sendOrigin(rc.getLocation());
-            }
 
             while (true) {
 

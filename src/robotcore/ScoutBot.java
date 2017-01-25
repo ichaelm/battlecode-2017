@@ -29,6 +29,8 @@ public class ScoutBot extends RobotGlobal {
     }
 
     public static void turn() throws GameActionException {
+		processNearbyTrees();
+    	tryToShake();
 		if (firstTurn) {
 			goDir = randomDirection();
 		}
@@ -60,7 +62,6 @@ public class ScoutBot extends RobotGlobal {
             }
         	
         	//Check if there's a tree nearby
-        	processNearbyTrees();
         	TreeInfo nearestTree = getNearestTree();
         	
         	if (nearestTree != null) {

@@ -63,6 +63,7 @@ public class ArchonBot extends RobotGlobal {
             }
             sendScoutMode(ScoutMode.HARASS, false);
         }
+        processNearbyTrees();
 
         boolean iMakeGardeners;
         if (firstTurn) {
