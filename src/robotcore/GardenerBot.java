@@ -12,7 +12,7 @@ public class GardenerBot extends RobotGlobal {
     static Direction goDir = null;
     static int birthTurn = -1;
     static FarmingMode mode = FarmingMode.SEARCHING;
-	static boolean goBack = false;
+	//static boolean goBack = false;
     static boolean builtSecondary = false;
 	static int farmTableEntryNum = -1;
 
@@ -194,17 +194,10 @@ public class GardenerBot extends RobotGlobal {
 			if (farmGeo != null) {
 				rc.setIndicatorDot(farmGeo.getBuildLoc(), 55, 55, 55);
 				if (rc.hasRobotBuildRequirements(priorityBuild) && !rc.isCircleOccupiedExceptByThisRobot(farmGeo.getConstructionZone(), 1)) {
-					//System.out.println("Moved: " + moved);
-					if (!moved) {
-						moved = tryMoveExact(farmGeo.getBuildLoc());
-						if (moved) {
-							goBack = true;
-							if (rc.canBuildRobot(priorityBuild, farmGeo.getBuildDirection())) {
-								rc.buildRobot(priorityBuild, farmGeo.getBuildDirection());
-								popBuildQueue1();
-								builtPriority = true;
-							}
-						}
+					if (rc.canBuildRobot(priorityBuild, farmGeo.getBuildDirection())) {
+						rc.buildRobot(priorityBuild, farmGeo.getBuildDirection());
+						popBuildQueue1();
+						builtPriority = true;
 					}
 				}
 			} else {
@@ -229,6 +222,40 @@ public class GardenerBot extends RobotGlobal {
         	
         	farmGeo.drawFarm(rc);
 
+
+        	boolean builtTree = false;
+        	boolean haveBullets = teamBullets > GameConstants.BULLET_TREE_COST + skippedCost;
+        	for (int t = 0; t < 5; t++) {
+        		boolean isAlive = isTreeAlive[t];
+        		boolean isBlocked = isTreeBlocked[t];
+        		if (!isAlive && !isBlocked) {
+        			// try to plant this one
+        			MapLocation pLoc = farmGeo.getTreePlantingLocs()[t];
+
+        			if (haveBullets && rc.onTheMap(pLoc, 1) && rc.isBuildReady()){ // check location, cooldown, & bullets
+        				Direction tDir = farmGeo.getTreeDirections()[t];
+        				//System.out.println("Attempting to plant Tree #" + t);
+
+        				if (rc.canPlantTree(tDir)) {						// check if can plant
+        					rc.plantTree(myLoc.directionTo(farmGeo.getTreeLocs()[t])); 	// Success! now account for the new tree
+        					//System.out.println("Tree #" + t + " is planted.");
+        					isTreeAlive[t] = true;
+        					builtTree = true;
+        				} else {
+        					//System.out.println("Couldn't plant tree # " + t + " in treeDir specified.");
+        				}
+
+        			}
+        			//System.out.println("Waiting for cooldown...");
+        			break;
+        		}
+        	}
+        	if (!builtTree) {
+        		skippedCost += GameConstants.BULLET_TREE_COST;
+        	}
+
+        	
+        	/*
             if (goBack) {
                 if (!moved){ // if not in center, goback to center
                     moved = tryMoveExact(farmGeo.getFarmCenter());
@@ -276,27 +303,24 @@ public class GardenerBot extends RobotGlobal {
 					skippedCost += GameConstants.BULLET_TREE_COST;
 				}
         	}
+            
+            */
+
         	if (secondaryBuild != null && teamBullets > skippedCost + secondaryBuild.bulletCost) {
-				// Build a unit if possible
-				float so = GameConstants.GENERAL_SPAWN_OFFSET;
-				rc.setIndicatorDot(farmGeo.getConstructionZone(), 55, 55, 55);
-				boolean builtSecondary = false;
-				if (rc.hasRobotBuildRequirements(secondaryBuild) && !rc.isCircleOccupiedExceptByThisRobot(farmGeo.getConstructionZone(), 1)) {
-					//System.out.println("Moved: " + moved);
-					if (!moved) {
-						moved = tryMoveExact(farmGeo.getBuildLoc());
-						if (moved) {
-							goBack = true;
-							if (rc.canBuildRobot(secondaryBuild, farmGeo.getBuildDirection())) {
-								rc.buildRobot(secondaryBuild, farmGeo.getBuildDirection());
-								popBuildQueue2();
-								builtSecondary = true;
-							}
-						}
-					}
-				}
-				if (!builtSecondary) {
-					skippedCost += secondaryBuild.bulletCost;
+        		// Build a unit if possible
+        		float so = GameConstants.GENERAL_SPAWN_OFFSET;
+        		rc.setIndicatorDot(farmGeo.getConstructionZone(), 55, 55, 55);
+        		boolean builtSecondary = false;
+        		if (rc.hasRobotBuildRequirements(secondaryBuild) && !rc.isCircleOccupiedExceptByThisRobot(farmGeo.getConstructionZone(), 1)) {
+
+        			if (rc.canBuildRobot(secondaryBuild, farmGeo.getBuildDirection())) {
+        				rc.buildRobot(secondaryBuild, farmGeo.getBuildDirection());
+        				popBuildQueue2();
+        				builtSecondary = true;
+        			}
+        		}
+        		if (!builtSecondary) {
+        			skippedCost += secondaryBuild.bulletCost;
 				}
 			}
 
@@ -313,31 +337,22 @@ public class GardenerBot extends RobotGlobal {
         	float so = GameConstants.GENERAL_SPAWN_OFFSET;
         	rc.setIndicatorDot(farmGeo.getConstructionZone(), 55, 55, 55);
 
-            if (goBack) {
-                if (!moved) {
-                    moved = tryMoveExact(farmGeo.getFarmCenter());
-                    goBack = false;
-                }
-            } else if (currentBuildOrder != null && teamBullets > skippedCost + currentBuildOrder.bulletCost) {
-                if (rc.hasRobotBuildRequirements(currentBuildOrder) && !rc.isCircleOccupiedExceptByThisRobot(farmGeo.getConstructionZone(), 1)) {
-                    //System.out.println("Moved: " + moved);
-                    if (!moved) {
-                        moved = tryMoveExact(farmGeo.getBuildLoc());
-                        if (rc.canBuildRobot(currentBuildOrder, farmGeo.getBuildDirection())){
-                            rc.buildRobot(currentBuildOrder, farmGeo.getBuildDirection());
-                        }
-                        goBack = true;
-                    }
-                }
-            }
+        	if (currentBuildOrder != null && teamBullets > skippedCost + currentBuildOrder.bulletCost) {
+        		if (rc.hasRobotBuildRequirements(currentBuildOrder) && !rc.isCircleOccupiedExceptByThisRobot(farmGeo.getConstructionZone(), 1)) {
+        			
+        			if (rc.canBuildRobot(currentBuildOrder, farmGeo.getBuildDirection())){
+        				rc.buildRobot(currentBuildOrder, farmGeo.getBuildDirection());
+        			}
+        		}
+        	}
         	//System.out.println("watering");
-        }
+		}
 
 
 		// Update farm table
 		boolean isFull;
-        if (mode == FarmingMode.FARMING) {
-        	isFull = true;
+		if (mode == FarmingMode.FARMING) {
+			isFull = true;
 			for (int i = 0; i < 5; i++) {
 				if (!isTreeAlive[i] && !isTreeBlocked[i]) {
 					isFull = false;
