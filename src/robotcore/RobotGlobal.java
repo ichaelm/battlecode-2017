@@ -964,24 +964,28 @@ public strictfp class RobotGlobal {
 
     public static boolean tryMoveElseLeftRight(Direction dir, float dist, float degreeOffset, int checksPerSide) throws GameActionException {
 
-        // First, try intended direction
-        MapLocation newLoc = myLoc.add(dir, dist);
-        if (rc.canMove(dir, dist)) {
-            if (!willCollideWith(bulletsToAvoid, newLoc, myType.bodyRadius)) {
-                rc.move(dir, dist);
-                myLoc = newLoc;
-                return true;
-            }
-        }
+    	// First, try intended direction
+    	MapLocation newLoc = myLoc.add(dir, dist);
+    	if (rc.onTheMap(newLoc)) { 
+    		if (rc.canMove(dir, dist)) {
+    			if (!willCollideWith(bulletsToAvoid, newLoc, myType.bodyRadius)) {
+    				rc.move(dir, dist);
+    				myLoc = newLoc;
+    				return true;
+    			}
+    		}
+    	}
 
-        // Now try a bunch of similar angles
-        boolean moved = false;
+    	// Now try a bunch of similar angles
+    	boolean moved = false;
         int currentCheck = 1;
 
         while(currentCheck<=checksPerSide) {
             // Try the offset of the left side
             Direction newDir = dir.rotateLeftDegrees(degreeOffset*currentCheck);
             newLoc = myLoc.add(newDir, dist);
+            
+            if (!rc.onTheMap(newLoc)) { continue; }
             if(rc.canMove(newDir, dist)) {
                 if (!willCollideWith(bulletsToAvoid, newLoc, myType.bodyRadius)) {
                     rc.move(newDir, dist);
@@ -993,6 +997,7 @@ public strictfp class RobotGlobal {
             // Try the offset on the right side
             newDir = dir.rotateRightDegrees(degreeOffset*currentCheck);
             newLoc = myLoc.add(newDir, dist);
+            if (!rc.onTheMap(newLoc)) { continue; }
             if(rc.canMove(newDir, dist)) {
                 if (!willCollideWith(bulletsToAvoid, newLoc, myType.bodyRadius)) {
                     rc.move(newDir, dist);
