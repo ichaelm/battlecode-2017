@@ -4,6 +4,16 @@ import battlecode.common.*;
 
 
 public class TankBot extends RobotGlobal {
+	static final int iNORTH = 0;
+    static final int iEAST = 1;
+    static final int iSOUTH = 2;
+    static final int iWEST = 3;
+    
+    static MapLocation nearestToMe = null;
+    static MapLocation nearestToEnemy = null;
+    static MapLocation furthestFromMe = null;
+    static MapLocation furthestFromEnemy = null;
+	
 	static Direction goDir;
 	static boolean firstTurn = true;
 	static int goCount = 0;
@@ -51,6 +61,70 @@ public class TankBot extends RobotGlobal {
 		rc.setIndicatorDot(newTarget, 225, 100, 0);
 		return myLoc.directionTo(newTarget);
 	}
+	
+	public static void parseMap() {
+		if (attackLoc == null) return;
+		MapLocation knownNE = knownMapBounds.getInnerCornerLoc(MapBounds.NORTH, MapBounds.EAST);
+        MapLocation knownSE = knownMapBounds.getInnerCornerLoc(MapBounds.SOUTH, MapBounds.EAST);
+        MapLocation knownNW = knownMapBounds.getInnerCornerLoc(MapBounds.NORTH, MapBounds.WEST);
+        MapLocation knownSW = knownMapBounds.getInnerCornerLoc(MapBounds.SOUTH, MapBounds.WEST);
+        
+        float distToTarget = myLoc.distanceTo(attackLoc);
+		
+        float knownHeight = knownMapBounds.getInnerBound(iNORTH) - knownMapBounds.getInnerBound(iSOUTH);
+        float knownWidth = knownMapBounds.getInnerBound(iEAST) - knownMapBounds.getInnerBound(iWEST);
+        float avgY = knownMapBounds.getInnerBound(iSOUTH) + knownHeight * 0.5f;
+        float avgX = knownMapBounds.getInnerBound(iWEST) + knownWidth * 0.5f;
+        
+        MapLocation knownMidNorth = new MapLocation(avgX, knownMapBounds.getInnerBound(iNORTH));
+        MapLocation knownMidSouth = new MapLocation(avgX, knownMapBounds.getInnerBound(iSOUTH));
+        MapLocation knownMidEast = new MapLocation(knownMapBounds.getInnerBound(iEAST), avgY);
+        MapLocation knownMidWest = new MapLocation(knownMapBounds.getInnerBound(iWEST), avgY);
+        
+        MapLocation[] spots = new MapLocation[] {
+        		knownNE.add(Direction.SOUTH, 2).add(Direction.WEST, 2),
+        		knownSE.add(Direction.NORTH, 2).add(Direction.WEST, 2),
+        		knownNW.add(Direction.SOUTH, 2).add(Direction.EAST, 2),
+        		knownSW.add(Direction.NORTH, 2).add(Direction.EAST, 2),
+        		knownMidNorth.add(Direction.SOUTH, 2),
+        		knownMidWest.add(Direction.EAST, 2),
+        		knownMidSouth.add(Direction.NORTH, 2),
+        		knownMidEast.add(Direction.WEST, 2)
+        };
+        
+        
+        float minDistToMe = Float.POSITIVE_INFINITY;
+        float minDistToEnemy = Float.POSITIVE_INFINITY;
+        float maxDistToMe = 0;
+        float maxDistToEnemy = 0;
+        
+        for (MapLocation l: spots) {
+        	float dM = l.distanceTo(myLoc);
+        	float dE = l.distanceTo(attackLoc);
+        	
+        	if (dM < minDistToMe) {
+        		nearestToMe = l;
+        	}
+        	if (dE < minDistToEnemy) {
+        		nearestToEnemy = l;
+        	}
+        	
+        	minDistToMe = Math.min(dM, minDistToMe);
+        	minDistToEnemy = Math.min(dE, minDistToEnemy);
+        	
+        	if (dM > maxDistToMe) {
+        		furthestFromMe = l;
+        	}
+        	if (dE > maxDistToEnemy) {
+        		furthestFromEnemy = l;
+        	}
+        	
+        	maxDistToMe = Math.max(dM, maxDistToMe);
+        	maxDistToEnemy = Math.max(dE, maxDistToEnemy);
+        }
+        
+       
+	}
 	/**
 	public static MapLocation newAttackLocation() throws GameActionException {
 		MapLocation prev = attackLoc;
@@ -89,6 +163,7 @@ public class TankBot extends RobotGlobal {
 		processNearbyRobots();
 		processNearbyBullets();
 		processNearbyTrees();
+		parseMap();
 		tryToShake();
         if (firstTurn) {
             goDir = randomDirection();
@@ -147,6 +222,10 @@ public class TankBot extends RobotGlobal {
         	debugTick(4);
         	
         	MapLocation firingLineSpot = attackLoc.add(attackLoc.directionTo(myLoc), attackRadius); // Location on the line 
+        	
+        	MapLocation barrageLoc = nearestToMe;
+        	rc.setIndicatorDot(barrageLoc, 0, 0, 0);
+        	
         	rc.setIndicatorDot(firingLineSpot, 222, 222, 222);
         	goDir = myLoc.directionTo(firingLineSpot);
         	
@@ -154,7 +233,7 @@ public class TankBot extends RobotGlobal {
         	
         	rc.setIndicatorDot(attackLoc, 255, 0, 0);
 
-        	if (!rc.hasMoved()) { moved = tryMoveElseBack(myLoc.directionTo(firingLineSpot)); }
+        	if (!rc.hasMoved()) { moved = tryMoveElseBack(myLoc.directionTo(barrageLoc)); } // <<<<<<<<<<
         	
         	Direction shootAt = offsetTarget(attackLoc);
         	debugTick(12);
