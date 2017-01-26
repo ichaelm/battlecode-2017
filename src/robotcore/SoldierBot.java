@@ -47,6 +47,11 @@ public class SoldierBot extends RobotGlobal {
         boolean shoot = true;
         debugTick(0);
         
+        MapLocation selectedGardenerLoc = null;
+        RobotInfo selectedGardenerInfo = getNearestEnemyGardener();
+		if (selectedGardenerInfo != null) {
+			selectedGardenerLoc = selectedGardenerInfo.location;
+		}
 
         if (nearestHostile != null) { // If there is a nearby hostile enemy
             // Move towards it or kite it
@@ -111,6 +116,13 @@ public class SoldierBot extends RobotGlobal {
             }
         }
         if (nearestNonHostile != null) {
+        	
+        	if (selectedGardenerInfo != null) {
+        		if (rc.canFireSingleShot()) {
+        			rc.fireSingleShot(myLoc.directionTo(selectedGardenerLoc));
+        		}
+        	}
+        	
             int whichAttackLoc = whichAttackLocation(nearestNonHostile.location);
             if (whichAttackLoc >= 0) {
                 updateAttackLocation(nearestNonHostile.location, whichAttackLoc);
