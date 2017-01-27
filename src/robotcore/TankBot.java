@@ -23,6 +23,8 @@ public class TankBot extends RobotGlobal {
 	static boolean wasAttacking = false;
 	static int attackRound = 0;
 	
+	static MapLocation barrageLoc = myLoc;
+	
 	
 	public static Direction offsetTarget(MapLocation target) throws GameActionException { // gives a random angle offset for shooting
 		debugTick(6);
@@ -177,7 +179,8 @@ public class TankBot extends RobotGlobal {
         	if (attackLoc.equals(peekAttackLocation())){
             	wasAttacking = true;
             	attackRound ++;
-            } else { 
+            } else {
+            	barrageLoc = parseMap();
             	wasAttacking = false;
             	attackRound = 0;
             }
@@ -224,7 +227,7 @@ public class TankBot extends RobotGlobal {
         	
         	MapLocation firingLineSpot = attackLoc.add(attackLoc.directionTo(myLoc), attackRadius); // Location on the line 
         	
-        	MapLocation barrageLoc = parseMap();
+        	
         	rc.setIndicatorDot(barrageLoc, 0, 0, 0);
         	
         	rc.setIndicatorDot(firingLineSpot, 222, 222, 222);
