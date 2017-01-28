@@ -5,9 +5,7 @@ import battlecode.common.*;
 public class GardenerBot extends RobotGlobal {
 
 	// Farm geometry constants
-	static final float octEdge = (float) 0.4693;
-	static final float octDiag = (float) 0.6132;
-	static final float octagonFarmRadius = (float) 3.625;
+	static final float hexFarmRadius = 3f;
 
 	// My state
     private enum FarmingMode {SEARCHING, FARMING};
@@ -50,7 +48,7 @@ public class GardenerBot extends RobotGlobal {
     }
 
     public static void countTrees() throws GameActionException {
-		for (int t = 0; t < 7; t++) {
+		for (int t = 0; t < 5; t++) {
 			boolean treeNotExists = false;
 			MapLocation l = farmGeo.getTreeLocs()[t];
 			TreeInfo info = rc.senseTreeAtLocation(l);
@@ -78,7 +76,7 @@ public class GardenerBot extends RobotGlobal {
 	}
 
 	private static boolean proposedFarmIsOnMap(ProposedFarm farm) throws GameActionException {
-    	return rc.onTheMap(myLoc, 1);
+    	return rc.onTheMap(myLoc, hexFarmRadius);
 	}
 
 	private static boolean proposedFarmBuildClear(ProposedFarm farm) throws GameActionException {
@@ -335,7 +333,8 @@ public class GardenerBot extends RobotGlobal {
 											System.out.println("Tree #" + t + " is planted.");
 											isTreeAlive[t] = true;
 											builtTree = true;
-										} else {System.out.println("Couldn't plant tree # " + t + " in treeDir specified.");
+										} else {
+											System.out.println("Couldn't plant tree # " + t + " in treeDir specified.");
 										}
 									} else {
 										System.out.println("Couldn't get to Tree Planting Location #" + t);
@@ -402,7 +401,7 @@ public class GardenerBot extends RobotGlobal {
 		boolean isFull;
         if (mode == FarmingMode.FARMING) {
         	isFull = true;
-			for (int i = 0; i < 7; i++) {
+			for (int i = 0; i < 5; i++) {
 				if (!isTreeAlive[i] && !isTreeBlocked[i]) {
 					isFull = false;
 				} else {
