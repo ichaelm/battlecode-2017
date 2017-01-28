@@ -150,7 +150,7 @@ public class SoldierBot extends RobotGlobal {
                 }
         	}
         	
-        	if (attackRound > 250 && shoot) {
+        	if (attackRound > 200 && shoot) {
         		System.out.println("Attacking non-hostiles!");
         		Direction atThing = myLoc.directionTo(nearestNonHostile.location);
         		float dist = myLoc.distanceTo(nearestNonHostile.location);
