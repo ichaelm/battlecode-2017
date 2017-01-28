@@ -207,6 +207,227 @@ public strictfp class RobotGlobal {
         }
     }
 
+    public static class CommArrayQueue {
+
+        private final int channel;
+        private final int numElements;
+        private final int elementSize;
+        private final int startChannel;
+        private final int countChannel;
+
+        public CommArrayQueue(int channel, int elementSize, int numElements, int startChannel, int countChannel) {
+            this.channel = channel;
+            this.numElements = numElements;
+            this.elementSize = elementSize;
+            this.startChannel = startChannel;
+            this.countChannel = countChannel;
+        }
+
+        public int count() throws GameActionException {
+            return rc.readBroadcast(countChannel);
+        }
+
+        public int[] peek() throws GameActionException {
+            int begin = rc.readBroadcast(startChannel);
+            int count = rc.readBroadcast(countChannel);
+            if (count <= 0) {
+                return null;
+            }
+            int itemIndex = begin;
+            int itemChannel = channel + (itemIndex * elementSize);
+            return readBroadcastArray(itemChannel, elementSize);
+        }
+
+        public int[] peek(int i) throws GameActionException {
+            int begin = rc.readBroadcast(startChannel);
+            int count = rc.readBroadcast(countChannel);
+            if (i >= count) {
+                return null;
+            }
+            int itemIndex = (begin + i) % numElements;
+            int itemChannel = channel + (itemIndex * elementSize);
+            return readBroadcastArray(itemChannel, elementSize);
+        }
+
+        public void add(int[] item) throws GameActionException {
+            int begin = rc.readBroadcast(startChannel);
+            int count = rc.readBroadcast(countChannel);
+            if (count >= numElements) {
+                System.out.println("Array queue overflow!");
+                return;
+            }
+            int itemIndex = (begin + count) % numElements;
+            int itemChannel = channel + itemIndex;
+            writeBroadcastArray(itemChannel, item);
+            count++;
+            rc.broadcast(countChannel, count);
+        }
+
+        public int[] pop() throws GameActionException {
+            int begin = rc.readBroadcast(startChannel);
+            int count = rc.readBroadcast(countChannel);
+            if (count <= 0) {
+                return null;
+            }
+            int itemIndex = begin;
+            int itemChannel = channel + (itemIndex * elementSize);
+            int[] item = readBroadcastArray(itemChannel, elementSize);
+            begin = (begin + 1) % numElements;
+            rc.broadcast(startChannel, begin);
+            count = count - 1;
+            rc.broadcast(countChannel, count);
+            return item;
+        }
+
+        public void remove() throws GameActionException {
+            int begin = rc.readBroadcast(startChannel);
+            int count = rc.readBroadcast(countChannel);
+            if (count > 0) {
+                begin = (begin + 1) % numElements;
+                rc.broadcast(startChannel, begin);
+                count = count - 1;
+                rc.broadcast(countChannel, count);
+            } else {
+                System.out.println("Array queue removed with no elements!");
+            }
+        }
+
+        public void clear() throws GameActionException {
+            rc.broadcast(countChannel, 0);
+        }
+    }
+
+    public static class FarmTableEntry {
+        private static final int EXPLORED_MASK = 0x1;
+        private static final int GARDENER_REGISTER_MASK = 0x2;
+        private static final int LUMBERJACK_REGISTER_MASK = 0x4;
+        private static final int FULL_MASK = 0x8;
+        private static final int GARDENER_STORE_MASK = 0x10;
+        private static final int LUMBERJACK_STORE_MASK = 0x20;
+        private static final int READY_MASK = 0x40;
+        private static final int CLEAR_MASK = 0x80;
+        private static final int ACTIVE_MASK = 0x100;
+        private static final int ARRIVED_MASK = 0x200;
+
+
+        private int flags;
+
+        public FarmTableEntry() {
+            this(0);
+        }
+
+        public FarmTableEntry(int flags) {
+            this.flags = flags;
+        }
+
+        public void setExplored() {
+            flags |= EXPLORED_MASK;
+        }
+
+        public void resetExplored() {
+            flags &= ~EXPLORED_MASK;
+        }
+
+        public boolean isExplored() {
+            return (flags & EXPLORED_MASK) != 0;
+        }
+
+        public void setFull() {
+            flags |= FULL_MASK;
+        }
+
+        public void resetFull() {
+            flags &= ~FULL_MASK;
+        }
+
+        public boolean isFull() {
+            return (flags & FULL_MASK) != 0;
+        }
+
+        public void setReady() {
+            flags |= READY_MASK;
+        }
+
+        public void resetReady() {
+            flags &= ~READY_MASK;
+        }
+
+        public boolean isReady() {
+            return (flags & READY_MASK) != 0;
+        }
+
+        public void setClear() {
+            flags |= CLEAR_MASK;
+        }
+
+        public void resetClear() {
+            flags &= ~CLEAR_MASK;
+        }
+
+        public boolean isClear() {
+            return (flags & CLEAR_MASK) != 0;
+        }
+
+        public void setActive() {
+            flags |= ACTIVE_MASK;
+        }
+
+        public void resetActive() {
+            flags &= ~ACTIVE_MASK;
+        }
+
+        public boolean isActive() {
+            return (flags & ACTIVE_MASK) != 0;
+        }
+
+        public void setArrived() {
+            flags |= ARRIVED_MASK;
+        }
+
+        public void resetArrived() {
+            flags &= ~ARRIVED_MASK;
+        }
+
+        public boolean isArrived() {
+            return (flags & ARRIVED_MASK) != 0;
+        }
+
+        public boolean hasGardenerRegistered() {
+            return (flags & GARDENER_REGISTER_MASK) != 0;
+        }
+
+        public boolean hasGardenerStored() {
+            return (flags & GARDENER_STORE_MASK) != 0;
+        }
+
+        public void registerGardener() {
+            flags |= GARDENER_REGISTER_MASK;
+        }
+
+        public boolean hasLumberjackRegistered() {
+            return (flags & LUMBERJACK_REGISTER_MASK) != 0;
+        }
+
+        public boolean hasLumberjackStored() {
+            return (flags & LUMBERJACK_STORE_MASK) != 0;
+        }
+
+        public void registerLumberjack() {
+            flags |= LUMBERJACK_REGISTER_MASK;
+        }
+
+        public void storeRegisters() {
+            if (hasGardenerRegistered()) {
+                flags |= GARDENER_STORE_MASK;
+            }
+            if (hasLumberjackRegistered()) {
+                flags |= LUMBERJACK_STORE_MASK;
+            }
+            flags &= ~(GARDENER_REGISTER_MASK | LUMBERJACK_REGISTER_MASK);
+        }
+    }
+
+
     public enum GardenerSchedule {ONCE_EVERY_N_ROUNDS, WHEN_FULL}
 
     public enum ScoutMode {HARASS, COLLECT}
@@ -221,19 +442,32 @@ public strictfp class RobotGlobal {
     public static final int ARCHON_LOCATION_TABLE_NUM_ENTRIES = 3;
     public static final int ARCHON_LOCATION_TABLE_LENGTH = ARCHON_LOCATION_TABLE_ENTRY_SIZE * ARCHON_LOCATION_TABLE_NUM_ENTRIES;
     public static final int FARM_TABLE_CHANNEL = ARCHON_LOCATION_TABLE_CHANNEL + ARCHON_LOCATION_TABLE_LENGTH;
-    public static final int FARM_TABLE_ENTRY_SIZE = 3;
-    public static final int FARM_TABLE_NUM_ENTRIES = 30;
+    public static final int FARM_TABLE_ENTRY_SIZE = 1;
+    public static final int FARM_TABLE_NUM_ENTRIES = 64;
     public static final int FARM_TABLE_LENGTH = FARM_TABLE_ENTRY_SIZE * FARM_TABLE_NUM_ENTRIES;
-    public static final int FARM_TABLE_COUNT_CHANNEL = FARM_TABLE_CHANNEL + FARM_TABLE_LENGTH;
-    public static final int BOUNDS_TABLE_CHANNEL = FARM_TABLE_COUNT_CHANNEL + 1; // IN_W, IN_E, IN_S, IN_N, OUT_W, OUT_E, OUT_S, OUT_N
+    public static final int FARMS_NEED_G_LIST_CHANNEL = FARM_TABLE_CHANNEL + FARM_TABLE_LENGTH;
+    public static final int FARMS_NEED_G_LIST_LENGTH = 64;
+    public static final int FARMS_NEED_G_LIST_START_CHANNEL = FARMS_NEED_G_LIST_CHANNEL + FARMS_NEED_G_LIST_LENGTH;
+    public static final int FARMS_NEED_G_LIST_COUNT_CHANNEL = FARMS_NEED_G_LIST_START_CHANNEL + 1;
+    public static final int FARMS_NEED_LJ_LIST_CHANNEL = FARMS_NEED_G_LIST_COUNT_CHANNEL + 1;
+    public static final int FARMS_NEED_LJ_LIST_LENGTH = 64;
+    public static final int FARMS_NEED_LJ_LIST_START_CHANNEL = FARMS_NEED_LJ_LIST_CHANNEL + FARMS_NEED_LJ_LIST_LENGTH;
+    public static final int FARMS_NEED_LJ_LIST_COUNT_CHANNEL = FARMS_NEED_LJ_LIST_START_CHANNEL + 1;
+    public static final int FARMS_EXPLORED_LIST_CHANNEL = FARMS_NEED_LJ_LIST_COUNT_CHANNEL + 1;
+    public static final int FARMS_EXPLORED_LIST_LENGTH = 64;
+    public static final int FARMS_EXPLORED_LIST_START_CHANNEL = FARMS_EXPLORED_LIST_CHANNEL + FARMS_EXPLORED_LIST_LENGTH;
+    public static final int FARMS_EXPLORED_LIST_COUNT_CHANNEL = FARMS_EXPLORED_LIST_START_CHANNEL + 1;
+    public static final int FARMS_ACTIVE_LIST_CHANNEL = FARMS_EXPLORED_LIST_COUNT_CHANNEL + 1;
+    public static final int FARMS_ACTIVE_LIST_LENGTH = 64;
+    public static final int FARMS_ACTIVE_LIST_START_CHANNEL = FARMS_ACTIVE_LIST_CHANNEL + FARMS_ACTIVE_LIST_LENGTH;
+    public static final int FARMS_ACTIVE_LIST_COUNT_CHANNEL = FARMS_ACTIVE_LIST_START_CHANNEL + 1;
+    public static final int BOUNDS_TABLE_CHANNEL = FARMS_ACTIVE_LIST_COUNT_CHANNEL + 1; // IN_W, IN_E, IN_S, IN_N, OUT_W, OUT_E, OUT_S, OUT_N
     public static final int BOUNDS_TABLE_LENGTH = 8;
-    public static final int LJ_JOBS_TABLE_CHANNEL = BOUNDS_TABLE_CHANNEL + BOUNDS_TABLE_LENGTH;
-    public static final int LJ_JOBS_TABLE_ENTRY_SIZE = 3;
-    public static final int LJ_JOBS_TABLE_NUM_ENTRIES = 30;
-    public static final int LJ_JOBS_TABLE_LENGTH = LJ_JOBS_TABLE_ENTRY_SIZE * LJ_JOBS_TABLE_NUM_ENTRIES;
-    public static final int LJ_JOBS_TABLE_BEGIN_CHANNEL = LJ_JOBS_TABLE_CHANNEL + LJ_JOBS_TABLE_LENGTH;
-    public static final int LJ_JOBS_TABLE_COUNT_CHANNEL = LJ_JOBS_TABLE_BEGIN_CHANNEL + 1;
-    public static final int BUILD_QUEUE_1_CHANNEL = LJ_JOBS_TABLE_COUNT_CHANNEL + 1;
+    public static CommArrayQueue gardenerJobsQueue = new CommArrayQueue(FARMS_NEED_G_LIST_CHANNEL, 1, FARMS_NEED_G_LIST_LENGTH, FARMS_NEED_G_LIST_START_CHANNEL, FARMS_NEED_G_LIST_COUNT_CHANNEL);
+    public static CommArrayQueue lumberjackJobsQueue = new CommArrayQueue(FARMS_NEED_LJ_LIST_CHANNEL, 1, FARMS_NEED_LJ_LIST_LENGTH, FARMS_NEED_LJ_LIST_START_CHANNEL, FARMS_NEED_LJ_LIST_COUNT_CHANNEL);
+    public static CommArrayQueue exploredFarmsQueue = new CommArrayQueue(FARMS_EXPLORED_LIST_CHANNEL, 1, FARMS_EXPLORED_LIST_LENGTH, FARMS_EXPLORED_LIST_START_CHANNEL, FARMS_EXPLORED_LIST_COUNT_CHANNEL);
+    public static CommArrayQueue activeFarmsQueue = new CommArrayQueue(FARMS_ACTIVE_LIST_CHANNEL, 1, FARMS_ACTIVE_LIST_LENGTH, FARMS_ACTIVE_LIST_START_CHANNEL, FARMS_ACTIVE_LIST_COUNT_CHANNEL);
+    public static final int BUILD_QUEUE_1_CHANNEL = BOUNDS_TABLE_CHANNEL + BOUNDS_TABLE_LENGTH;
     public static final int BUILD_QUEUE_1_LENGTH = 100;
     public static final int BUILD_QUEUE_1_BEGIN_CHANNEL = BUILD_QUEUE_1_CHANNEL + BUILD_QUEUE_1_LENGTH;
     public static final int BUILD_QUEUE_1_COUNT_CHANNEL = BUILD_QUEUE_1_BEGIN_CHANNEL + 1;
@@ -266,11 +500,34 @@ public strictfp class RobotGlobal {
     private static final int MAP_SIZE_B = 59;
     private static final int MAP_NUM_ENTRIES = MAP_SIZE_A * MAP_SIZE_B;
     private static final int MAP_LENGTH = MAP_ENTRY_SIZE * MAP_NUM_ENTRIES;
+    private static final int FIRST_FARM_EXISTS_CHANNEL = MAP_CHANNEL + MAP_LENGTH;
+    private static final int FIRST_FARM_LOC_X_CHANNEL = FIRST_FARM_EXISTS_CHANNEL + 1;
+    private static final int FIRST_FARM_LOC_Y_CHANNEL = FIRST_FARM_LOC_X_CHANNEL + 1;
+    private static final int CURRENT_FARM_NUM_X_CHANNEL = FIRST_FARM_LOC_Y_CHANNEL + 1;
+    private static final int CURRENT_FARM_NUM_Y_CHANNEL = CURRENT_FARM_NUM_X_CHANNEL + 1;
+    public static final int GARDENER_COUNTER_CHANNEL = CURRENT_FARM_NUM_Y_CHANNEL + 1;
+    public static final int LUMBERJACK_COUNTER_CHANNEL = GARDENER_COUNTER_CHANNEL + 1;
+    public static final int SCOUT_COUNTER_CHANNEL = LUMBERJACK_COUNTER_CHANNEL + 1;
+    public static final int SOLDIER_COUNTER_CHANNEL = SCOUT_COUNTER_CHANNEL + 1;
+    public static final int TANK_COUNTER_CHANNEL = SOLDIER_COUNTER_CHANNEL + 1;
+    public static final int GARDENER_NUM_CHANNEL = TANK_COUNTER_CHANNEL + 1;
+    public static final int LUMBERJACK_NUM_CHANNEL = GARDENER_NUM_CHANNEL + 1;
+    public static final int SCOUT_NUM_CHANNEL = LUMBERJACK_NUM_CHANNEL + 1;
+    public static final int SOLDIER_NUM_CHANNEL = SCOUT_NUM_CHANNEL + 1;
+    public static final int TANK_NUM_CHANNEL = SOLDIER_NUM_CHANNEL + 1;
+    public static final int GARDENER_BUILT_CHANNEL = TANK_NUM_CHANNEL + 1;
+    public static final int LUMBERJACK_BUILT_CHANNEL = GARDENER_BUILT_CHANNEL + 1;
+    public static final int SCOUT_BUILT_CHANNEL = LUMBERJACK_BUILT_CHANNEL + 1;
+    public static final int SOLDIER_BUILT_CHANNEL = SCOUT_BUILT_CHANNEL + 1;
+    public static final int TANK_BUILT_CHANNEL = SOLDIER_BUILT_CHANNEL + 1;
+    public static final int CAN_PLANT_COUNTER_CHANNEL = TANK_BUILT_CHANNEL + 1;
+    public static final int CAN_PLANT_NUM_CHANNEL = CAN_PLANT_COUNTER_CHANNEL + 1;
 
     // Performance constants
     public static final int DESIRED_ROBOTS = 20;
     public static final int DESIRED_TREES = 20;
     public static final int DESIRED_BULLETS = 20;
+    public static final float FARM_DIST = 9.5f;
     
     // Scout variables
     public static Direction currentDirection;
@@ -336,6 +593,7 @@ public strictfp class RobotGlobal {
     private static HexCoord[] toScoutCoordBuffer = new HexCoord[20];
     private static int toScoutCoordBufferStart = 0;
     private static int toScoutCoordBufferCount = 0;
+    private static boolean useFarmGrid = false;
 
     // Configuration for Offensive Units
     public static boolean useTriad = false;
@@ -487,6 +745,17 @@ public strictfp class RobotGlobal {
     }
 
     public static void processNearbyTrees() throws GameActionException {
+        int farmNum = queryCurrentFarmNum();
+        System.out.println("current farm num = " + farmNum);
+        MapLocation farmToExplore = null;
+        boolean farmReady = true;
+        boolean farmClear = true;
+        if (canExploreFarm(farmNum)) {
+            farmToExplore = farmNumToLoc(farmNum);
+            System.out.println("can explore at " + farmToExplore);
+        } else {
+            System.out.println("can't explore");
+        }
         float minDist = Float.POSITIVE_INFINITY;
         float minRobotTreeDist = Float.POSITIVE_INFINITY;
         float minFriendlyDist = Float.POSITIVE_INFINITY;
@@ -524,6 +793,20 @@ public strictfp class RobotGlobal {
                     }
                 }
             }
+            if (farmToExplore != null) {
+                float farmTreeDist = farmToExplore.distanceTo(tree.getLocation()) - tree.radius;
+                if (farmTreeDist < ProposedFarm.octagonFarmRadius) {
+                    farmClear = false;
+                    if (farmTreeDist < RobotType.GARDENER.bodyRadius) {
+                        farmReady = false;
+                    }
+                }
+            }
+        }
+        if (farmToExplore != null) {
+            sendFarmExploredInfo(farmNum, farmReady, farmClear);
+            incrementCurrentFarmLoc();
+            exploredFarmsQueue.add(new int[]{farmNum});
         }
     }
 
@@ -538,6 +821,112 @@ public strictfp class RobotGlobal {
         		numBulletsToAvoid++;
         	}
         }
+    }
+
+    public static void leaderStoreCounters() throws GameActionException {
+        rc.broadcast(GARDENER_NUM_CHANNEL, rc.readBroadcast(GARDENER_COUNTER_CHANNEL));
+        rc.broadcast(GARDENER_COUNTER_CHANNEL, 0);
+
+        rc.broadcast(LUMBERJACK_NUM_CHANNEL, rc.readBroadcast(LUMBERJACK_COUNTER_CHANNEL));
+        rc.broadcast(LUMBERJACK_COUNTER_CHANNEL, 0);
+
+        rc.broadcast(SCOUT_NUM_CHANNEL, rc.readBroadcast(SCOUT_COUNTER_CHANNEL));
+        rc.broadcast(SCOUT_COUNTER_CHANNEL, 0);
+
+        rc.broadcast(SOLDIER_NUM_CHANNEL, rc.readBroadcast(SOLDIER_COUNTER_CHANNEL));
+        rc.broadcast(SOLDIER_COUNTER_CHANNEL, 0);
+
+        rc.broadcast(TANK_NUM_CHANNEL, rc.readBroadcast(TANK_COUNTER_CHANNEL));
+        rc.broadcast(TANK_COUNTER_CHANNEL, 0);
+
+        rc.broadcast(CAN_PLANT_NUM_CHANNEL, rc.readBroadcast(CAN_PLANT_COUNTER_CHANNEL));
+        rc.broadcast(CAN_PLANT_COUNTER_CHANNEL, 0);
+    }
+
+
+
+    public static boolean canExploreFarm(int farmNum) throws GameActionException {
+        return myLoc.distanceTo(farmNumToLoc(farmNum)) + ProposedFarm.octagonFarmRadius <= myType.sensorRadius;
+    }
+
+    public static boolean queryFirstFarmExists() throws GameActionException {
+        return rc.readBroadcast(FIRST_FARM_EXISTS_CHANNEL) != 0;
+    }
+
+    public static void sendFirstFarm(MapLocation loc) throws GameActionException {
+        rc.broadcast(FIRST_FARM_EXISTS_CHANNEL, 1);
+        rc.broadcast(FIRST_FARM_LOC_X_CHANNEL, Float.floatToIntBits(loc.x));
+        rc.broadcast(FIRST_FARM_LOC_Y_CHANNEL, Float.floatToIntBits(loc.y));
+    }
+
+    public static MapLocation queryFirstFarmLoc() throws GameActionException {
+        float x = Float.intBitsToFloat(rc.readBroadcast(FIRST_FARM_LOC_X_CHANNEL));
+        float y = Float.intBitsToFloat(rc.readBroadcast(FIRST_FARM_LOC_Y_CHANNEL));
+        return new MapLocation(x, y);
+    }
+
+    public static void incrementCurrentFarmLoc() throws GameActionException {
+        int x = rc.readBroadcast(CURRENT_FARM_NUM_X_CHANNEL);
+        int y = rc.readBroadcast(CURRENT_FARM_NUM_Y_CHANNEL);
+        if (x == 0 && y == 0) {
+            x++;
+        } else {
+            int sum = x + y;
+            int diff = x - y;
+            if (diff < 0) {
+                if (sum < 0) {
+                    y++;
+                } else {
+                    x++;
+                }
+            } else {
+                if (sum > 0) {
+                    y--;
+                } else {
+                    x--;
+                }
+            }
+        }
+        rc.broadcast(CURRENT_FARM_NUM_X_CHANNEL, x);
+        rc.broadcast(CURRENT_FARM_NUM_Y_CHANNEL, y);
+    }
+
+    public static MapLocation queryCurrentFarmLoc() throws GameActionException {
+        MapLocation firstFarmLoc = queryFirstFarmLoc();
+        int x = rc.readBroadcast(CURRENT_FARM_NUM_X_CHANNEL);
+        int y = rc.readBroadcast(CURRENT_FARM_NUM_Y_CHANNEL);
+        return firstFarmLoc.translate(x * FARM_DIST, y * FARM_DIST);
+    }
+
+    public static int queryCurrentFarmNum() throws GameActionException {
+        int x = rc.readBroadcast(CURRENT_FARM_NUM_X_CHANNEL);
+        int y = rc.readBroadcast(CURRENT_FARM_NUM_Y_CHANNEL);
+        int farmNum = farmOffsetToNum(x, y);
+        if (farmNum < 0 || farmNum >= 64) {
+            System.out.println("Farmnum error: x = " + x + ", y = " + y);
+            return -1;
+        }
+        return farmNum;
+    }
+
+    public static int[] farmNumToOffset(int num) {
+        int y = num / 8;
+        int x = num % 8;
+        y = y - 4;
+        x = x - 4;
+        return new int[]{x, y};
+    }
+
+    public static int farmOffsetToNum(int x, int y) {
+        return ((y + 4) * 8) + (x + 4);
+    }
+
+    public static MapLocation farmNumToLoc(int num) throws GameActionException {
+        int[] offset = farmNumToOffset(num);
+        int x = offset[0];
+        int y = offset[1];
+        MapLocation firstFarmLoc = queryFirstFarmLoc();
+        return firstFarmLoc.translate(x * FARM_DIST, y * FARM_DIST);
     }
 
     private static void toScoutCoordBuffer_add(HexCoord elem) {
@@ -1527,180 +1916,77 @@ public strictfp class RobotGlobal {
         writeBroadcastArray(BOUNDS_TABLE_CHANNEL, bounds.serialize());
     }
 
-    public static final int FARM_TABLE_ENTRY_EXISTS_MASK = 0x1;
-    public static final int FARM_TABLE_ENTRY_GARDENER_MASK = 0x2;
-    public static final int FARM_TABLE_ENTRY_LUMBERJACK_MASK = 0x4;
-    public static final int FARM_TABLE_ENTRY_FULL_MASK = 0x8;
-    public static final int FARM_TABLE_ENTRY_GARDENER_STORE_MASK = 0x10;
-    public static final int FARM_TABLE_ENTRY_LUMBERJACK_STORE_MASK = 0x20;
-
-    public static int createFarmTableEntry() throws GameActionException{
-        int farmTableCount = rc.readBroadcast(FARM_TABLE_COUNT_CHANNEL);
-        int farmNum = farmTableCount;
-        if (farmNum >= FARM_TABLE_NUM_ENTRIES) {
-            System.out.println("Farm table overflow!");
-            return -1;
-        }
-        rc.broadcast(FARM_TABLE_COUNT_CHANNEL, farmTableCount + 1);
-        writeFarmTableEntry(farmNum, myLoc, true, false, false);
-        return farmNum;
+    public static void writeFarmTableEntry(int farmNum, FarmTableEntry e) throws GameActionException {
+        int entryChannel = FARM_TABLE_CHANNEL + (FARM_TABLE_ENTRY_SIZE * farmNum);
+        rc.broadcast(entryChannel, e.flags);
     }
 
-    public static void writeFarmTableEntry(int farmNum, MapLocation loc, boolean gardenerAlive, boolean lumberjackAlive) throws GameActionException {
-        int farmTableCount = rc.readBroadcast(FARM_TABLE_COUNT_CHANNEL);
-        if (farmNum >= farmTableCount) {
-            System.out.println("Farm number invalid!");
-            return;
-        }
-        int farmTableEntryChannel = FARM_TABLE_CHANNEL + (farmNum * FARM_TABLE_ENTRY_SIZE);
-        int xChannel = farmTableEntryChannel;
-        int yChannel = farmTableEntryChannel + 1;
-        int flagsChannel = farmTableEntryChannel + 2;
-        rc.broadcast(xChannel, Float.floatToIntBits(loc.x));
-        rc.broadcast(yChannel, Float.floatToIntBits(loc.y));
-        int flags = rc.readBroadcast(flagsChannel);
-        flags = flags | FARM_TABLE_ENTRY_EXISTS_MASK;
-        if (gardenerAlive) {
-            flags = flags | FARM_TABLE_ENTRY_GARDENER_MASK;
-        }
-        if (lumberjackAlive) {
-            flags = flags | FARM_TABLE_ENTRY_LUMBERJACK_MASK;
-        }
-        rc.broadcast(flagsChannel, flags);
+    public static FarmTableEntry readFarmTableEntry(int farmNum) throws GameActionException {
+        int entryChannel = FARM_TABLE_CHANNEL + (FARM_TABLE_ENTRY_SIZE * farmNum);
+        return new FarmTableEntry(rc.readBroadcast(entryChannel));
     }
 
-    public static void writeFarmTableEntry(int farmNum, MapLocation loc, boolean gardenerAlive, boolean lumberjackAlive, boolean full) throws GameActionException {
-        int farmTableCount = rc.readBroadcast(FARM_TABLE_COUNT_CHANNEL);
-        if (farmNum >= farmTableCount) {
-            System.out.println("Farm number invalid!");
-            return;
-        }
-        int farmTableEntryChannel = FARM_TABLE_CHANNEL + (farmNum * FARM_TABLE_ENTRY_SIZE);
-        int xChannel = farmTableEntryChannel;
-        int yChannel = farmTableEntryChannel + 1;
-        int flagsChannel = farmTableEntryChannel + 2;
-        rc.broadcast(xChannel, Float.floatToIntBits(loc.x));
-        rc.broadcast(yChannel, Float.floatToIntBits(loc.y));
-        int flags = rc.readBroadcast(flagsChannel);
-        flags = flags | FARM_TABLE_ENTRY_EXISTS_MASK;
-        if (gardenerAlive) {
-            flags = flags | FARM_TABLE_ENTRY_GARDENER_MASK;
-        }
-        if (lumberjackAlive) {
-            flags = flags | FARM_TABLE_ENTRY_LUMBERJACK_MASK;
-        }
-        if (full) {
-            flags = flags | FARM_TABLE_ENTRY_FULL_MASK;
-        } else {
-            flags = flags & ~FARM_TABLE_ENTRY_FULL_MASK;
-        }
-        rc.broadcast(flagsChannel, flags);
+    public static void storeFarmTableEntry(int farmNum) throws GameActionException {
+        FarmTableEntry e = readFarmTableEntry(farmNum);
+        e.storeRegisters();
+        writeFarmTableEntry(farmNum, e);
     }
 
-    public static MapLocation readFarmTableEntryLocation(int farmNum) throws GameActionException {
-        int farmTableEntryChannel = FARM_TABLE_CHANNEL + (farmNum * FARM_TABLE_ENTRY_SIZE);
-        int xChannel = farmTableEntryChannel;
-        int yChannel = farmTableEntryChannel + 1;
-        float x = Float.intBitsToFloat(rc.readBroadcast(xChannel));
-        float y = Float.intBitsToFloat(rc.readBroadcast(yChannel));
-        return new MapLocation(x, y);
+    public static void leaderClearOrders() throws GameActionException {
+        // Clear gardener jobs queue
+        gardenerJobsQueue.clear();
+        // Clear lumberjack jobs queue
+        lumberjackJobsQueue.clear();
+        // Clear build queues
+        clearBuildQueue1();
+        clearBuildQueue2();
     }
 
-    public static int readFarmTableEntryFlags(int farmNum) throws GameActionException {
-        int farmTableEntryChannel = FARM_TABLE_CHANNEL + (farmNum * FARM_TABLE_ENTRY_SIZE);
-        int flagsChannel = farmTableEntryChannel + 2;
-        int flags = rc.readBroadcast(flagsChannel);
-        return flags;
-    }
-
-    public static void resetFarmTableEntryFlags(int farmNum) throws GameActionException {
-        int farmTableEntryChannel = FARM_TABLE_CHANNEL + (farmNum * FARM_TABLE_ENTRY_SIZE);
-        int flagsChannel = farmTableEntryChannel + 2;
-        int flags = rc.readBroadcast(flagsChannel);
-        boolean gardener = (flags & FARM_TABLE_ENTRY_GARDENER_MASK) != 0;
-        boolean lumberjack = (flags & FARM_TABLE_ENTRY_LUMBERJACK_MASK) != 0;
-        flags = flags & (FARM_TABLE_ENTRY_EXISTS_MASK | FARM_TABLE_ENTRY_FULL_MASK);
-        if (gardener) {
-            flags = flags | FARM_TABLE_ENTRY_GARDENER_STORE_MASK;
+    public static void sendFarmExploredInfo(int farmNum, boolean ready, boolean clear) throws GameActionException {
+        FarmTableEntry e = readFarmTableEntry(farmNum);
+        e.setExplored();
+        if (ready) {
+            e.setReady();
         }
-        if (lumberjack) {
-            flags = flags | FARM_TABLE_ENTRY_LUMBERJACK_STORE_MASK;
+        if (clear) {
+            e.setClear();
         }
-        rc.broadcast(flagsChannel, flags);
+        writeFarmTableEntry(farmNum, e);
     }
 
-    public static int getFarmTableEntryCount() throws GameActionException {
-        return rc.readBroadcast(FARM_TABLE_COUNT_CHANNEL);
+    public static void activateFarm() throws GameActionException {
+        int[] farmIndexArr = exploredFarmsQueue.pop();
+        activeFarmsQueue.add(farmIndexArr);
+        int farmIndex = farmIndexArr[0];
+        FarmTableEntry e = readFarmTableEntry(farmIndex);
+        e.setActive();
+        writeFarmTableEntry(farmIndex, e);
     }
 
-    public static int numFarmsBuildingTrees() throws GameActionException {
-        int farmCount = getFarmTableEntryCount();
-        int fullOrDeadCount = 0;
-        for (int farmNum = 0; farmNum < farmCount; farmNum++) {
-            int flags = readFarmTableEntryFlags(farmNum);
-            if ((flags & FARM_TABLE_ENTRY_FULL_MASK) != 0) {
-                fullOrDeadCount++;
-            } else if ((flags & FARM_TABLE_ENTRY_GARDENER_STORE_MASK) == 0) {
-                fullOrDeadCount++;
+    public static void leaderManageActiveFarms() throws GameActionException {
+        int numActiveFarms = activeFarmsQueue.count();
+        for (int i = 0; i < numActiveFarms; i++) {
+            int activeFarmIndex = activeFarmsQueue.peek(i)[0];
+            FarmTableEntry e = readFarmTableEntry(activeFarmIndex);
+            e.storeRegisters();
+            if (!e.isReady() && !e.hasLumberjackStored()) { // If farm is not ready, and does not have a lumberjack
+                // Farm needs lumberjack
+                lumberjackJobsQueue.add(new int[]{activeFarmIndex});
+                // Build a lumberjack
+                addBuildQueue1(RobotType.LUMBERJACK);
+            } else if (e.isReady() && !e.hasGardenerStored()) { // If the farm is ready, and does not have a gardener
+                // Farm needs gardener
+                gardenerJobsQueue.add(new int[]{activeFarmIndex});
+                // Build a gardener
+                addBuildQueue1(RobotType.GARDENER);
+            } else if (e.hasGardenerStored() && !e.isClear() && !e.hasLumberjackStored()) { // If the farm has a gardener but is not clear and has no lumberjack
+                // Farm needs lumberjack
+                lumberjackJobsQueue.add(new int[]{activeFarmIndex});
+                // Build a lumberjack
+                addBuildQueue1(RobotType.LUMBERJACK);
             }
-        }
-        return farmCount - fullOrDeadCount;
-    }
 
-    public static void addLumberjackJob(MapLocation loc) throws GameActionException {
-        addLumberjackJob(loc, -1);
-    }
-
-    public static void addLumberjackJob(MapLocation loc, int farmNum) throws GameActionException {
-        int begin = rc.readBroadcast(LJ_JOBS_TABLE_BEGIN_CHANNEL);
-        int count = rc.readBroadcast(LJ_JOBS_TABLE_COUNT_CHANNEL);
-        if (count >= LJ_JOBS_TABLE_NUM_ENTRIES) {
-            System.out.println("Lumberjack job table overflow!");
-            return;
         }
-        int entryIndex = (begin + count) % LJ_JOBS_TABLE_NUM_ENTRIES;
-        int entryChannel = LJ_JOBS_TABLE_CHANNEL + (entryIndex * LJ_JOBS_TABLE_ENTRY_SIZE);
-        int xChannel = entryChannel;
-        int yChannel = entryChannel + 1;
-        int farmNumChannel = entryChannel + 2;
-        rc.broadcast(xChannel, Float.floatToIntBits(loc.x));
-        rc.broadcast(yChannel, Float.floatToIntBits(loc.y));
-        rc.broadcast(farmNumChannel, farmNum);
-        count++;
-        rc.broadcast(LJ_JOBS_TABLE_COUNT_CHANNEL, count);
-    }
-
-    public static int popLumberjackJobFarmNum() throws GameActionException {
-        int begin = rc.readBroadcast(LJ_JOBS_TABLE_BEGIN_CHANNEL);
-        int count = rc.readBroadcast(LJ_JOBS_TABLE_COUNT_CHANNEL);
-        if (count <= 0) {
-            return -1;
-        }
-        int entryChannel = LJ_JOBS_TABLE_CHANNEL + (begin * LJ_JOBS_TABLE_ENTRY_SIZE);
-        //int xChannel = begin;
-        //int yChannel = begin + 1;
-        int farmNumChannel = entryChannel + 2;
-        int farmNum = rc.readBroadcast(farmNumChannel);
-        begin = (begin + 1) % LJ_JOBS_TABLE_NUM_ENTRIES;
-        rc.broadcast(LJ_JOBS_TABLE_BEGIN_CHANNEL, begin);
-        count = count - 1;
-        rc.broadcast(LJ_JOBS_TABLE_COUNT_CHANNEL, count);
-        return farmNum;
-    }
-
-    public static boolean[] getFarmTableHasLumberjackJob() throws GameActionException {
-        int farmTableCount = rc.readBroadcast(FARM_TABLE_COUNT_CHANNEL);
-        boolean[] farmTableHasLumberjackJob = new boolean[farmTableCount];
-        int begin = rc.readBroadcast(LJ_JOBS_TABLE_BEGIN_CHANNEL);
-        int count = rc.readBroadcast(LJ_JOBS_TABLE_COUNT_CHANNEL);
-        for (int i = 0; i < count; i++) {
-            int ljIndex = (begin + i) % LJ_JOBS_TABLE_NUM_ENTRIES;
-            int entryChannel = LJ_JOBS_TABLE_CHANNEL + (ljIndex * LJ_JOBS_TABLE_ENTRY_SIZE);
-            int farmNumChannel = entryChannel + 2;
-            int farmNum = rc.readBroadcast(farmNumChannel);
-            farmTableHasLumberjackJob[farmNum] = true;
-        }
-        return farmTableHasLumberjackJob;
     }
 
     public static RobotType peekBuildQueue1() throws GameActionException {
@@ -1781,6 +2067,14 @@ public strictfp class RobotGlobal {
         count = count - 1;
         rc.broadcast(BUILD_QUEUE_2_COUNT_CHANNEL, count);
         return RobotType.values()[rtNum];
+    }
+
+    public static void clearBuildQueue1() throws GameActionException {
+        rc.broadcast(BUILD_QUEUE_1_COUNT_CHANNEL, 0);
+    }
+
+    public static void clearBuildQueue2() throws GameActionException {
+        rc.broadcast(BUILD_QUEUE_2_COUNT_CHANNEL, 0);
     }
 
     public static void setGlobalDefaultBuild(RobotType type) throws GameActionException {
@@ -2127,6 +2421,14 @@ public strictfp class RobotGlobal {
 
     public static void setScoutWhenFull(boolean scoutWhenFull) {
         RobotGlobal.scoutWhenFull = scoutWhenFull;
+    }
+
+    public static boolean getUseFarmGrid() {
+        return useFarmGrid;
+    }
+
+    public static void setUseFarmGrid(boolean useFarmGrid) {
+        RobotGlobal.useFarmGrid = useFarmGrid;
     }
 
     /*

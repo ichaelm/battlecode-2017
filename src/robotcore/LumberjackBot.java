@@ -35,6 +35,8 @@ public class LumberjackBot extends RobotGlobal {
         if (firstTurn) {
             goDir = randomDirection();
         }
+
+        rc.broadcast(LUMBERJACK_COUNTER_CHANNEL, rc.readBroadcast(LUMBERJACK_COUNTER_CHANNEL) + 1);
         
         RobotInfo nearestEnemy = getNearestEnemy();
         boolean enemyInRange = false;
@@ -86,13 +88,21 @@ public class LumberjackBot extends RobotGlobal {
             }
             moved = tryMoveElseBack(combatDir);
         } else {
+
             if (farmNum < 0) {
-                farmNum = popLumberjackJobFarmNum();
+                int[] lumberjackJob = lumberjackJobsQueue.pop();
+                if (lumberjackJob != null) {
+                    farmNum = lumberjackJob[0];
+
+                }
             }
             if (farmNum >= 0) {
                 // do farm job
-                MapLocation farmLoc = readFarmTableEntryLocation(farmNum);
-                writeFarmTableEntry(farmNum, farmLoc, false, true);
+                System.out.println("my farm num = " + farmNum);
+                MapLocation farmLoc = farmNumToLoc(farmNum);
+                FarmTableEntry e = readFarmTableEntry(farmNum);
+                e.registerLumberjack();
+                writeFarmTableEntry(farmNum, e);
                 Direction farmDir = myLoc.directionTo(farmLoc);
                 if (enemyInRange) {
                     if (rc.canStrike()) {
@@ -121,6 +131,7 @@ public class LumberjackBot extends RobotGlobal {
                         moved = tryMoveDistFrom(farmLoc, 4.75f);
                     }
                 }
+
             } else {
                 // invade
                 if (enemyInRange) {

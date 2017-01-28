@@ -55,9 +55,6 @@ public class ArchonBot extends RobotGlobal {
 
         if (isLeader()) {
             if (firstTurn) {
-                initializeBuildQueue1();
-                initializeBuildQueue2();
-                initializeDefaultBuild();
                 for (MapLocation attackLoc : enemyInitialArchonLocations) {
                     addAttackLocation(attackLoc);
                 }
@@ -113,7 +110,17 @@ public class ArchonBot extends RobotGlobal {
         }
 
         if (isLeader()) {
-            maintainFarmAndLumberjackTables();
+            System.out.println("I am leader");
+            System.out.println(firstTurn);
+            System.out.println(iMakeGardeners);
+            if (firstTurn && iMakeGardeners) {
+                sendFirstFarm(myLoc);
+            }
+            leaderClearOrders();
+            leaderManageActiveFarms();
+            leaderStoreCounters();
+        } else {
+            System.out.println("I am not leader");
         }
 
         if (iMakeGardeners) {
@@ -141,6 +148,7 @@ public class ArchonBot extends RobotGlobal {
                     }
                     break;
                 case WHEN_FULL:
+                    /*
                     int numFarmsBuildingTrees = numFarmsBuildingTrees();
                     if (numFarmsBuildingTrees == 0) {
                         success = tryHireGardener(gardenerDir);
@@ -155,8 +163,16 @@ public class ArchonBot extends RobotGlobal {
                             }
                         }
                     }
+                    */
                     break;
             }
+
+            /*
+            System.out.println(exploredFarmsQueue.count());
+            if (exploredFarmsQueue.count() > 0) {
+                System.out.println(farmNumToLoc(exploredFarmsQueue.peek()[0]));
+            }
+            */
         }
 
         RobotInfo nearestHostile = getNearestEnemyHostile();
@@ -180,26 +196,16 @@ public class ArchonBot extends RobotGlobal {
             }
         }
 
-        firstTurn = false;
-    }
-
-    private static void maintainFarmAndLumberjackTables() throws GameActionException {
-        boolean[] farmTableHasLumberjackJob = getFarmTableHasLumberjackJob();
-        int farmTableEntryCount = getFarmTableEntryCount();
-        for (int farmNum = 0; farmNum < farmTableEntryCount; farmNum++) {
-            int farmFlags = readFarmTableEntryFlags(farmNum);
-            if ((farmFlags & FARM_TABLE_ENTRY_GARDENER_MASK) != 0) {
-                if ((farmFlags & FARM_TABLE_ENTRY_LUMBERJACK_MASK) == 0) {
-                    // Needs lumberjack
-                    if (!farmTableHasLumberjackJob[farmNum]) {
-                        // Has no job entry
-                        MapLocation farmLoc = readFarmTableEntryLocation(farmNum);
-                        addLumberjackJob(farmLoc, farmNum);
-                    }
-                }
+        MapLocation farmLoc = queryCurrentFarmLoc();
+        if (farmLoc != null) {
+            // Found an explored farm to go to
+            boolean moved = tryMoveElseLeftRight(myLoc.directionTo(farmLoc), 20, 5);
+            if (!moved) {
+                System.out.println("Can't move to farm i should explore");
             }
-            resetFarmTableEntryFlags(farmNum);
         }
+
+        firstTurn = false;
     }
 
     private static boolean isLeader() {
