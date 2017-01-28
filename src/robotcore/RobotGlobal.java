@@ -1675,6 +1675,20 @@ public strictfp class RobotGlobal {
         }
         return farmCount - fullOrDeadCount;
     }
+    
+
+	public static MapLocation[] getAllFarmLocs() throws GameActionException {
+		int fCount = getFarmTableEntryCount();
+		if (fCount < 1) return null;
+		MapLocation[] farmLocs = new MapLocation[fCount];
+		
+		for (int fNum = 0; fNum < fCount; fNum ++) {
+			farmLocs[fNum] = readFarmTableEntryLocation(fNum);
+			//System.out.println("Farm # " + fNum + " is at " + farmLocs[fNum]);
+		}
+		
+		return farmLocs;
+	}
 
     public static void addLumberjackJob(MapLocation loc) throws GameActionException {
         addLumberjackJob(loc, -1);
