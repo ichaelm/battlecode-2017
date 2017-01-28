@@ -172,6 +172,7 @@ public class TankBot extends RobotGlobal {
 		farmLocs = getAllFarmLocs();
 		
 		for (MapLocation f: farmLocs) {
+			if (f == null) continue;
 			rc.setIndicatorLine(myLoc, f, 55, 255, 55);
 		}
 		
@@ -183,7 +184,6 @@ public class TankBot extends RobotGlobal {
         debugTick(1);
         
         if (attackLoc != null) {
-        	if (barrageLoc == null) barrageLoc = parseMap();
         	
         	if (attackLoc.equals(peekAttackLocation())){
             	wasAttacking = true;
@@ -235,13 +235,13 @@ public class TankBot extends RobotGlobal {
         	
         	debugTick(4);
         	
-        	MapLocation firingLineSpot = attackLoc.add(attackLoc.directionTo(myLoc), attackRadius); // Location on the line 
+        	//MapLocation firingLineSpot = attackLoc.add(attackLoc.directionTo(myLoc), attackRadius); // Location on the line 
         	
-        	
+        	if (barrageLoc == null) barrageLoc = parseMap();
         	rc.setIndicatorDot(barrageLoc, 0, 0, 0);
         	
         	//rc.setIndicatorDot(firingLineSpot, 222, 222, 222);
-        	goDir = myLoc.directionTo(firingLineSpot);
+        	goDir = myLoc.directionTo(barrageLoc);
         	
         	debugTick(5);
         	
