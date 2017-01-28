@@ -190,8 +190,8 @@ public class GardenerBot extends RobotGlobal {
             }
             
             float minArchonDist = minDistBetween(myLoc, archonLocations);
-            if (minFriendlyTreeDist > 8 && minArchonDist > 8 && 
-            		(nearestFGLoc == null || myLoc.distanceTo(nearestFGLoc) > 6) ) { // ensure space between gardeners
+            if (minFriendlyTreeDist > 6 && minArchonDist > 9 && 
+            		(nearestFGLoc == null || myLoc.distanceTo(nearestFGLoc) > 10) ) { // ensure space between gardeners
             	ProposedFarm farm = tryProposeFarm();
             	if(farm != null) {
             		farmGeo = farm;
@@ -281,7 +281,9 @@ public class GardenerBot extends RobotGlobal {
         		rc.setIndicatorDot(farmGeo.getConstructionZone(), 55, 55, 55);
         		boolean builtSecondary = false;
         		if (rc.hasRobotBuildRequirements(secondaryBuild) && !rc.isCircleOccupiedExceptByThisRobot(farmGeo.getConstructionZone(), 1)) {
-
+        			if (secondaryBuild == RobotType.TANK) {
+        				farmGeo.tankBuild();
+        			}
         			if (rc.canBuildRobot(secondaryBuild, farmGeo.getBuildDirection())) {
         				rc.buildRobot(secondaryBuild, farmGeo.getBuildDirection());
         				popBuildQueue2();
