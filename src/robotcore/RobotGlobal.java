@@ -355,6 +355,10 @@ public strictfp class RobotGlobal {
     public static float attackCircleStart = 15f;
     public static float attackCircleChange = 0.125f;
     
+    // Configuration for Gardeners Units
+    public static boolean earlyLumberjacks = false;
+    public static int earlyLJRounds = 500;
+    
 
     public static void init(RobotController rc) throws GameActionException {
         RobotGlobal.rc = rc;
@@ -529,25 +533,30 @@ public strictfp class RobotGlobal {
         }
     }
     
-    public static RobotInfo[] nearbyFriendlyGardeners() {
-    	RobotInfo[] allFriendly = rc.senseNearbyRobots(myType.sensorRadius, myTeam);
-    	RobotInfo[] fg = new RobotInfo[allFriendly.length];
-    	if (allFriendly.length < 1) return null;
+    public static RobotInfo[] nearbyFriendlyGardeners() { // locate friendly gardeners
+    	RobotInfo[] nearbyFriendly = rc.senseNearbyRobots(-1, rc.getTeam());
+    	int len = nearbyFriendly.length;
     	
-    	int fgCount = 0;
-    	for (RobotInfo r: fg) {
-    		if (r.type == RobotType.GARDENER) {
-    			fg[fgCount] = r;
-    			fgCount ++;
-    		}
-    		else {
-    			if (r == null) {
-    				break;
-    			}
-    		}
+    	if (len < 1) {
+    		System.out.println("No nearby friendlies!");
+    		return null;
     	}
     	
-    	return fg;
+    	RobotInfo[] fgArray = new RobotInfo[len];
+    	int fgI = 0;
+    	for (int i = 0; i < len; i++) {
+    		RobotInfo fr = nearbyFriendly[i];
+    		if (fr.type == RobotType.GARDENER) { // if gardener
+    			fgArray[fgI] = fr; // store in fgArray
+    			fgI ++;
+    		}
+    		
+    		//System.out.println("FGs: " + fgI);
+    	}
+    	
+    	if (fgArray.length < 1) return null;
+    	
+    	return fgArray;
     }
 
     public static void processNearbyBullets() throws GameActionException {
@@ -1445,6 +1454,11 @@ public strictfp class RobotGlobal {
              	rc.broadcast(DONATED_CHANNEL, 1);
              }
         }
+        
+        if (rc.readBroadcast(DONATED_CHANNEL) == 0 && teamBullets > 1000) {
+        	rc.donate((float) (vpCost * Math.floor(rc.getTreeCount()/10)));
+         	rc.broadcast(DONATED_CHANNEL, 1);
+        }
        
         
     }
@@ -1695,6 +1709,10 @@ public strictfp class RobotGlobal {
 		MapLocation[] farmLocs = new MapLocation[fCount];
 		
 		for (int fNum = 0; fNum < fCount; fNum ++) {
+			int flags = readFarmTableEntryFlags(fNum);
+			if ((flags & FARM_TABLE_ENTRY_GARDENER_STORE_MASK) == 0) { // skip dead farms
+                continue;
+            }
 			farmLocs[fNum] = readFarmTableEntryLocation(fNum);
 			//System.out.println("Farm # " + fNum + " is at " + farmLocs[fNum]);
 		}

@@ -132,6 +132,10 @@ public class GardenerBot extends RobotGlobal {
         }
 
         RobotType currentBuildOrder = getGlobalDefaultBuild();
+        //Experimental for sure. to compensate for those... tree covered maps
+        if (earlyLumberjacks && rc.getRoundNum() < earlyLJRounds) {
+        	addBuildQueue2(RobotType.LUMBERJACK);
+        }
 
         boolean moved = false;
 
@@ -154,7 +158,10 @@ public class GardenerBot extends RobotGlobal {
 			
 			
 			// move
-			moved = tryMoveElseBack(goDir);
+			if (!rc.hasMoved()) {
+				moved = tryMoveElseBack(goDir);
+			} else moved = true;
+			
 			if (!moved) {
 				moved = tryMoveElseBack(goDir);
 				if (!moved) {
@@ -168,9 +175,23 @@ public class GardenerBot extends RobotGlobal {
             if (nearestFriendlyTree != null) {
                 minFriendlyTreeDist = myLoc.distanceTo(getNearestFriendlyTree().location);
             }
+            
+
             MapLocation[] archonLocations = getMyArchonLocations();
+            MapLocation nearestFGLoc = null;
+            RobotInfo[] NFG = nearbyFriendlyGardeners();
+      
+            if (NFG == null || NFG[0] == null) {
+            	System.out.println("no nearby gardeners!");
+            }
+            else {
+            	
+            	nearestFGLoc = NFG[0].location;
+            }
+            
             float minArchonDist = minDistBetween(myLoc, archonLocations);
-            if (minFriendlyTreeDist > 8 && minArchonDist > 8) {
+            if (minFriendlyTreeDist > 8 && minArchonDist > 8 && 
+            		(nearestFGLoc == null || myLoc.distanceTo(nearestFGLoc) > 6) ) { // ensure space between gardeners
             	ProposedFarm farm = tryProposeFarm();
             	if(farm != null) {
             		farmGeo = farm;
@@ -253,58 +274,6 @@ public class GardenerBot extends RobotGlobal {
         	if (!builtTree) {
         		skippedCost += GameConstants.BULLET_TREE_COST;
         	}
-
-        	
-        	/*
-            if (goBack) {
-                if (!moved){ // if not in center, goback to center
-                    moved = tryMoveExact(farmGeo.getFarmCenter());
-                    goBack = !moved;
-                }
-            } else {
-            	boolean builtTree = false;
-				boolean haveBullets = teamBullets > GameConstants.BULLET_TREE_COST + skippedCost;
-				for (int t = 0; t < 5; t++) {
-					boolean isAlive = isTreeAlive[t];
-					boolean isBlocked = isTreeBlocked[t];
-					if (!isAlive && !isBlocked) {
-						// try to plant this one
-						MapLocation pLoc = farmGeo.getTreePlantingLocs()[t];
-
-						if (haveBullets && rc.onTheMap(pLoc, 1) && rc.isBuildReady()){ // check location, cooldown, & bullets
-							Direction tDir = farmGeo.getTreeDirections()[t];
-							//System.out.println("Attempting to plant Tree #" + t);
-
-							if (rc.canMove(pLoc) && !moved) {						// check if can move this turn, then do
-								moved = tryMoveExact(pLoc);	// Go to plantLoc
-								if (moved) {
-									goBack = true;
-
-									if (rc.canPlantTree(tDir)) {						// check if can plant
-										rc.plantTree(myLoc.directionTo(farmGeo.getTreeLocs()[t])); 	// Success! now account for the new tree
-										//System.out.println("Tree #" + t + " is planted.");
-										isTreeAlive[t] = true;
-										builtTree = true;
-									} else {
-										//System.out.println("Couldn't plant tree # " + t + " in treeDir specified.");
-									}
-								} else {
-									//System.out.println("Couldn't get to Tree Planting Location #" + t);
-								}
-							} else {
-								//System.out.println("Couldn't get to Tree Planting Location #" + t);
-							}
-						}
-						//System.out.println("Waiting for cooldown...");
-						break;
-					}
-				}
-				if (!builtTree) {
-					skippedCost += GameConstants.BULLET_TREE_COST;
-				}
-        	}
-            
-            */
 
         	if (secondaryBuild != null && teamBullets > skippedCost + secondaryBuild.bulletCost) {
         		// Build a unit if possible
