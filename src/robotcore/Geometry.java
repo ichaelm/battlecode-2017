@@ -78,54 +78,54 @@ public class Geometry {
         }
     }
     public static float[][] getCirclePolygonIntersectionPairs(MapLocation center, float r, MapLocation[] poly) {
-        // start with a point that's outside the circle
-        int start = -1;
-        for (int i = 0; i < poly.length; i++) {
-            if (center.distanceTo(poly[i]) > r) {
-                start = i;
-                break;
-            }
-        }
-        if (start < 0) {
-            // Polygon is completely inside
-            return new float[][]{};
-        }
+    	// start with a point that's outside the circle
+    	int start = -1;
+    	for (int i = 0; i < poly.length; i++) {
+    		if (center.distanceTo(poly[i]) > r) {
+    			start = i;
+    			break;
+    		}
+    	}
+    	if (start < 0) {
+    		// Polygon is completely inside
+    		return new float[][]{};
+    	}
 
-        // get intersections from each side
-        MapLocation[] intersections = new MapLocation[10];
-        int numIntersections = 0;
-        for (int i = start; i < start+poly.length; i++) {
-            int iMod = i % poly.length;
-            int jMod = (i+1) % poly.length;
-            MapLocation[] lineIntersections = getCircleLineSegmentIntersections(center, r, poly[iMod], poly[jMod]);
-            for (MapLocation lineIntersection : lineIntersections) {
-                if (numIntersections >= 10) {
-                    System.out.println("Too many intersections found!!!");
-                } else {
-                    intersections[numIntersections] = lineIntersection;
-                    numIntersections++;
-                }
-            }
-        }
+    	// get intersections from each side
+    	MapLocation[] intersections = new MapLocation[10];
+    	int numIntersections = 0;
+    	for (int i = start; i < start+poly.length; i++) {
+    		int iMod = i % poly.length;
+    		int jMod = (i+1) % poly.length;
+    		MapLocation[] lineIntersections = getCircleLineSegmentIntersections(center, r, poly[iMod], poly[jMod]);
+    		for (MapLocation lineIntersection : lineIntersections) {
+    			if (numIntersections >= 10) {
+    				System.out.println("Too many intersections found!!!");
+    			} else {
+    				intersections[numIntersections] = lineIntersection;
+    				numIntersections++;
+    			}
+    		}
+    	}
 
-        // Handle less than 2 intersections
-        if (numIntersections == 0) {
-            // No intersections
-            return new float[][]{};
-        } else if (numIntersections % 2 == 1) {
-            System.out.println("Odd number of intersections found!!!");
-            return new float[][]{};
-        }
+    	// Handle less than 2 intersections
+    	if (numIntersections == 0) {
+    		// No intersections
+    		return new float[][]{};
+    	} else if (numIntersections % 2 == 1) {
+    		System.out.println("Odd number of intersections found!!!");
+    		return new float[][]{};
+    	}
 
-        // get angle of each intersection
-        float[][] retval = new float[numIntersections][];
-        for (int i = 0; i < retval.length; i++) {
-            retval[i] = new float[]{
-                    center.directionTo(intersections[0]).radians,
-                    center.directionTo(intersections[1]).radians
-            };
-        }
-        return retval;
+    	// get angle of each intersection
+    	float[][] retval = new float[numIntersections][];
+    	for (int i = 0; i < retval.length; i++) {
+    		retval[i] = new float[]{
+    				center.directionTo(intersections[0]).radians,
+    				center.directionTo(intersections[1]).radians
+    		};
+    	}
+    	return retval;
     }
 
 }
