@@ -343,7 +343,7 @@ public strictfp class RobotGlobal {
     public static boolean useTriad = false;
     public static boolean usePentad = false;
     public static float triadDist = 2.75f;
-    public static float pentadDist = 2.1f;
+    public static float pentadDist = 2.25f;
     public static boolean friendlyFireOn = true;
     public static boolean prioritizeRobotTrees = false;
     public static boolean kiteEnemyLumberjacks = true;
@@ -354,6 +354,7 @@ public strictfp class RobotGlobal {
     public static boolean kiteTanks = false;
     public static float attackCircleStart = 15f;
     public static float attackCircleChange = 0.125f;
+    public static boolean ceaseFire = false;
     
     // Configuration for Gardeners Units
     public static boolean earlyLumberjacks = false;
@@ -1439,12 +1440,47 @@ public strictfp class RobotGlobal {
         return true;
     }
     
-    public static void VP() throws GameActionException { // Donation strategy
+    // Will be used to see if tank barrage will hit friendly farms or other things out of sensor range
+    public static boolean willConeOfFireHitCircle(MapLocation target, MapLocation center, float radius) {
+    	// Start with the line from tank to target
+    	MapLocation[] intersections = Geometry.getCircleLineSegmentIntersections(center, radius, myLoc, target);
+    	if (intersections.length >= 1) {
+    		rc.setIndicatorDot(intersections[0], 88, 88, 88);
+    		System.out.println("Intersection detected!");
+    		return true;
+    	}
+    	
+    	// Calculate offsets forming the cone 'base' 
+    	float offsetDistMax = 2.5f;
+    	Direction targetDir = myLoc.directionTo(target);
+    	Direction dirA = targetDir.rotateLeftDegrees(90);
+    	Direction dirB = targetDir.rotateRightDegrees(90);
+    	MapLocation offsetLocA = target.add(dirA, offsetDistMax); // cone base point 1
+    	MapLocation offsetLocB = target.add(dirB, offsetDistMax); // cone base point 2
+    	//getCircleLineSegmentIntersections(MapLocation center, float r, MapLocation lineA, MapLocation lineB)
+    	intersections = Geometry.getCircleLineSegmentIntersections(center, radius, myLoc, offsetLocA);
+    	if (intersections.length >= 1) {
+    		rc.setIndicatorDot(intersections[0], 88, 88, 88);
+    		System.out.println("Intersection detected!");
+    		return true;
+    	}
+    	intersections = Geometry.getCircleLineSegmentIntersections(center, radius, myLoc, offsetLocB);
+    	if (intersections.length >= 1) {
+    		rc.setIndicatorDot(intersections[0], 88, 88, 88);
+    		System.out.println("Intersection detected!");
+    		return true;
+    	}
+    	
+    	return false;
+    }
+    
+    public static boolean VP() throws GameActionException { // Donation strategy
     	int VPtoWin = GameConstants.VICTORY_POINTS_TO_WIN - victoryPoints;
     	
     	if(teamBullets >= vpCost * VPtoWin) rc.donate(vpCost * VPtoWin);
         if(rc.getRoundLimit() - rc.getRoundNum() < 2) {
         	rc.donate(teamBullets);
+        	return true;
         }
         
         // if not donated already this turn, and not under attack
@@ -1452,15 +1488,17 @@ public strictfp class RobotGlobal {
         	 if (teamBullets > vpCost*5) {
              	rc.donate((float) (vpCost * Math.floor(rc.getTreeCount()/15)));
              	rc.broadcast(DONATED_CHANNEL, 1);
+             	return true;
              }
         }
         
-        if (rc.readBroadcast(DONATED_CHANNEL) == 0 && teamBullets > 1000) {
-        	rc.donate((float) (vpCost * Math.floor(rc.getTreeCount()/10)));
+        if (teamBullets > 1500) {
+        	rc.donate(vpCost);
          	rc.broadcast(DONATED_CHANNEL, 1);
+         	return true;
         }
        
-        
+        return false;
     }
 
     public static int[] readBroadcastArray(int channelStart, int length) throws GameActionException {
