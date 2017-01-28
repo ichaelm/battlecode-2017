@@ -1,4 +1,4 @@
-package new_soldierrush_1s1so5t_noFF_multishot;
+package new_soldierrush_1s1lj2so3t_noFF_multi;
 
 import battlecode.common.GameActionException;
 import battlecode.common.RobotController;
@@ -11,11 +11,13 @@ public strictfp class RobotPlayer {
             RobotGlobal.init(rc);
             RobotGlobal.setInitialBuildQueue1(new RobotType[]{
             		RobotType.SOLDIER,
+            		RobotType.LUMBERJACK,
             		RobotType.SCOUT,
+            		RobotType.SCOUT
             });
             RobotGlobal.setInitialBuildQueue2(new RobotType[]{
-            		RobotType.TANK,
-                    RobotType.TANK,
+            		//RobotType.TANK,
+                    //RobotType.TANK,
                     RobotType.TANK,
                     RobotType.TANK,
                     RobotType.TANK
@@ -26,6 +28,7 @@ public strictfp class RobotPlayer {
             RobotGlobal.friendlyFireOn = false;
             RobotGlobal.useTriad = true;
             RobotGlobal.usePentad = true;
+            //RobotGlobal.kite = true;
             
         } catch (Exception e) {
             System.out.println("Exception during global init");

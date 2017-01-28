@@ -23,11 +23,11 @@ public strictfp class RobotPlayer {
             });
             RobotGlobal.setInitialDefaultBuild(RobotType.SOLDIER);
             RobotGlobal.setGardenerSchedule(RobotGlobal.GardenerSchedule.ONCE_EVERY_N_ROUNDS);
-            RobotGlobal.setGardenerScheduleN(200);
+            RobotGlobal.setGardenerScheduleN(175);
             RobotGlobal.friendlyFireOn = false;
             RobotGlobal.useTriad = true;
             RobotGlobal.usePentad = true;
-            //RobotGlobal.kite = true;
+            RobotGlobal.kite = true;
             
         } catch (Exception e) {
             System.out.println("Exception during global init");
