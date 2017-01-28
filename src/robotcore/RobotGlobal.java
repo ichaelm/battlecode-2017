@@ -266,11 +266,13 @@ public strictfp class RobotGlobal {
     private static final int MAP_SIZE_B = 59;
     private static final int MAP_NUM_ENTRIES = MAP_SIZE_A * MAP_SIZE_B;
     private static final int MAP_LENGTH = MAP_ENTRY_SIZE * MAP_NUM_ENTRIES;
+	public static final int DONATED_CHANNEL = 999;
 
     // Performance constants
     public static final int DESIRED_ROBOTS = 20;
     public static final int DESIRED_TREES = 20;
     public static final int DESIRED_BULLETS = 20;
+
     
     // Scout variables
     public static Direction currentDirection;
@@ -1435,6 +1437,16 @@ public strictfp class RobotGlobal {
         if(rc.getRoundLimit() - rc.getRoundNum() < 2) {
         	rc.donate(teamBullets);
         }
+        
+        // if not donated already this turn, and not under attack
+        if (rc.readBroadcast(DONATED_CHANNEL) == 0 && peekDefendLocation() == null) {
+        	 if (teamBullets > vpCost*5) {
+             	rc.donate((float) (vpCost * Math.floor(rc.getTreeCount()/15)));
+             	rc.broadcast(DONATED_CHANNEL, 1);
+             }
+        }
+       
+        
     }
 
     public static int[] readBroadcastArray(int channelStart, int length) throws GameActionException {
