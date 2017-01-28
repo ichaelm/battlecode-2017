@@ -27,7 +27,7 @@ public strictfp class RobotPlayer {
             RobotGlobal.friendlyFireOn = false;
             RobotGlobal.useTriad = true;
             RobotGlobal.usePentad = true;
-            RobotGlobal.kite = true;
+            //RobotGlobal.kite = true;
             
         } catch (Exception e) {
             System.out.println("Exception during global init");

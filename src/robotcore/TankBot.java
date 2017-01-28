@@ -22,9 +22,8 @@ public class TankBot extends RobotGlobal {
 	static boolean friendlyFireOn = false;
 	static boolean wasAttacking = false;
 	static int attackRound = 0;
-	
-	static MapLocation barrageLoc = myLoc;
-	
+	static MapLocation barrageLoc = null;
+	static MapLocation[] farmLocs = null;
 	
 	public static Direction offsetTarget(MapLocation target) throws GameActionException { // gives a random angle offset for shooting
 		debugTick(6);
@@ -128,6 +127,9 @@ public class TankBot extends RobotGlobal {
         int r = (int) (Math.random()*spots.length);
         return spots[r];
 	}
+	
+	
+	
 	/**
 	public static MapLocation newAttackLocation() throws GameActionException {
 		MapLocation prev = attackLoc;
@@ -166,8 +168,13 @@ public class TankBot extends RobotGlobal {
 		processNearbyRobots();
 		processNearbyBullets();
 		processNearbyTrees();
-		parseMap();
 		tryToShake();
+		farmLocs = getAllFarmLocs();
+		
+		for (MapLocation f: farmLocs) {
+			rc.setIndicatorLine(myLoc, f, 55, 255, 55);
+		}
+		
         if (firstTurn) {
             goDir = randomDirection();
         }
@@ -176,15 +183,18 @@ public class TankBot extends RobotGlobal {
         debugTick(1);
         
         if (attackLoc != null) {
+        	if (barrageLoc == null) barrageLoc = parseMap();
+        	
         	if (attackLoc.equals(peekAttackLocation())){
             	wasAttacking = true;
             	attackRound ++;
             } else {
-            	barrageLoc = parseMap();
+            	
             	wasAttacking = false;
             	attackRound = 0;
             }
-        } else { 
+        } else {
+        	barrageLoc = null;
         	wasAttacking = false;
         	attackRound = 0;
         }
@@ -220,7 +230,7 @@ public class TankBot extends RobotGlobal {
         	}
         } else if (attackLoc != null) { // firing line code
         	debugTick(3);
-        	//System.out.println("attRound: " + attackRound);
+        	System.out.println("attRound: " + attackRound);
         	float attackRadius = attackCircleStart - (attackRound * attackCircleChange); // Radius for the firing line
         	
         	debugTick(4);
@@ -230,7 +240,7 @@ public class TankBot extends RobotGlobal {
         	
         	rc.setIndicatorDot(barrageLoc, 0, 0, 0);
         	
-        	rc.setIndicatorDot(firingLineSpot, 222, 222, 222);
+        	//rc.setIndicatorDot(firingLineSpot, 222, 222, 222);
         	goDir = myLoc.directionTo(firingLineSpot);
         	
         	debugTick(5);
@@ -238,17 +248,24 @@ public class TankBot extends RobotGlobal {
         	rc.setIndicatorDot(attackLoc, 255, 0, 0);
 
         	if (!rc.hasMoved()) { moved = tryMoveElseLeftRight(myLoc.directionTo(barrageLoc)); } // <<<<<<<<<<
-        	
         	Direction shootAt = offsetTarget(attackLoc);
-        	debugTick(12);
-        	if (rc.canFireSingleShot() && shoot) {
-        		rc.fireSingleShot(shootAt);
+        	
+        	if (!friendlyFireOn) {
+        		shoot = hasLineOfSightFF(myLoc.add(shootAt, myType.sensorRadius));
         	}
-        	debugTick(16);
+        	
+        	if (shoot) {
+        		debugTick(12);
+        		if (rc.canFireSingleShot() && shoot) {
+        			rc.fireSingleShot(shootAt);
+        		}
+        		debugTick(16);
+        	}
+
         	if (myLoc.distanceTo(attackLoc) < myType.sensorRadius) {
         		//newAttackLocation();
         		popAttackLocation();
-        		
+
         	}
         	if (attackRound > 100) { // if bombardment has been long enough, switch targets
         		//newAttackLocation();
