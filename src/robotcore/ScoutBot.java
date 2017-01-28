@@ -49,8 +49,8 @@ public class ScoutBot extends RobotGlobal {
         	RobotInfo nearestEnemy = getNearestEnemy();
         	
         	if (nearestEnemy != null) {
-        		//Only shoot 50% of the time
-        		if (Math.random() < 0.5) {
+        		//Only shoot 20% of the time, and if we have many bullets
+        		if (Math.random() < 0.2 && teamBullets > 310) {
 	        		Direction enemyDirection = myLoc.directionTo(nearestEnemy.location);
 	                if (rc.canFireSingleShot() && (friendlyFireOn || hasLineOfSight(nearestEnemy.location))) {
 	                    rc.fireSingleShot(enemyDirection);
@@ -121,7 +121,7 @@ public class ScoutBot extends RobotGlobal {
 					Direction atEnemy = myLoc.directionTo(selectedGardenerInfo.location);
 		            float dist = selectedGardenerInfo.location.distanceTo(myLoc); 
 	        	
-	        		if (usePentad && rc.canFirePentadShot() && dist < pentadDist) { // if soldier shoots, canFire becomes false
+	        		if (usePentad && rc.canFirePentadShot() && dist < pentadDist) { // if scout shoots, canFire becomes false
 	                	rc.firePentadShot(atEnemy);
 	                }
 	        		else if (useTriad && rc.canFireTriadShot() && dist < triadDist) {
