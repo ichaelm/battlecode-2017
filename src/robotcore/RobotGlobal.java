@@ -795,7 +795,7 @@ public strictfp class RobotGlobal {
             }
             if (farmToExplore != null) {
                 float farmTreeDist = farmToExplore.distanceTo(tree.getLocation()) - tree.radius;
-                if (farmTreeDist < ProposedFarm.octagonFarmRadius) {
+                if (farmTreeDist < ProposedFarm.hexFarmRadius) {
                     farmClear = false;
                     if (farmTreeDist < RobotType.GARDENER.bodyRadius) {
                         farmReady = false;
@@ -846,7 +846,7 @@ public strictfp class RobotGlobal {
 
 
     public static boolean canExploreFarm(int farmNum) throws GameActionException {
-        return myLoc.distanceTo(farmNumToLoc(farmNum)) + ProposedFarm.octagonFarmRadius <= myType.sensorRadius;
+        return myLoc.distanceTo(farmNumToLoc(farmNum)) + ProposedFarm.hexFarmRadius <= myType.sensorRadius;
     }
 
     public static boolean queryFirstFarmExists() throws GameActionException {
