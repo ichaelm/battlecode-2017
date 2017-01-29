@@ -191,10 +191,13 @@ public class GardenerBot extends RobotGlobal {
 
 			} else {
 				// exploring farm locs
+				makeCurrentFarmLocOnMap();
 				MapLocation farmLoc = queryCurrentFarmLoc();
-				moved = tryMoveElseLeftRight(myLoc.directionTo(farmLoc), 20, 5);
-				if (!moved) {
-					System.out.println("Can't move to explore farms");
+				if (farmLoc != null) {
+					moved = tryMoveElseLeftRight(myLoc.directionTo(farmLoc), 20, 5);
+					if (!moved) {
+						System.out.println("Can't move to explore farms");
+					}
 				}
 			}
         }
