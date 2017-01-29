@@ -2011,9 +2011,22 @@ public strictfp class RobotGlobal {
                 // Build a lumberjack
                 addBuildQueue1(RobotType.LUMBERJACK);
             }
-
         }
     }
+
+	public static MapLocation[] getAllFarmLocs() throws GameActionException {
+		int fCount = activeFarmsQueue.count();
+		if (fCount < 1) return null;
+		MapLocation[] farmLocs = new MapLocation[fCount];
+		
+		for (int i = 0; i < fCount; i++) {
+		    int fNum = activeFarmsQueue.peek(i)[0];
+			farmLocs[fNum] = farmNumToLoc(fNum);
+			//System.out.println("Farm # " + fNum + " is at " + farmLocs[fNum]);
+		}
+		
+		return farmLocs;
+	}
 
     public static RobotType peekBuildQueue1() throws GameActionException {
         int begin = rc.readBroadcast(BUILD_QUEUE_1_BEGIN_CHANNEL);
