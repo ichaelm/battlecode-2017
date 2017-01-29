@@ -81,14 +81,14 @@ public class TankBot extends RobotGlobal {
         float o = 2.7f;
         
         MapLocation[] spots = new MapLocation[] {
-        		knownNE.add(Direction.SOUTH, o).add(Direction.WEST, o),
-        		knownSE.add(Direction.NORTH, o).add(Direction.WEST, o),
-        		knownNW.add(Direction.SOUTH, o).add(Direction.EAST, o),
-        		knownSW.add(Direction.NORTH, o).add(Direction.EAST, o),
-        		knownMidNorth.add(Direction.SOUTH, o),
-        		knownMidWest.add(Direction.EAST, o),
-        		knownMidSouth.add(Direction.NORTH, o),
-        		knownMidEast.add(Direction.WEST, o)
+        		knownNE.add(Direction.getSouth(), o).add(Direction.getWest(), o),
+        		knownSE.add(Direction.getNorth(), o).add(Direction.getWest(), o),
+        		knownNW.add(Direction.getSouth(), o).add(Direction.getEast(), o),
+        		knownSW.add(Direction.getNorth(), o).add(Direction.getEast(), o),
+        		knownMidNorth.add(Direction.getSouth(), o),
+        		knownMidWest.add(Direction.getEast(), o),
+        		knownMidSouth.add(Direction.getNorth(), o),
+        		knownMidEast.add(Direction.getWest(), o)
         };
         
         
