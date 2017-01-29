@@ -45,7 +45,6 @@ public class ArchonBot extends RobotGlobal {
     }
 
     public static void turn() throws GameActionException {
-        VP();
         processNearbyRobots();
         processNearbyBullets();
         processNearbyTrees();
@@ -55,7 +54,7 @@ public class ArchonBot extends RobotGlobal {
         registerArchon();
 
         if (isLeader) {
-        	rc.broadcast(DONATED_CHANNEL, 0);
+            leaderVP();
             if (firstTurn) {
                 for (MapLocation attackLoc : enemyInitialArchonLocations) {
                     addAttackLocation(attackLoc);

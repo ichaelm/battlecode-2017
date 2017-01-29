@@ -162,11 +162,11 @@ public class TankBot extends RobotGlobal {
     
     
     public static void turn() throws GameActionException {
-		VP();
 		processNearbyRobots();
 		processNearbyBullets();
 		processNearbyTrees();
 		tryToShake();
+		elections();
 
 		registerTank();
 

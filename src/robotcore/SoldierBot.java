@@ -1,8 +1,6 @@
 package robotcore;
 
 import battlecode.common.*;
-import robotcore.RobotGlobal;
-
 
 
 public class SoldierBot extends RobotGlobal {
@@ -33,11 +31,11 @@ public class SoldierBot extends RobotGlobal {
 
 
     public static void turn() throws GameActionException {
-        VP();
         processNearbyRobots();
         processNearbyBullets();
         processNearbyTrees();
         tryToShake();
+        elections();
 
         registerSoldier();
 

@@ -523,7 +523,6 @@ public strictfp class RobotGlobal {
     public static final int TANK_BUILT_CHANNEL = SOLDIER_BUILT_CHANNEL + 1;
     public static final int CAN_PLANT_COUNTER_CHANNEL = TANK_BUILT_CHANNEL + 1;
     public static final int CAN_PLANT_NUM_CHANNEL = CAN_PLANT_COUNTER_CHANNEL + 1;
-	public static final int DONATED_CHANNEL = CAN_PLANT_NUM_CHANNEL + 1;
 
     // Performance constants
     public static final int DESIRED_ROBOTS = 20;
@@ -1901,27 +1900,27 @@ public strictfp class RobotGlobal {
     	return false;
     }
     
-    public static boolean VP() throws GameActionException { // Donation strategy
+    public static boolean leaderVP() throws GameActionException { // Donation strategy
     	int VPtoWin = GameConstants.VICTORY_POINTS_TO_WIN - victoryPoints;
     	
-    	if(teamBullets >= vpCost * VPtoWin) rc.donate(vpCost * VPtoWin);
+    	if(teamBullets >= vpCost * VPtoWin) {
+    	    rc.donate(vpCost * VPtoWin);
+        }
         if(rc.getRoundLimit() - rc.getRoundNum() < 2) {
         	rc.donate(teamBullets);
         	return true;
         }
         
-        // if not donated already this turn, and not under attack
-        if (rc.readBroadcast(DONATED_CHANNEL) == 0 && peekDefendLocation() == null) {
+        // if not under attack
+        if (peekDefendLocation() == null) {
         	 if (teamBullets > vpCost*5) {
              	rc.donate((float) (vpCost * Math.floor(rc.getTreeCount()/15)));
-             	rc.broadcast(DONATED_CHANNEL, 1);
              	return true;
              }
         }
         
         if (teamBullets > 1500) {
         	rc.donate(vpCost);
-         	rc.broadcast(DONATED_CHANNEL, 1);
          	return true;
         }
        
