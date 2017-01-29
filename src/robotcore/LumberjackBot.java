@@ -33,11 +33,12 @@ public class LumberjackBot extends RobotGlobal {
         processNearbyBullets();
         processNearbyTrees();
         tryToShake();
+
+        registerLumberjack();
+
         if (firstTurn) {
             goDir = randomDirection();
         }
-
-        rc.broadcast(LUMBERJACK_COUNTER_CHANNEL, rc.readBroadcast(LUMBERJACK_COUNTER_CHANNEL) + 1);
         
         RobotInfo nearestEnemy = getNearestEnemy();
         boolean enemyInRange = false;

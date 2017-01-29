@@ -869,6 +869,30 @@ public strictfp class RobotGlobal {
         }
         rc.broadcast(EXEC_ROUND_CHANNEL, roundNum);
     }
+    
+    public static void registerArchon() throws GameActionException {
+        rc.broadcast(ARCHON_COUNTER_CHANNEL, rc.readBroadcast(ARCHON_COUNTER_CHANNEL) + 1);
+    }
+    
+    public static void registerGardener() throws GameActionException {
+        rc.broadcast(GARDENER_COUNTER_CHANNEL, rc.readBroadcast(GARDENER_COUNTER_CHANNEL) + 1);
+    }
+
+    public static void registerLumberjack() throws GameActionException {
+        rc.broadcast(LUMBERJACK_COUNTER_CHANNEL, rc.readBroadcast(LUMBERJACK_COUNTER_CHANNEL) + 1);
+    }
+
+    public static void registerSoldier() throws GameActionException {
+        rc.broadcast(SOLDIER_COUNTER_CHANNEL, rc.readBroadcast(SOLDIER_COUNTER_CHANNEL) + 1);
+    }
+
+    public static void registerTank() throws GameActionException {
+        rc.broadcast(TANK_COUNTER_CHANNEL, rc.readBroadcast(TANK_COUNTER_CHANNEL) + 1);
+    }
+
+    public static void registerScout() throws GameActionException {
+        rc.broadcast(SCOUT_COUNTER_CHANNEL, rc.readBroadcast(SCOUT_COUNTER_CHANNEL) + 1);
+    }
 
     public static void leaderStoreCounters() throws GameActionException {
         rc.broadcast(NUM_ARCHONS_CHANNEL, rc.readBroadcast(ARCHON_COUNTER_CHANNEL));

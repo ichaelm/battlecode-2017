@@ -38,6 +38,9 @@ public class SoldierBot extends RobotGlobal {
         processNearbyBullets();
         processNearbyTrees();
         tryToShake();
+
+        registerSoldier();
+
         if (firstTurn) {
             goDir = randomDirection();
         }

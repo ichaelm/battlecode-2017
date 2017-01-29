@@ -34,6 +34,9 @@ public class ScoutBot extends RobotGlobal {
 		processNearbyBullets();
 		processNearbyTrees();
 		tryToShake();
+
+		registerScout();
+
 		if (firstTurn) {
 			goDir = randomDirection();
 		}

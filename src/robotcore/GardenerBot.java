@@ -120,7 +120,7 @@ public class GardenerBot extends RobotGlobal {
 		processNearbyTrees();
 		tryToShake();
 
-		rc.broadcast(GARDENER_COUNTER_CHANNEL, rc.readBroadcast(GARDENER_COUNTER_CHANNEL) + 1);
+		registerGardener();
     	
     	if (birthTurn < 0) {
             birthTurn = roundNum;

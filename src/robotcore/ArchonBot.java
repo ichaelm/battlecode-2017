@@ -52,7 +52,7 @@ public class ArchonBot extends RobotGlobal {
         tryToShake();
         elections();
 
-        rc.broadcast(ARCHON_COUNTER_CHANNEL, rc.readBroadcast(ARCHON_COUNTER_CHANNEL) + 1);
+        registerArchon();
 
         if (isLeader) {
         	rc.broadcast(DONATED_CHANNEL, 0);
