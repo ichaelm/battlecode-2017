@@ -26,14 +26,11 @@ public class TankBot extends RobotGlobal {
 	static MapLocation[] farmLocs = null;
 	
 	public static Direction offsetTarget(MapLocation target) throws GameActionException { // gives a random angle offset for shooting
-		debugTick(6);
 		float offsetDistMax = 2.5f;
 		MapLocation newTarget = null;
 		int c = 0;
-		debugTick(7);
 		while (newTarget == null) {
 			c++;
-			debugTick(7+c);
 			try{
 				Direction dir = myLoc.directionTo(target);
 				
@@ -58,7 +55,6 @@ public class TankBot extends RobotGlobal {
 			}
 
 		}
-		debugTick(15);
 		rc.setIndicatorDot(newTarget, 225, 100, 0);
 		return myLoc.directionTo(newTarget);
 	}
@@ -82,15 +78,17 @@ public class TankBot extends RobotGlobal {
         MapLocation knownMidEast = new MapLocation(knownMapBounds.getInnerBound(iEAST), avgY);
         MapLocation knownMidWest = new MapLocation(knownMapBounds.getInnerBound(iWEST), avgY);
         
+        float o = 2.7f;
+        
         MapLocation[] spots = new MapLocation[] {
-        		knownNE.add(Direction.SOUTH, 2).add(Direction.WEST, 2),
-        		knownSE.add(Direction.NORTH, 2).add(Direction.WEST, 2),
-        		knownNW.add(Direction.SOUTH, 2).add(Direction.EAST, 2),
-        		knownSW.add(Direction.NORTH, 2).add(Direction.EAST, 2),
-        		knownMidNorth.add(Direction.SOUTH, 2),
-        		knownMidWest.add(Direction.EAST, 2),
-        		knownMidSouth.add(Direction.NORTH, 2),
-        		knownMidEast.add(Direction.WEST, 2)
+        		knownNE.add(Direction.SOUTH, o).add(Direction.WEST, o),
+        		knownSE.add(Direction.NORTH, o).add(Direction.WEST, o),
+        		knownNW.add(Direction.SOUTH, o).add(Direction.EAST, o),
+        		knownSW.add(Direction.NORTH, o).add(Direction.EAST, o),
+        		knownMidNorth.add(Direction.SOUTH, o),
+        		knownMidWest.add(Direction.EAST, o),
+        		knownMidSouth.add(Direction.NORTH, o),
+        		knownMidEast.add(Direction.WEST, o)
         };
         
         
@@ -180,8 +178,6 @@ public class TankBot extends RobotGlobal {
             goDir = randomDirection();
         }
         boolean shoot = true;
-
-        debugTick(1);
         
         if (attackLoc != null) {
         	
@@ -211,7 +207,6 @@ public class TankBot extends RobotGlobal {
         TreeInfo nearestTree = getNearestUnfriendlyTree();
         TreeInfo nearestRobotTree = getNearestRobotTree();
         
-        debugTick(2);
         if (nearestTree != null) {
             float distToTree = myLoc.distanceTo(nearestTree.location);
             treeDir = myLoc.directionTo(nearestTree.location);
@@ -229,49 +224,45 @@ public class TankBot extends RobotGlobal {
         		shoot = hasLineOfSightFF(nearestEnemy.location); // if this tank is to avoid FriendlyFire
         	}
         } else if (attackLoc != null) { // firing line code
-        	debugTick(3);
         	System.out.println("attRound: " + attackRound);
         	float attackRadius = attackCircleStart - (attackRound * attackCircleChange); // Radius for the firing line
-        	
-        	debugTick(4);
         	
         	//MapLocation firingLineSpot = attackLoc.add(attackLoc.directionTo(myLoc), attackRadius); // Location on the line 
         	
         	if (barrageLoc == null) barrageLoc = parseMap();
         	rc.setIndicatorDot(barrageLoc, 0, 0, 0);
-        	
+
         	//rc.setIndicatorDot(firingLineSpot, 222, 222, 222);
         	goDir = myLoc.directionTo(barrageLoc);
-        	
-        	debugTick(5);
-        	
+
         	rc.setIndicatorDot(attackLoc, 255, 0, 0);
 
-        	if (!rc.hasMoved()) { moved = tryMoveElseLeftRight(myLoc.directionTo(barrageLoc)); } // <<<<<<<<<<
-        	Direction shootAt = offsetTarget(attackLoc);
-        	
-        	if (!friendlyFireOn) {
-        		shoot = hasLineOfSightFF(myLoc.add(shootAt, myType.sensorRadius));
-        	}
-        	
-        	if (shoot) {
-        		debugTick(12);
-        		if (rc.canFireSingleShot() && shoot) {
-        			rc.fireSingleShot(shootAt);
-        		}
-        		debugTick(16);
-        	}
+        	if (attackRound > 150 && ceaseFire) { // if bombardment has been long enough, switch targets
+        		//newAttackLocation();
+        		//attackLoc = null;
+        		shoot = false;
+        		if (!rc.hasMoved()) { moved = tryMoveElseLeftRight(myLoc.directionTo(attackLoc)); } 
+        		goDir = myLoc.directionTo(attackLoc);
+        	} 
+        	else {
+        		if (!rc.hasMoved()) { moved = tryMoveElseLeftRight(myLoc.directionTo(barrageLoc)); } 
+        		Direction shootAt = offsetTarget(attackLoc);
 
+        		if (!friendlyFireOn) {
+        			shoot = hasLineOfSightFF(myLoc.add(shootAt, myType.sensorRadius));
+        		}
+
+        		if (shoot) {
+        			if (rc.canFireSingleShot() && shoot) {
+        				rc.fireSingleShot(shootAt);
+        			}
+        		}
+        	}
         	if (myLoc.distanceTo(attackLoc) < myType.sensorRadius) {
         		//newAttackLocation();
         		popAttackLocation();
+        	}
 
-        	}
-        	if (attackRound > 100) { // if bombardment has been long enough, switch targets
-        		//newAttackLocation();
-        		attackLoc = null;
-        	}
-        	
         }
 
         if (nearestEnemy == null && attackLoc == null) {

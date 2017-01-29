@@ -8,6 +8,9 @@ import robotcore.RobotGlobal;
 public class SoldierBot extends RobotGlobal {
     static Direction goDir;
     static boolean firstTurn = true;
+    static MapLocation attackLoc = null;
+    static boolean wasAttacking = false;
+	static int attackRound = 0;
 
     public static void loop() {
         while (true) {
@@ -37,6 +40,19 @@ public class SoldierBot extends RobotGlobal {
         tryToShake();
         if (firstTurn) {
             goDir = randomDirection();
+        }
+
+        if (attackLoc != null) {
+        	if (attackLoc.equals(peekAttackLocation())){
+        		wasAttacking = true;
+        		attackRound ++;
+        	} else {
+        		wasAttacking = false;
+        		attackRound = 0;
+        	}
+        } else {
+        	wasAttacking = false;
+        	attackRound = 0;
         }
 
         MapLocation attackLoc = peekAttackLocation();
@@ -116,11 +132,37 @@ public class SoldierBot extends RobotGlobal {
             }
         }
         if (nearestNonHostile != null) {
+        	if (!friendlyFireOn) {
+        		shoot = hasLineOfSightFF(nearestNonHostile.location); // if this soldier is to avoid FriendlyFire
+        	}
+        	if (selectedGardenerInfo != null && shoot) {
+        		Direction atGard = myLoc.directionTo(selectedGardenerLoc);
+        		float dist = myLoc.distanceTo(selectedGardenerLoc);
+        		
+        		if (usePentad && rc.canFirePentadShot() && dist < pentadDist) { // if soldier shoots, canFire becomes false
+                    rc.firePentadShot(atGard);
+                }
+                else if (useTriad && rc.canFireTriadShot() && dist < triadDist) {
+                    rc.fireTriadShot(atGard);
+                }
+                else if (rc.canFireSingleShot()) {
+                    rc.fireSingleShot(atGard);
+                }
+        	}
         	
-        	if (selectedGardenerInfo != null) {
-        		if (rc.canFireSingleShot()) {
-        			rc.fireSingleShot(myLoc.directionTo(selectedGardenerLoc));
-        		}
+        	if (attackRound > 200 && shoot) {
+        		System.out.println("Attacking non-hostiles!");
+        		Direction atThing = myLoc.directionTo(nearestNonHostile.location);
+        		float dist = myLoc.distanceTo(nearestNonHostile.location);
+        		if (usePentad && rc.canFirePentadShot() && dist < pentadDist) { // if soldier shoots, canFire becomes false
+                    rc.firePentadShot(atThing);
+                }
+                else if (useTriad && rc.canFireTriadShot() && dist < triadDist) {
+                    rc.fireTriadShot(atThing);
+                }
+                else if (rc.canFireSingleShot()) {
+                    rc.fireSingleShot(atThing);
+                }
         	}
         	
             int whichAttackLoc = whichAttackLocation(nearestNonHostile.location);
@@ -134,45 +176,6 @@ public class SoldierBot extends RobotGlobal {
         firstTurn = false;
     }
 
-    void doesNothing(){
-   	 /*
-       int moveMode = 0; // 0 is approach, 1 is kite lumberjack, 2 is run from lumberjack
-       Direction moveDir = null;
-
-       MapLocation myLocation = rc.getLocation();
-       MapLocation closestEnemyLoc = null;
-       float closestEnemyDist = 9999999;
-
-       // See if there are any nearby enemy robots
-       RobotInfo[] robots = rc.senseNearbyRobots(-1, enemy);
-
-       for (RobotInfo robot : robots) {
-           MapLocation robotLocation = robot.getLocation();
-           float dist = robot.getLocation().distanceTo(myLocation);
-           if (dist < closestEnemyDist) {
-               closestEnemyLoc = robotLocation;
-               closestEnemyDist = dist;
-           }
-           RobotType type = robot.getType();
-           if (type == RobotType.LUMBERJACK) {
-               if (dist <= GameConstants.LUMBERJACK_STRIKE_RADIUS + RobotType.LUMBERJACK.bodyRadius) {
-                   moveMode = 2; // run
-                   moveDir = robotLocation.directionTo(myLocation);
-               } else if (dist <= GameConstants.LUMBERJACK_STRIKE_RADIUS + RobotType.LUMBERJACK.bodyRadius + RobotType.SOLDIER.strideRadius) {
-                   moveMode = 1; // kite
-                   moveDir = robotLocation.directionTo(myLocation).rotateLeftDegrees(90);
-               }
-           }
-       }
-       if (moveMode == 0) {
-           if (closestEnemyLoc == null) {
-               moveDir = randomDirection();
-           } else {
-               moveDir = myLocation.directionTo(closestEnemyLoc);
-           }
-       }
-   	  */
-
-    }
+   
 
 }
