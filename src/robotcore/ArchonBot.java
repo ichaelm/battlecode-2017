@@ -140,13 +140,15 @@ public class ArchonBot extends RobotGlobal {
                 addAttackLocationFirst(nearestNonHostile.location);
             }
         }
-
-        MapLocation farmLoc = queryCurrentFarmLoc();
-        if (farmLoc != null) {
-            // Found an explored farm to go to
-            boolean moved = tryMoveElseLeftRight(myLoc.directionTo(farmLoc), 20, 5);
-            if (!moved) {
-                System.out.println("Can't move to farm i should explore");
+        if (queryFirstFarmExists()) {
+            makeCurrentFarmLocOnMap();
+            MapLocation farmLoc = queryCurrentFarmLoc();
+            if (farmLoc != null) {
+                // Found an explored farm to go to
+                boolean moved = tryMoveElseLeftRight(myLoc.directionTo(farmLoc), 20, 5);
+                if (!moved) {
+                    System.out.println("Can't move to farm i should explore");
+                }
             }
         }
     }

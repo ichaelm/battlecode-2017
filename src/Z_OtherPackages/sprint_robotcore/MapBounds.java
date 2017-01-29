@@ -1,4 +1,4 @@
-package robotcore;
+package sprint_robotcore;
 
 import battlecode.common.Direction;
 import battlecode.common.MapLocation;
@@ -55,22 +55,6 @@ public class MapBounds {
             return new MapLocation(loc.x, getOuterBound(direction));
         }
     }
-    
-    public MapLocation getInnerCornerLoc(int NSdir, int EWdir) { // returns a corner location like "NE" or "SW"
-    	if (NSdir != NORTH && NSdir != SOUTH) { // check NS
-    		System.out.println("Invalid North-South Direction!");
-    		return null;
-    	}
-    	if (EWdir != EAST && EWdir != WEST) { // check EW
-    		System.out.println("Invalid East-West Direction!");
-    		return null;
-    	}
-    	
-    	float Y = getInnerBound(NSdir);
-    	float X = getInnerBound(EWdir);
-    	
-    	return new MapLocation(X, Y);
-    }
 
     public boolean updateInnerBound(int direction, float innerBound) {
         if (directionIsPositive(direction)) {
@@ -106,49 +90,6 @@ public class MapBounds {
             outerBound = outerBoundLoc.y;
         }
         return updateOuterBound(direction, outerBound);
-    }
-
-    public boolean isInsideInner(MapLocation loc) {
-        for (int dirOrd = 0; dirOrd < 4; dirOrd++) {
-            float val;
-            if (directionIsX(dirOrd)) {
-                val = loc.x;
-            } else {
-                val = loc.y;
-            }
-            boolean isInside;
-            if (directionIsPositive(dirOrd)) {
-                isInside = (val <= getInnerBound(dirOrd));
-            } else {
-                isInside = (val >= getInnerBound(dirOrd));
-            }
-            if (!isInside) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    public boolean isInsideOuter(MapLocation loc) {
-        for (int dirOrd = 0; dirOrd < 4; dirOrd++) {
-            float val;
-            if (directionIsX(dirOrd)) {
-                val = loc.x;
-            } else {
-                val = loc.y;
-            }
-            boolean isInside;
-            if (directionIsPositive(dirOrd)) {
-                isInside = (val <= getOuterBound(dirOrd));
-            } else {
-                isInside = (val >= getOuterBound(dirOrd));
-            }
-            if (!isInside) {
-                System.out.println(loc + " is not inside " + this);
-                return false;
-            }
-        }
-        return true;
     }
 
     public static Direction dirFromOrd(int dirOrd) {
