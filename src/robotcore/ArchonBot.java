@@ -52,6 +52,7 @@ public class ArchonBot extends RobotGlobal {
         elections();
 
         registerArchon();
+        archonOrder = rc.readBroadcast(ARCHON_COUNTER_CHANNEL) - 1;
 
         if (isLeader) {
             leaderVP();
@@ -63,43 +64,30 @@ public class ArchonBot extends RobotGlobal {
             sendScoutMode(ScoutMode.HARASS, false);
         }
 
-        boolean iMakeGardeners;
-        if (firstTurn) {
-            MapLocation maxMinDistLoc = null;
+
+        if (isLeader) {
+            MapLocation[] myArchonLocations;
+            if (firstTurn) {
+                myArchonLocations = myInitialArchonLocations;
+            } else {
+                myArchonLocations = getMyArchonLocations();
+            }
+            int maxMinDistArchon = -1;
             float maxMinDist = -1f;
-            for (MapLocation loc : myInitialArchonLocations) {
+            for (int i = 0; i < myArchonLocations.length; i++) {
+                MapLocation loc = myArchonLocations[i];
                 float minDist = minDistBetween(loc, enemyInitialArchonLocations);
                 if (minDist > maxMinDist) {
                     maxMinDist = minDist;
-                    maxMinDistLoc = loc;
+                    maxMinDistArchon = i;
                 }
             }
-            if (myLoc.distanceTo(maxMinDistLoc) < RobotType.ARCHON.bodyRadius) { // if it's me
-                iMakeGardeners = true;
-            } else {
-                iMakeGardeners = false;
-            }
-        } else {
-            if (isLeader) {
-                MapLocation[] myArchonLocations = getMyArchonLocations();
-                int maxMinDistArchon = -1;
-                float maxMinDist = -1f;
-                for (int i = 0; i < myArchonLocations.length; i++) {
-                    MapLocation loc = myArchonLocations[i];
-                    float minDist = minDistBetween(loc, enemyInitialArchonLocations);
-                    if (minDist > maxMinDist) {
-                        maxMinDist = minDist;
-                        maxMinDistArchon = i;
-                    }
-                }
-                rc.broadcast(WHICH_ARCHON_MAKES_GARDENERS_CHANNEL, maxMinDistArchon);
-            }
-
-            int whichArchonMakesGardeners = rc.readBroadcast(WHICH_ARCHON_MAKES_GARDENERS_CHANNEL);
-
-            iMakeGardeners = (archonOrder == whichArchonMakesGardeners);
+            rc.broadcast(WHICH_ARCHON_MAKES_GARDENERS_CHANNEL, maxMinDistArchon);
         }
 
+        int whichArchonMakesGardeners = rc.readBroadcast(WHICH_ARCHON_MAKES_GARDENERS_CHANNEL);
+
+        boolean iMakeGardeners = (archonOrder == whichArchonMakesGardeners);
 
         // Broadcast location
         int locChannel = ARCHON_LOCATION_TABLE_CHANNEL + (archonOrder*ARCHON_LOCATION_TABLE_ENTRY_SIZE);
