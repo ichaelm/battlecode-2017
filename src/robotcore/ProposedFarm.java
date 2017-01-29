@@ -2,7 +2,7 @@ package robotcore;
 
 import battlecode.common.*;
 
-public class ProposedFarm extends RobotGlobal{
+public class ProposedFarm {
 
     // Farm geometry constants
     static final float hexFarmRadius = 3f;
@@ -30,19 +30,6 @@ public class ProposedFarm extends RobotGlobal{
             this.treeLocs[T] = center.add(treeDir, 2 + spOff);
             this.treeDirections[T] = treeDir;
         }
-    }
-    
-    public void tankBuild() { // points buildDirection away from closest archon
-    	 MapLocation nearestFGLoc = null;
-         RobotInfo[] NFG = nearbyFriendlyGardeners();
-   
-         if (NFG == null || NFG[0] == null) {
-         	return;
-         }
-         else {
-         	nearestFGLoc = NFG[0].location;
-         }
-         buildDirection = myLoc.directionTo(nearestFGLoc).opposite();
     }
  
     public MapLocation getFarmCenter() {
