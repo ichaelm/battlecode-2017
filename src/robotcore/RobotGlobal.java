@@ -527,7 +527,7 @@ public strictfp class RobotGlobal {
     public static final int DESIRED_ROBOTS = 20;
     public static final int DESIRED_TREES = 20;
     public static final int DESIRED_BULLETS = 20;
-    public static final float FARM_DIST = 9.5f;
+    public static final float FARM_DIST = 8f;
     
     // Scout variables
     public static Direction currentDirection;

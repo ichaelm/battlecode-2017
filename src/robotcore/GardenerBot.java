@@ -18,8 +18,8 @@ public class GardenerBot extends RobotGlobal {
 	static ProposedFarm farmGeo;
 
     // Farm state
-    static boolean[] isTreeAlive = new boolean[7];
-	static boolean[] isTreeBlocked = new boolean[7]; // A spot is marked as blocked if the block is not  due to one of our non-archon robots
+    static boolean[] isTreeAlive = new boolean[5];
+	static boolean[] isTreeBlocked = new boolean[5]; // A spot is marked as blocked if the block is not  due to one of our non-archon robots
 
     public static void loop() {
         while (true) {
@@ -138,27 +138,15 @@ public class GardenerBot extends RobotGlobal {
 			Direction buildDir;
 			boolean built = false;
 			if (farmGeo != null) {
-				rc.setIndicatorDot(farmGeo.getBuildLoc(), 55, 55, 55);
-				if (rc.hasRobotBuildRequirements(currentBuildOrder) && !rc.isCircleOccupiedExceptByThisRobot(farmGeo.getConstructionZone(), 1)) {
-					//System.out.println("Moved: " + moved);
-					if (!moved) {
-						moved = tryMoveExact(farmGeo.getBuildLoc());
-						if (moved) {
-							if (rc.canBuildRobot(currentBuildOrder, farmGeo.getBuildDirection())) {
-								rc.buildRobot(currentBuildOrder, farmGeo.getBuildDirection());
-								built = true;
-								popBuildQueue1();
-							}
-						}
-					}
-				}
+				buildDir = farmGeo.getBuildDirection();
 			} else {
-				if (rc.hasRobotBuildRequirements(currentBuildOrder)) {
-					boolean success = tryBuildRobot(currentBuildOrder, randomDirection());
-					if (success) {
-						popBuildQueue1();
-						built = true;
-					}
+				buildDir = randomDirection();
+			}
+			if (rc.hasRobotBuildRequirements(currentBuildOrder)) {
+				boolean success = tryBuildRobot(currentBuildOrder, buildDir);
+				if (success) {
+					popBuildQueue1();
+					built = true;
 				}
 			}
 			if (!built) {
@@ -205,13 +193,9 @@ public class GardenerBot extends RobotGlobal {
 			} else {
 				// exploring farm locs
 				MapLocation farmLoc = queryCurrentFarmLoc();
-				if (rc.canMove(farmLoc)) {
-					rc.move(farmLoc);
-				} else {
-					moved = tryMoveElseLeftRight(myLoc.directionTo(farmLoc), 20, 5);
-					if (!moved) {
-						System.out.println("Can't move to explore farms");
-					}
+				moved = tryMoveElseLeftRight(myLoc.directionTo(farmLoc), 20, 5);
+				if (!moved) {
+					System.out.println("Can't move to explore farms");
 				}
 			}
 
@@ -220,14 +204,19 @@ public class GardenerBot extends RobotGlobal {
 			if (goingToFarm) {
 				System.out.println("Going to farm");
 				MapLocation farmLoc = farmNumToLoc(myFarmNum);
-				if (rc.canMove(farmLoc)) {
-					FarmTableEntry e = readFarmTableEntry(myFarmNum);
-					e.setArrived();
-					writeFarmTableEntry(myFarmNum, e);
-					rc.move(farmLoc);
-					goingToFarm = false;
+				if (myLoc.distanceTo(farmLoc) < myType.strideRadius) {
 
-					System.out.println("Got there");
+					moved = tryMoveExact(farmLoc);
+					if (moved) {
+						FarmTableEntry e = readFarmTableEntry(myFarmNum);
+						e.setArrived();
+						writeFarmTableEntry(myFarmNum, e);
+						goingToFarm = false;
+
+						System.out.println("Got there");
+					} else {
+						System.out.println("This should never happen!!!");
+					}
 					// transition to planting
 
 				} else {
@@ -274,7 +263,7 @@ public class GardenerBot extends RobotGlobal {
 		*/
 
 		if (mode == FarmingMode.FARMING) {
-			if (farmGeo == null) {
+			if (!goingToFarm && farmGeo == null) {
 				ProposedFarm farm = null;
 				int i = 0;
 				while (farm == null && i < 10) {

@@ -19,24 +19,15 @@ public class ProposedFarm {
     public ProposedFarm(MapLocation center, Direction buildDir) {
         this.farmCenter = center;
         this.buildDirection = buildDir;
-        Direction firstMove = buildDir.rotateLeftDegrees(60);
-
-        Direction treeDir = firstMove;
-        Direction moveDir;
         float spOff = GameConstants.GENERAL_SPAWN_OFFSET;
         
         this.buildLoc = center;
         this.constructionZone = farmCenter.add(buildDirection, 2 + spOff);
-        this.treePlantingLocs[0] = center;
-        this.treeLocs[0] = center.add(firstMove, 2);
-        this.treeDirections[0] = treeDir;
 
-        for(int T = 1; T < 5; T++) {
-            MapLocation curLoc = this.treePlantingLocs[T-1];
-            treeDir = firstMove.rotateLeftDegrees(60*T);
-
+        for(int T = 0; T < 5; T++) {
+            Direction treeDir = buildDir.rotateLeftDegrees(60*(T+1));
             this.treePlantingLocs[T] = center;
-            this.treeLocs[T] = this.treePlantingLocs[T].add(treeDir, 2 + spOff);
+            this.treeLocs[T] = center.add(treeDir, 2 + spOff);
             this.treeDirections[T] = treeDir;
         }
     }
