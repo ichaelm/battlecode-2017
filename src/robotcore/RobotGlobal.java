@@ -577,6 +577,8 @@ public strictfp class RobotGlobal {
     private static BulletInfo[] bulletsToAvoid = new BulletInfo[0];
     private static int numBulletsToAvoid = 0;
     public static boolean isLeader = false;
+    public static int birthTurn = -1;
+    public static boolean firstTurn = true;
 
     // Special stored values
     private static boolean circleClockwise = true;
@@ -646,6 +648,11 @@ public strictfp class RobotGlobal {
             System.out.println("Skipped a turn!");
         }
         roundNum = newRoundNum;
+        if (birthTurn == -1) {
+            birthTurn = roundNum;
+        } else {
+            firstTurn = false;
+        }
         victoryPoints = rc.getTeamVictoryPoints();
         treeCount = rc.getTreeCount();
         teamBullets = rc.getTeamBullets();
@@ -867,6 +874,45 @@ public strictfp class RobotGlobal {
             System.out.print("Elections error");
         }
         rc.broadcast(EXEC_ROUND_CHANNEL, roundNum);
+    }
+
+    public static void leadIfLeader() throws GameActionException {
+        if (isLeader) {
+            lead();
+        }
+    }
+
+    public static void lead() throws GameActionException {
+        leaderVP();
+        if (firstTurn) {
+            for (MapLocation attackLoc : enemyInitialArchonLocations) {
+                addAttackLocation(attackLoc);
+            }
+        }
+        sendScoutMode(ScoutMode.HARASS, false);
+
+
+        MapLocation[] myArchonLocations;
+        if (firstTurn) {
+            myArchonLocations = myInitialArchonLocations;
+        } else {
+            myArchonLocations = getMyArchonLocations();
+        }
+        int maxMinDistArchon = -1;
+        float maxMinDist = -1f;
+        for (int i = 0; i < myArchonLocations.length; i++) {
+            MapLocation loc = myArchonLocations[i];
+            float minDist = minDistBetween(loc, enemyInitialArchonLocations);
+            if (minDist > maxMinDist) {
+                maxMinDist = minDist;
+                maxMinDistArchon = i;
+            }
+        }
+        rc.broadcast(WHICH_ARCHON_MAKES_GARDENERS_CHANNEL, maxMinDistArchon);
+
+        leaderClearOrders();
+        leaderManageActiveFarms();
+        leaderStoreCounters();
     }
     
     public static void registerArchon() throws GameActionException {

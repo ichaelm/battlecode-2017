@@ -5,7 +5,6 @@ import battlecode.common.*;
 public class LumberjackBot extends RobotGlobal {
 
     static Direction goDir;
-    static boolean firstTurn = true;
     private static int farmNum = -1;
     private static float strikeRadius = GameConstants.LUMBERJACK_STRIKE_RADIUS;
 
@@ -192,7 +191,5 @@ public class LumberjackBot extends RobotGlobal {
                 }
             }
         }
-
-        firstTurn = false;
     }
 }

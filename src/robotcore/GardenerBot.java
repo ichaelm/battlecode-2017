@@ -9,7 +9,6 @@ public class GardenerBot extends RobotGlobal {
 
 	// My state
     private enum FarmingMode {SEARCHING, FARMING};
-    static int birthTurn = -1;
     static FarmingMode mode = FarmingMode.SEARCHING;
 	static int myFarmNum = -1;
 	static boolean goingToFarm = false;
@@ -121,10 +120,6 @@ public class GardenerBot extends RobotGlobal {
 		elections();
 
 		registerGardener();
-    	
-    	if (birthTurn < 0) {
-            birthTurn = roundNum;
-        }
 
         RobotType currentBuildOrder = peekBuildQueue1();
 

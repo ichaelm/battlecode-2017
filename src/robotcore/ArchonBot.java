@@ -4,7 +4,6 @@ import battlecode.common.*;
 
 public class ArchonBot extends RobotGlobal {
     static int archonOrder = -1;
-    static boolean firstTurn = true;
     
     // Check all directions and see if I'm stuck
     public static boolean trapped() throws GameActionException {
@@ -54,40 +53,17 @@ public class ArchonBot extends RobotGlobal {
         registerArchon();
         archonOrder = rc.readBroadcast(ARCHON_COUNTER_CHANNEL) - 1;
 
-        if (isLeader) {
-            leaderVP();
-            if (firstTurn) {
-                for (MapLocation attackLoc : enemyInitialArchonLocations) {
-                    addAttackLocation(attackLoc);
-                }
-            }
-            sendScoutMode(ScoutMode.HARASS, false);
-        }
-
-
-        if (isLeader) {
-            MapLocation[] myArchonLocations;
-            if (firstTurn) {
-                myArchonLocations = myInitialArchonLocations;
-            } else {
-                myArchonLocations = getMyArchonLocations();
-            }
-            int maxMinDistArchon = -1;
-            float maxMinDist = -1f;
-            for (int i = 0; i < myArchonLocations.length; i++) {
-                MapLocation loc = myArchonLocations[i];
-                float minDist = minDistBetween(loc, enemyInitialArchonLocations);
-                if (minDist > maxMinDist) {
-                    maxMinDist = minDist;
-                    maxMinDistArchon = i;
-                }
-            }
-            rc.broadcast(WHICH_ARCHON_MAKES_GARDENERS_CHANNEL, maxMinDistArchon);
-        }
+        leadIfLeader();
 
         int whichArchonMakesGardeners = rc.readBroadcast(WHICH_ARCHON_MAKES_GARDENERS_CHANNEL);
 
         boolean iMakeGardeners = (archonOrder == whichArchonMakesGardeners);
+
+        if (isLeader) {
+            if (firstTurn && iMakeGardeners) {
+                sendFirstFarm(myLoc);
+            }
+        }
 
         // Broadcast location
         int locChannel = ARCHON_LOCATION_TABLE_CHANNEL + (archonOrder*ARCHON_LOCATION_TABLE_ENTRY_SIZE);
@@ -96,20 +72,6 @@ public class ArchonBot extends RobotGlobal {
         } else {
             rc.broadcast(locChannel, Float.floatToIntBits(myLoc.x));
             rc.broadcast(locChannel + 1, Float.floatToIntBits(myLoc.y));
-        }
-
-        if (isLeader) {
-            System.out.println("I am leader");
-            System.out.println(firstTurn);
-            System.out.println(iMakeGardeners);
-            if (firstTurn && iMakeGardeners) {
-                sendFirstFarm(myLoc);
-            }
-            leaderClearOrders();
-            leaderManageActiveFarms();
-            leaderStoreCounters();
-        } else {
-            System.out.println("I am not leader");
         }
 
         if (iMakeGardeners) {
@@ -193,7 +155,5 @@ public class ArchonBot extends RobotGlobal {
                 System.out.println("Can't move to farm i should explore");
             }
         }
-
-        firstTurn = false;
     }
 }

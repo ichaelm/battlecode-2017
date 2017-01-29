@@ -15,7 +15,6 @@ public class TankBot extends RobotGlobal {
     static MapLocation furthestFromEnemy = null;
 	
 	static Direction goDir;
-	static boolean firstTurn = true;
 	static int goCount = 0;
 	static RobotInfo nearestEnemy = null; 
 	static MapLocation attackLoc = null;
@@ -330,7 +329,5 @@ public class TankBot extends RobotGlobal {
                 addAttackLocationFirst(nearestNonHostile.location);
             }
         }
-        
-        firstTurn = false;
     }
 }

@@ -5,7 +5,6 @@ import battlecode.common.*;
 
 public class SoldierBot extends RobotGlobal {
     static Direction goDir;
-    static boolean firstTurn = true;
     static MapLocation attackLoc = null;
     static boolean wasAttacking = false;
 	static int attackRound = 0;
@@ -173,8 +172,6 @@ public class SoldierBot extends RobotGlobal {
                 addAttackLocationFirst(nearestNonHostile.location);
             }
         }
-
-        firstTurn = false;
     }
 
    

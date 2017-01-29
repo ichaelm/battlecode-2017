@@ -8,7 +8,6 @@ public class ScoutBot extends RobotGlobal {
 	static MapLocation selectedGardenerLoc = null;
 	static MapLocation selectedCampingTreeLoc = null;
 	static Direction goDir;
-	static boolean firstTurn = true;
 
     public static void loop() {
         while (true) {
@@ -245,7 +244,5 @@ public class ScoutBot extends RobotGlobal {
 				addAttackLocationFirst(nearestNonHostile.location);
 			}
 		}
-
-    	firstTurn = false;
     }
 }
