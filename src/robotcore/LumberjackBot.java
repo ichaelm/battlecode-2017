@@ -123,9 +123,11 @@ public class LumberjackBot extends RobotGlobal {
                         }
                     }
                 }
-                if (treeInRange && nearestTree.location.distanceTo(farmLoc) - nearestTree.radius < 5.75f) {
+                if (nearestTree.location.distanceTo(farmLoc) - nearestTree.radius < 5.75f) {
                     moved = tryMoveElseBack(treeDir);
+                    rc.setIndicatorDot(nearestTree.location, 255, 0, 0);
                 } else {
+                    rc.setIndicatorDot(farmLoc, 255, 255, 0);
                     moved = tryMoveDistFrom(farmLoc, 4.75f);
                     if (!moved) {
                         moved = tryMoveDistFrom(farmLoc, 4.75f);

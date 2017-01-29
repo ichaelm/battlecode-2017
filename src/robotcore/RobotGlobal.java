@@ -1593,13 +1593,10 @@ public strictfp class RobotGlobal {
                 MapLocation target = intersections[circleClockwise ? 1 : 0];
                 if (myLoc.distanceTo(target) < myType.strideRadius) {
                     success = tryMoveElseBack(target);
-                    if (!success) {
-                        success = tryMoveElseLeftRight(target, 15, 5);
-                    }
                 } else {
-                    success = tryMoveElseBack(myLoc.directionTo(target));
+                    success = tryMoveElseLeftRight(myLoc.directionTo(target), 15, 3);
                     if (!success) {
-                        success = tryMoveElseLeftRight(myLoc.directionTo(target), 15, 5);
+                        success = tryMoveElseBack(myLoc.directionTo(target));
                     }
                 }
                 if (success) {
