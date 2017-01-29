@@ -198,7 +198,6 @@ public class GardenerBot extends RobotGlobal {
 					System.out.println("Can't move to explore farms");
 				}
 			}
-
         }
         if (mode == FarmingMode.FARMING) {
 			if (goingToFarm) {

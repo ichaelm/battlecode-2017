@@ -522,6 +522,7 @@ public strictfp class RobotGlobal {
     public static final int TANK_BUILT_CHANNEL = SOLDIER_BUILT_CHANNEL + 1;
     public static final int CAN_PLANT_COUNTER_CHANNEL = TANK_BUILT_CHANNEL + 1;
     public static final int CAN_PLANT_NUM_CHANNEL = CAN_PLANT_COUNTER_CHANNEL + 1;
+	public static final int DONATED_CHANNEL = CAN_PLANT_NUM_CHANNEL + 1;
 
     // Performance constants
     public static final int DESIRED_ROBOTS = 20;
@@ -610,6 +611,10 @@ public strictfp class RobotGlobal {
     public static boolean kiteTanks = false;
     public static float attackCircleStart = 15f;
     public static float attackCircleChange = 0.125f;
+    
+    // Configuration for Gardeners Units
+    public static boolean earlyLumberjacks = false;
+    public static int earlyLJRounds = 500;
     
 
     public static void init(RobotController rc) throws GameActionException {
@@ -810,25 +815,30 @@ public strictfp class RobotGlobal {
         }
     }
     
-    public static RobotInfo[] nearbyFriendlyGardeners() {
-    	RobotInfo[] allFriendly = rc.senseNearbyRobots(myType.sensorRadius, myTeam);
-    	RobotInfo[] fg = new RobotInfo[allFriendly.length];
-    	if (allFriendly.length < 1) return null;
+    public static RobotInfo[] nearbyFriendlyGardeners() { // locate friendly gardeners
+    	RobotInfo[] nearbyFriendly = rc.senseNearbyRobots(-1, rc.getTeam());
+    	int len = nearbyFriendly.length;
     	
-    	int fgCount = 0;
-    	for (RobotInfo r: fg) {
-    		if (r.type == RobotType.GARDENER) {
-    			fg[fgCount] = r;
-    			fgCount ++;
-    		}
-    		else {
-    			if (r == null) {
-    				break;
-    			}
-    		}
+    	if (len < 1) {
+    		System.out.println("No nearby friendlies!");
+    		return null;
     	}
     	
-    	return fg;
+    	RobotInfo[] fgArray = new RobotInfo[len];
+    	int fgI = 0;
+    	for (int i = 0; i < len; i++) {
+    		RobotInfo fr = nearbyFriendly[i];
+    		if (fr.type == RobotType.GARDENER) { // if gardener
+    			fgArray[fgI] = fr; // store in fgArray
+    			fgI ++;
+    		}
+    		
+    		//System.out.println("FGs: " + fgI);
+    	}
+    	
+    	if (fgArray.length < 1) return null;
+    	
+    	return fgArray;
     }
 
     public static void processNearbyBullets() throws GameActionException {
@@ -1821,6 +1831,21 @@ public strictfp class RobotGlobal {
         if(rc.getRoundLimit() - rc.getRoundNum() < 2) {
         	rc.donate(teamBullets);
         }
+        
+        // if not donated already this turn, and not under attack
+        if (rc.readBroadcast(DONATED_CHANNEL) == 0 && peekDefendLocation() == null) {
+        	 if (teamBullets > vpCost*5) {
+             	rc.donate((float) (vpCost * Math.floor(rc.getTreeCount()/15)));
+             	rc.broadcast(DONATED_CHANNEL, 1);
+             }
+        }
+        
+        if (rc.readBroadcast(DONATED_CHANNEL) == 0 && teamBullets > 1000) {
+        	rc.donate((float) (vpCost * Math.floor(rc.getTreeCount()/10)));
+         	rc.broadcast(DONATED_CHANNEL, 1);
+        }
+       
+        
     }
 
     public static int[] readBroadcastArray(int channelStart, int length) throws GameActionException {
@@ -2018,7 +2043,7 @@ public strictfp class RobotGlobal {
 		int fCount = activeFarmsQueue.count();
 		if (fCount < 1) return null;
 		MapLocation[] farmLocs = new MapLocation[fCount];
-		
+
 		for (int i = 0; i < fCount; i++) {
 		    int fNum = activeFarmsQueue.peek(i)[0];
 			farmLocs[fNum] = farmNumToLoc(fNum);

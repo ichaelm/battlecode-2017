@@ -7,6 +7,7 @@ public class LumberjackBot extends RobotGlobal {
     static Direction goDir;
     static boolean firstTurn = true;
     private static int farmNum = -1;
+    private static float strikeRadius = GameConstants.LUMBERJACK_STRIKE_RADIUS;
 
     public static void loop() {
         while (true) {
@@ -44,7 +45,7 @@ public class LumberjackBot extends RobotGlobal {
         if (nearestEnemy != null) {
             combatDir = myLoc.directionTo(nearestEnemy.location);
             float distToEnemy = myLoc.distanceTo(nearestEnemy.location);
-            enemyInRange = distToEnemy <= myType.bodyRadius + GameConstants.LUMBERJACK_STRIKE_RADIUS + nearestEnemy.type.bodyRadius;
+            enemyInRange = distToEnemy <= myType.bodyRadius + strikeRadius + nearestEnemy.type.bodyRadius;
         }
 
         boolean moved = false;
@@ -68,13 +69,15 @@ public class LumberjackBot extends RobotGlobal {
 
         // Decide on mode
         if (enemyInRange) {
-            // combat
-            if (rc.canStrike()) {
-                rc.strike();
-                attacked = true;
-            }
-            if (!attacked) {
-                if (robotTreeSeen) {
+        	// combat
+        	if (rc.canStrike()) {
+        		if (rc.senseNearbyRobots(strikeRadius, myTeam).length < 2) {
+        			rc.strike();
+        			attacked = true;
+        		}
+        	}
+        	if (!attacked) {
+        		if (robotTreeSeen) {
                     if (rc.canChop(nearestRobotTree.ID)) {
                         rc.chop(nearestRobotTree.ID);
                         attacked = true;

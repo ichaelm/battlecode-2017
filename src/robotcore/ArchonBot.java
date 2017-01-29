@@ -54,6 +54,7 @@ public class ArchonBot extends RobotGlobal {
         }
 
         if (isLeader()) {
+        	rc.broadcast(DONATED_CHANNEL, 0);
             if (firstTurn) {
                 for (MapLocation attackLoc : enemyInitialArchonLocations) {
                     addAttackLocation(attackLoc);
