@@ -49,21 +49,21 @@ public class LumberjackBot extends RobotGlobal {
 
         boolean moved = false;
         boolean attacked = false;
-        boolean treeInRange = false;
+        boolean treeSeen = false;
         Direction treeDir = null;
-        boolean robotTreeInRange = false;
+        boolean robotTreeSeen = false;
         Direction robotTreeDir = null;
         TreeInfo nearestTree = getNearestUnfriendlyTree();
         if (nearestTree != null) {
             float distToTree = myLoc.distanceTo(nearestTree.location);
             treeDir = myLoc.directionTo(nearestTree.location);
-            treeInRange = distToTree <= myType.bodyRadius + myType.strideRadius + nearestTree.radius;
+            treeSeen = true;
         }
         TreeInfo nearestRobotTree = getNearestRobotTree();
         if (nearestRobotTree != null) {
             float distToRobotTree = myLoc.distanceTo(nearestRobotTree.location);
             robotTreeDir = myLoc.directionTo(nearestRobotTree.location);
-            robotTreeInRange = distToRobotTree <= myType.bodyRadius + myType.strideRadius + nearestRobotTree.radius;
+            robotTreeSeen = true;
         }
 
         // Decide on mode
@@ -74,12 +74,12 @@ public class LumberjackBot extends RobotGlobal {
                 attacked = true;
             }
             if (!attacked) {
-                if (robotTreeInRange) {
+                if (robotTreeSeen) {
                     if (rc.canChop(nearestRobotTree.ID)) {
                         rc.chop(nearestRobotTree.ID);
                         attacked = true;
                     }
-                } else if (treeInRange) {
+                } else if (treeSeen) {
                     if (rc.canChop(nearestTree.ID)) {
                         rc.chop(nearestTree.ID);
                         attacked = true;
@@ -111,21 +111,21 @@ public class LumberjackBot extends RobotGlobal {
                     }
                 }
                 if (!attacked) {
-                    if (robotTreeInRange) {
+                    if (robotTreeSeen) {
                         if (rc.canChop(nearestRobotTree.ID)) {
                             rc.chop(nearestRobotTree.ID);
                             attacked = true;
                         }
-                    } else if (treeInRange) {
+                    } else if (treeSeen) {
                         if (rc.canChop(nearestTree.ID)) {
                             rc.chop(nearestTree.ID);
                             attacked = true;
                         }
                     }
                 }
-                if (robotTreeInRange && nearestRobotTree.location.distanceTo(farmLoc) - nearestRobotTree.radius < 5.05f) {
+                if (robotTreeSeen && nearestRobotTree.location.distanceTo(farmLoc) - nearestRobotTree.radius < 5.05f) {
                     moved = tryMoveElseBack(robotTreeDir);
-                } else if (treeInRange && nearestTree.location.distanceTo(farmLoc) - nearestTree.radius < 5.05f) {
+                } else if (treeSeen && nearestTree.location.distanceTo(farmLoc) - nearestTree.radius < 5.05f) {
                     moved = tryMoveElseBack(treeDir);
                     rc.setIndicatorDot(nearestTree.location, 255, 0, 0);
                 } else {
@@ -145,12 +145,12 @@ public class LumberjackBot extends RobotGlobal {
                     }
                 }
                 if (!attacked) {
-                    if (robotTreeInRange) {
+                    if (robotTreeSeen) {
                         if (rc.canChop(nearestRobotTree.ID)) {
                             rc.chop(nearestRobotTree.ID);
                             attacked = true;
                         }
-                    } else if (treeInRange) {
+                    } else if (treeSeen) {
                         if (rc.canChop(nearestTree.ID)) {
                             rc.chop(nearestTree.ID);
                             attacked = true;
