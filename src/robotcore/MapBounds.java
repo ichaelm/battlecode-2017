@@ -55,6 +55,22 @@ public class MapBounds {
             return new MapLocation(loc.x, getOuterBound(direction));
         }
     }
+    
+    public MapLocation getInnerCornerLoc(int NSdir, int EWdir) { // returns a corner location like "NE" or "SW"
+    	if (NSdir != NORTH && NSdir != SOUTH) { // check NS
+    		System.out.println("Invalid North-South Direction!");
+    		return null;
+    	}
+    	if (EWdir != EAST && EWdir != WEST) { // check EW
+    		System.out.println("Invalid East-West Direction!");
+    		return null;
+    	}
+    	
+    	float Y = getInnerBound(NSdir);
+    	float X = getInnerBound(EWdir);
+    	
+    	return new MapLocation(X, Y);
+    }
 
     public boolean updateInnerBound(int direction, float innerBound) {
         if (directionIsPositive(direction)) {

@@ -809,6 +809,27 @@ public strictfp class RobotGlobal {
             exploredFarmsQueue.add(new int[]{farmNum});
         }
     }
+    
+    public static RobotInfo[] nearbyFriendlyGardeners() {
+    	RobotInfo[] allFriendly = rc.senseNearbyRobots(myType.sensorRadius, myTeam);
+    	RobotInfo[] fg = new RobotInfo[allFriendly.length];
+    	if (allFriendly.length < 1) return null;
+    	
+    	int fgCount = 0;
+    	for (RobotInfo r: fg) {
+    		if (r.type == RobotType.GARDENER) {
+    			fg[fgCount] = r;
+    			fgCount ++;
+    		}
+    		else {
+    			if (r == null) {
+    				break;
+    			}
+    		}
+    	}
+    	
+    	return fg;
+    }
 
     public static void processNearbyBullets() throws GameActionException {
         int numIters = Math.min(nearbyBullets.length, DESIRED_BULLETS);
@@ -1332,24 +1353,28 @@ public strictfp class RobotGlobal {
 
     public static boolean tryMoveElseLeftRight(Direction dir, float dist, float degreeOffset, int checksPerSide) throws GameActionException {
 
-        // First, try intended direction
-        MapLocation newLoc = myLoc.add(dir, dist);
-        if (rc.canMove(dir, dist)) {
-            if (!willCollideWith(bulletsToAvoid, newLoc, myType.bodyRadius)) {
-                rc.move(dir, dist);
-                myLoc = newLoc;
-                return true;
-            }
-        }
+    	// First, try intended direction
+    	MapLocation newLoc = myLoc.add(dir, dist);
+    	if (rc.onTheMap(newLoc)) { 
+    		if (rc.canMove(dir, dist)) {
+    			if (!willCollideWith(bulletsToAvoid, newLoc, myType.bodyRadius)) {
+    				rc.move(dir, dist);
+    				myLoc = newLoc;
+    				return true;
+    			}
+    		}
+    	}
 
-        // Now try a bunch of similar angles
-        boolean moved = false;
+    	// Now try a bunch of similar angles
+    	boolean moved = false;
         int currentCheck = 1;
 
         while(currentCheck<=checksPerSide) {
             // Try the offset of the left side
             Direction newDir = dir.rotateLeftDegrees(degreeOffset*currentCheck);
             newLoc = myLoc.add(newDir, dist);
+            
+            if (!rc.onTheMap(newLoc)) { continue; }
             if(rc.canMove(newDir, dist)) {
                 if (!willCollideWith(bulletsToAvoid, newLoc, myType.bodyRadius)) {
                     rc.move(newDir, dist);
@@ -1361,6 +1386,7 @@ public strictfp class RobotGlobal {
             // Try the offset on the right side
             newDir = dir.rotateRightDegrees(degreeOffset*currentCheck);
             newLoc = myLoc.add(newDir, dist);
+            if (!rc.onTheMap(newLoc)) { continue; }
             if(rc.canMove(newDir, dist)) {
                 if (!willCollideWith(bulletsToAvoid, newLoc, myType.bodyRadius)) {
                     rc.move(newDir, dist);
@@ -1836,18 +1862,21 @@ public strictfp class RobotGlobal {
         }
 
         //Debug
-        /*
-        MapLocation knownNE = new MapLocation(bounds.getInnerBound(MapBounds.EAST), bounds.getInnerBound(MapBounds.NORTH));
-        MapLocation knownSE = new MapLocation(bounds.getInnerBound(MapBounds.EAST), bounds.getInnerBound(MapBounds.SOUTH));
-        MapLocation knownNW = new MapLocation(bounds.getInnerBound(MapBounds.WEST), bounds.getInnerBound(MapBounds.NORTH));
-        MapLocation knownSW = new MapLocation(bounds.getInnerBound(MapBounds.WEST), bounds.getInnerBound(MapBounds.SOUTH));
+        
+        MapLocation knownNE = bounds.getInnerCornerLoc(MapBounds.NORTH, MapBounds.EAST);
+        MapLocation knownSE = bounds.getInnerCornerLoc(MapBounds.SOUTH, MapBounds.EAST);
+        MapLocation knownNW = bounds.getInnerCornerLoc(MapBounds.NORTH, MapBounds.WEST);
+        MapLocation knownSW = bounds.getInnerCornerLoc(MapBounds.SOUTH, MapBounds.WEST);
 		
-        int r = 0; int g = 255; int b = 255;
+        int r = 0; int g = 255; int b = 0;;
+        if (myTeam == Team.A) r = 255;
+        if (myTeam == Team.B) b = 255;
+        
         rc.setIndicatorLine(knownNE, knownNW, r, g, b);
         rc.setIndicatorLine(knownNE, knownSE, r, g, b);
         rc.setIndicatorLine(knownSW, knownSE, r, g, b);
         rc.setIndicatorLine(knownSW, knownNW, r, g, b);
-        */
+        
 
         return bounds;
 
