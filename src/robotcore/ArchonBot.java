@@ -5,6 +5,26 @@ import battlecode.common.*;
 public class ArchonBot extends RobotGlobal {
     static int archonOrder = -1;
     static boolean firstTurn = true;
+    
+    // Check all directions and see if I'm stuck
+    public static boolean trapped() throws GameActionException {
+    	boolean canBuild = false;
+    	boolean canMove = false;
+    	for (Direction d: usefulDirections) {
+    		if (rc.canMove(d)) {
+    			canMove = true;
+    		}
+    		if (!rc.isCircleOccupied(myLoc.add(d, 3 + GameConstants.GENERAL_SPAWN_OFFSET), 
+    				RobotType.GARDENER.bodyRadius)) {
+    			canBuild = true;
+    		}
+    	}
+    	
+    	if (!canBuild) return true;
+    	if (!canMove) return true;
+    	
+    	return false;
+    }
 
     public static void loop() {
         while (true) {
@@ -41,7 +61,12 @@ public class ArchonBot extends RobotGlobal {
             // Either it's turn 0, or I'm not the leader. So count.
             if (firstTurn) {
                 archonOrder = rc.readBroadcast(ARCHON_COUNTER_CHANNEL);
-                rc.broadcast(ARCHON_COUNTER_CHANNEL, archonOrder + 1);
+                if (trapped() && isLeader()) {
+                	rc.broadcast(ARCHON_COUNTER_CHANNEL, 0);
+                }
+                else {
+                	rc.broadcast(ARCHON_COUNTER_CHANNEL, archonOrder + 1);
+                }
             } else {
                 int newArchonOrder = rc.readBroadcast(ARCHON_COUNTER_CHANNEL);
                 if (newArchonOrder > archonOrder) {
