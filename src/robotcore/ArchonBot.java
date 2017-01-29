@@ -59,12 +59,6 @@ public class ArchonBot extends RobotGlobal {
 
         boolean iMakeGardeners = (archonOrder == whichArchonMakesGardeners);
 
-        if (isLeader) {
-            if (firstTurn && iMakeGardeners) {
-                sendFirstFarm(myLoc);
-            }
-        }
-
         // Broadcast location
         int locChannel = ARCHON_LOCATION_TABLE_CHANNEL + (archonOrder*ARCHON_LOCATION_TABLE_ENTRY_SIZE);
         if (archonOrder >= ARCHON_LOCATION_TABLE_NUM_ENTRIES) {

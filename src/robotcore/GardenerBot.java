@@ -115,6 +115,10 @@ public class GardenerBot extends RobotGlobal {
     public static void turn() throws GameActionException {
 		processNearbyRobots();
 		processNearbyBullets();
+		if (!queryFirstFarmExists()) { // must happen before processing trees
+			sendFirstFarm(myLoc);
+			System.out.println("Sent first farm");
+		}
 		processNearbyTrees();
 		tryToShake();
 		elections();

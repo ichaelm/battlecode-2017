@@ -759,16 +759,21 @@ public strictfp class RobotGlobal {
     }
 
     public static void processNearbyTrees() throws GameActionException {
-        int farmNum = queryCurrentFarmNum();
-        System.out.println("current farm num = " + farmNum);
+        boolean explore = queryFirstFarmExists();
+        int farmNum = -1;
         MapLocation farmToExplore = null;
         boolean farmReady = true;
         boolean farmClear = true;
-        if (canExploreFarm(farmNum)) {
-            farmToExplore = farmNumToLoc(farmNum);
-            System.out.println("can explore at " + farmToExplore);
-        } else {
-            System.out.println("can't explore");
+        if (explore) {
+            farmNum = queryCurrentFarmNum();
+            System.out.println("current farm num = " + farmNum);
+            farmToExplore = null;
+            if (canExploreFarm(farmNum)) {
+                farmToExplore = farmNumToLoc(farmNum);
+                System.out.println("can explore at " + farmToExplore);
+            } else {
+                System.out.println("can't explore");
+            }
         }
         float minDist = Float.POSITIVE_INFINITY;
         float minRobotTreeDist = Float.POSITIVE_INFINITY;
