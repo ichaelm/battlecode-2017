@@ -50,35 +50,11 @@ public class ArchonBot extends RobotGlobal {
         processNearbyBullets();
         processNearbyTrees();
         tryToShake();
+        elections();
 
-        // Archon count and leader selection
-        if (isLeader()) {
-            // Since I'm the leader and it's not turn 0, I reset the counter
-            int numArchons = rc.readBroadcast(ARCHON_COUNTER_CHANNEL);
-            rc.broadcast(ARCHON_COUNTER_CHANNEL, 1);
-            rc.broadcast(NUM_ARCHONS_CHANNEL, numArchons);
-        } else {
-            // Either it's turn 0, or I'm not the leader. So count.
-            if (firstTurn) {
-                archonOrder = rc.readBroadcast(ARCHON_COUNTER_CHANNEL);
-                if (trapped() && isLeader()) {
-                	rc.broadcast(ARCHON_COUNTER_CHANNEL, 0);
-                }
-                else {
-                	rc.broadcast(ARCHON_COUNTER_CHANNEL, archonOrder + 1);
-                }
-            } else {
-                int newArchonOrder = rc.readBroadcast(ARCHON_COUNTER_CHANNEL);
-                if (newArchonOrder > archonOrder) {
-                    // Leader died, so now I am the leader
-                    newArchonOrder = 0;
-                }
-                archonOrder = newArchonOrder;
-                rc.broadcast(ARCHON_COUNTER_CHANNEL, archonOrder + 1);
-            }
-        }
+        rc.broadcast(ARCHON_COUNTER_CHANNEL, rc.readBroadcast(ARCHON_COUNTER_CHANNEL) + 1);
 
-        if (isLeader()) {
+        if (isLeader) {
         	rc.broadcast(DONATED_CHANNEL, 0);
             if (firstTurn) {
                 for (MapLocation attackLoc : enemyInitialArchonLocations) {
@@ -105,7 +81,7 @@ public class ArchonBot extends RobotGlobal {
                 iMakeGardeners = false;
             }
         } else {
-            if (isLeader()) {
+            if (isLeader) {
                 MapLocation[] myArchonLocations = getMyArchonLocations();
                 int maxMinDistArchon = -1;
                 float maxMinDist = -1f;
@@ -135,7 +111,7 @@ public class ArchonBot extends RobotGlobal {
             rc.broadcast(locChannel + 1, Float.floatToIntBits(myLoc.y));
         }
 
-        if (isLeader()) {
+        if (isLeader) {
             System.out.println("I am leader");
             System.out.println(firstTurn);
             System.out.println(iMakeGardeners);
@@ -232,9 +208,5 @@ public class ArchonBot extends RobotGlobal {
         }
 
         firstTurn = false;
-    }
-
-    private static boolean isLeader() {
-        return archonOrder == 0;
     }
 }

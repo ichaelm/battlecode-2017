@@ -435,7 +435,8 @@ public strictfp class RobotGlobal {
     public static RobotController rc;
 
     // Channel constants
-    public static final int ARCHON_COUNTER_CHANNEL = 0;
+    public static final int EXEC_ROUND_CHANNEL = 0;
+    public static final int ARCHON_COUNTER_CHANNEL = EXEC_ROUND_CHANNEL + 1;
     public static final int NUM_ARCHONS_CHANNEL = ARCHON_COUNTER_CHANNEL + 1;
     public static final int ARCHON_LOCATION_TABLE_CHANNEL = NUM_ARCHONS_CHANNEL + 1;
     public static final int ARCHON_LOCATION_TABLE_ENTRY_SIZE = 2;
@@ -576,6 +577,7 @@ public strictfp class RobotGlobal {
     private static TreeInfo lowestFriendlyTree = null;
     private static BulletInfo[] bulletsToAvoid = new BulletInfo[0];
     private static int numBulletsToAvoid = 0;
+    public static boolean isLeader = false;
 
     // Special stored values
     private static boolean circleClockwise = true;
@@ -855,7 +857,23 @@ public strictfp class RobotGlobal {
         }
     }
 
+    public static void elections() throws GameActionException {
+        int lastExecRound = rc.readBroadcast(EXEC_ROUND_CHANNEL);
+        if (roundNum == lastExecRound) {
+            isLeader = false;
+        } else if (roundNum > lastExecRound) {
+            isLeader = true;
+            System.out.print("I am the leader!");
+        } else {
+            System.out.print("Elections error");
+        }
+        rc.broadcast(EXEC_ROUND_CHANNEL, roundNum);
+    }
+
     public static void leaderStoreCounters() throws GameActionException {
+        rc.broadcast(NUM_ARCHONS_CHANNEL, rc.readBroadcast(ARCHON_COUNTER_CHANNEL));
+        rc.broadcast(ARCHON_COUNTER_CHANNEL, 0);
+
         rc.broadcast(GARDENER_NUM_CHANNEL, rc.readBroadcast(GARDENER_COUNTER_CHANNEL));
         rc.broadcast(GARDENER_COUNTER_CHANNEL, 0);
 
@@ -1826,7 +1844,7 @@ public strictfp class RobotGlobal {
     }
     
     // Will be used to see if tank barrage will hit friendly farms or other things out of sensor range
-    public static boolean willConeOfFireHitCircle(MapLocation target, MapLocation center, float radius) {
+    public static boolean willConeOfFireHitCircle(MapLocation target, MapLocation center, float radius) throws GameActionException {
     	// Start with the line from tank to target
     	MapLocation[] intersections = Geometry.getCircleLineSegmentIntersections(center, radius, myLoc, target);
     	if (intersections.length >= 1) {
