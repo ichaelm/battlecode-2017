@@ -4,11 +4,16 @@ import battlecode.common.*;
 
 public class ArchonBot extends RobotGlobal {
     static int archonOrder = -1;
+    static final int CLEAR = 0;
+    static final int NOMOVE = 1;
+    static final int NOBUILD = 2;
+    static final int NOBUILDORMOVE = 3;
     
     // Check all directions and see if I'm stuck
-    public static boolean trapped() throws GameActionException {
+    public static int trapped() throws GameActionException {
     	boolean canBuild = false;
     	boolean canMove = false;
+    	int ret = CLEAR;
     	for (Direction d: usefulDirections) {
     		if (rc.canMove(d)) {
     			canMove = true;
@@ -20,11 +25,14 @@ public class ArchonBot extends RobotGlobal {
     	}
     	
     	if (!canBuild){
-    		if (!canMove) return true;
+    		ret = NOBUILD;
+    		if (!canMove) return NOBUILDORMOVE;
+    	} else if (!canMove) {
+    		ret = NOMOVE;
     	}
     	
     	
-    	return false;
+    	return ret;
     }
 
     public static void loop() {
@@ -53,7 +61,11 @@ public class ArchonBot extends RobotGlobal {
         elections();
         
         int numArchons = rc.readBroadcast(NUM_ARCHONS_CHANNEL);
-        if (numArchons > 1 && Math.random() < 0.02956) { if (trapped()) rc.disintegrate(); }
+        int trapVal = trapped();
+        if (numArchons > 1 && Math.random() < 0.02956) { if (trapVal == NOBUILDORMOVE) rc.disintegrate(); }
+        else if (trapped() == NOBUILD) {
+        	tryMoveFurthest(usefulRandomDir());
+        }
 
         registerArchon();
         archonOrder = rc.readBroadcast(ARCHON_COUNTER_CHANNEL) - 1;
@@ -148,7 +160,7 @@ public class ArchonBot extends RobotGlobal {
         if (queryFirstFarmExists()) {
             makeCurrentFarmLocOnMap();
             MapLocation farmLoc = queryCurrentFarmLoc();
-            if (farmLoc != null) {
+            if (farmLoc != null && !rc.hasMoved()) {
                 // Found an explored farm to go to
                 boolean moved = tryMoveElseLeftRight(myLoc.directionTo(farmLoc), 20, 5);
                 if (!moved) {
