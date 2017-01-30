@@ -243,11 +243,11 @@ public class TankBot extends RobotGlobal {
         		//newAttackLocation();
         		//attackLoc = null;
         		shoot = false;
-        		if (!rc.hasMoved()) { moved = tryMoveElseLeftRight(myLoc.directionTo(attackLoc)); } 
+        		if (!rc.hasMoved()) { moved = tryMoveElseLeftRight(myLoc.directionTo(attackLoc), 30, 5); }
         		goDir = myLoc.directionTo(attackLoc);
         	} 
         	else {
-        		if (!rc.hasMoved()) { moved = tryMoveElseLeftRight(myLoc.directionTo(barrageLoc)); } 
+        		if (!rc.hasMoved()) { moved = tryMoveElseLeftRight(myLoc.directionTo(barrageLoc), 30, 5); }
         		Direction shootAt = offsetTarget(attackLoc);
 
         		if (!friendlyFireOn) {

@@ -610,7 +610,7 @@ public strictfp class RobotGlobal {
     private static int toScoutCoordBufferCount = 0;
     private static boolean useFarmGrid = false;
     public static boolean debugExceptions = true;
-    public static boolean debug = false;
+    public static boolean debug = true;
 
     // Configuration for Offensive Units
     public static boolean useTriad = false;
@@ -1183,21 +1183,21 @@ public strictfp class RobotGlobal {
                         if (rc.onTheMap(loc)) {
                             Cell c = CommMap.queryCell(a, b);
                             if (c.isExplored()) {
-                                debug_dot(loc, 0, 0, 255);
+                                //debug_dot(loc, 0, 0, 255);
                             } else {
                                 c.setExplored(true);
                                 if (rc.senseTreeAtLocation(loc) == null) {
-                                    debug_dot(loc, 0, 255, 0);
+                                    //debug_dot(loc, 0, 255, 0);
                                     c.setClear(true);
                                 } else {
-                                    debug_dot(loc, 255, 0, 0);
+                                    //debug_dot(loc, 255, 0, 0);
                                     c.setClear(false);
                                 }
                                 CommMap.sendCell(c);
                             }
                         }
                     } else {
-                        debug_dot(loc, 255, 255, 255);
+                        //debug_dot(loc, 255, 255, 255);
                     }
                 }
             }
@@ -1211,21 +1211,21 @@ public strictfp class RobotGlobal {
                     if (rc.onTheMap(loc)) {
                         Cell c = CommMap.queryCell(hc.a, hc.b);
                         if (c.isExplored()) {
-                            debug_dot(loc, 0, 0, 255);
+                            //debug_dot(loc, 0, 0, 255);
                         } else {
                             c.setExplored(true);
                             if (rc.senseTreeAtLocation(loc) == null) {
-                                debug_dot(loc, 0, 255, 0);
+                                //debug_dot(loc, 0, 255, 0);
                                 c.setClear(true);
                             } else {
-                                debug_dot(loc, 255, 0, 0);
+                                //debug_dot(loc, 255, 0, 0);
                                 c.setClear(false);
                             }
                             CommMap.sendCell(c);
                         }
                     }
                 } else {
-                    debug_dot(loc, 255, 255, 255);
+                    //debug_dot(loc, 255, 255, 255);
                     toScoutCoordBuffer_add(hc);
                 }
             }
@@ -1238,21 +1238,21 @@ public strictfp class RobotGlobal {
                 if (rc.onTheMap(loc)) {
                     Cell c = CommMap.queryCell(leftoverCoord.a, leftoverCoord.b);
                     if (c.isExplored()) {
-                        debug_dot(loc, 0, 0, 255);
+                        //debug_dot(loc, 0, 0, 255);
                     } else {
                         c.setExplored(true);
                         if (rc.senseTreeAtLocation(loc) == null) {
-                            debug_dot(loc, 0, 255, 0);
+                            //debug_dot(loc, 0, 255, 0);
                             c.setClear(true);
                         } else {
-                            debug_dot(loc, 255, 0, 0);
+                            //debug_dot(loc, 255, 0, 0);
                             c.setClear(false);
                         }
                         CommMap.sendCell(c);
                     }
                 }
             } else {
-                debug_dot(loc, 255, 255, 255);
+                //debug_dot(loc, 255, 255, 255);
                 toScoutCoordBuffer_add(leftoverCoord);
             }
         }
@@ -1306,10 +1306,10 @@ public strictfp class RobotGlobal {
     		if (curDist > exclude) { // if already outside exclusion zone, strafe to the side
     			debug_tick(3);
     			if (rc.canMove(toEnemy.rotateLeftDegrees(90), stride)) { // try Left
-    				moved = tryMoveElseLeftRight(toEnemy.rotateLeftDegrees(90), stride);
+    				moved = tryMoveElseLeftRight(toEnemy.rotateLeftDegrees(90), stride, 30, 5);
     			}
     			else if (rc.canMove(toEnemy.rotateRightDegrees(90), stride)) { // try Right
-    				moved = tryMoveElseLeftRight(toEnemy.rotateRightDegrees(90), stride);
+    				moved = tryMoveElseLeftRight(toEnemy.rotateRightDegrees(90), stride, 30, 5);
     			}
     			else {
     				return false;
@@ -1319,17 +1319,17 @@ public strictfp class RobotGlobal {
     		else { // if inside exclusion zone
     			debug_tick(4);
     			// simply move out.
-    			moved = tryMoveElseLeftRight(toEnemy.opposite(), stride);
+    			moved = tryMoveElseLeftRight(toEnemy.opposite(), stride, 30, 5);
     		}
     	}
     	else { // if I can reach beyond the border line...
     		if (curDist > exclude) { // if already outside exclusion zone
     			debug_tick(5);
     			if (rc.canMove(toEnemy.rotateLeftDegrees(90), stride)) { // try Left
-    				moved = tryMoveElseLeftRight(toEnemy.rotateLeftDegrees(90), stride);
+    				moved = tryMoveElseLeftRight(toEnemy.rotateLeftDegrees(90), stride, 30, 5);
     			}
     			else if (rc.canMove(toEnemy.rotateRightDegrees(90), stride)) { // try Right
-    				moved = tryMoveElseLeftRight(toEnemy.rotateRightDegrees(90), stride);
+    				moved = tryMoveElseLeftRight(toEnemy.rotateRightDegrees(90), stride, 30, 5);
     			}
     			else {
     				return false;
@@ -1337,9 +1337,9 @@ public strictfp class RobotGlobal {
     		}
     		else { // if inside exclusion zone
     			debug_tick(6);
-    			moved = tryMoveElseLeftRight(toEnemy.opposite(), exclude - curDist);
+    			moved = tryMoveElseLeftRight(toEnemy.opposite(), exclude - curDist, 30, 5);
     			if (!moved) {
-    				moved = tryMoveElseLeftRight(toEnemy.opposite(), stride);
+    				moved = tryMoveElseLeftRight(toEnemy.opposite(), stride, 30, 5);
     			}
     		}
     	}
@@ -1423,36 +1423,43 @@ public strictfp class RobotGlobal {
     }
 
     public static boolean tryMoveExact(MapLocation loc) throws GameActionException {
+        debug_dot(loc, 0, 255, 0);
+        debug_line(myLoc, loc, 0, 255, 0);
         if (rc.canMove(loc)) {
             rc.move(loc);
             myLoc = loc;
+            debug_print("tryMoveExact() succeeds at center");
             return true;
         } else {
             MapLocation fudge = loc.add(Direction.getSouth(), 0.001f);
             if (rc.canMove(fudge)) {
                 rc.move(fudge);
                 myLoc = fudge;
+                debug_print("tryMoveExact() succeeds south");
                 return true;
             } else {
                 fudge = loc.add(Direction.getEast(), 0.001f);
                 if (rc.canMove(fudge)) {
                     rc.move(fudge);
                     myLoc = fudge;
+                    debug_print("tryMoveExact() succeeds east");
                     return true;
                 } else {
                     fudge = loc.add(Direction.getNorth(), 0.001f);
                     if (rc.canMove(fudge)) {
                         rc.move(fudge);
                         myLoc = fudge;
+                        debug_print("tryMoveExact() succeeds north");
                         return true;
                     } else {
                         fudge = loc.add(Direction.getWest(), 0.001f);
                         if (rc.canMove(fudge)) {
                             rc.move(fudge);
                             myLoc = fudge;
+                            debug_print("tryMoveExact() succeeds west");
                             return true;
                         } else {
-                            debug_print("Failed to move");
+                            debug_print("tryMoveExact() fails");
                             return false;
                         }
                     }
@@ -1500,6 +1507,7 @@ public strictfp class RobotGlobal {
     }
 
     public static boolean tryMoveElseBack(MapLocation loc) throws GameActionException {
+        debug_dot(loc, 0, 255, 0);
         return tryMoveElseBack(myLoc.directionTo(loc), myLoc.distanceTo(loc));
     }
 
@@ -1508,6 +1516,7 @@ public strictfp class RobotGlobal {
     }
 
     public static boolean tryMoveElseBack(Direction dir, float dist) throws GameActionException {
+        debug_line(myLoc, myLoc.add(dir, 1), 0, 255, 0);
         float currentStride = dist;
         while (currentStride > 0.1) {
             MapLocation newLoc = myLoc.add(dir, currentStride);
@@ -1515,27 +1524,18 @@ public strictfp class RobotGlobal {
                 if (!willCollideWith(bulletsToAvoid, newLoc, myType.bodyRadius)) {
                     rc.move(dir, currentStride);
                     myLoc = newLoc;
+                    debug_print("tryMoveElseBack() succeeds with stride  = " + currentStride);
                     return true;
                 }
             }
             currentStride -= 0.2;
         }
+        debug_print("tryMoveElseBack() fails");
         return false;
     }
 
-    public static boolean tryMoveElseLeftRight(MapLocation loc) throws GameActionException {
-        return tryMoveElseLeftRight(myLoc.directionTo(loc), myLoc.distanceTo(loc));
-    }
-
-    public static boolean tryMoveElseLeftRight(Direction dir) throws GameActionException {
-        return tryMoveElseLeftRight(dir, myType.strideRadius);
-    }
-
-    public static boolean tryMoveElseLeftRight(Direction dir, float dist) throws GameActionException {
-        return tryMoveElseLeftRight(dir, dist, 30, 5);
-    }
-
     public static boolean tryMoveElseLeftRight(MapLocation loc, float degreeOffset, int checksPerSide) throws GameActionException {
+        debug_dot(loc, 0, 255, 0);
         return tryMoveElseLeftRight(myLoc.directionTo(loc), myLoc.distanceTo(loc), degreeOffset, checksPerSide);
     }
 
@@ -1544,7 +1544,7 @@ public strictfp class RobotGlobal {
     }
 
     public static boolean tryMoveElseLeftRight(Direction dir, float dist, float degreeOffset, int checksPerSide) throws GameActionException {
-
+        debug_line(myLoc, myLoc.add(dir, 1), 0, 255, 0);
     	// First, try intended direction
     	MapLocation newLoc = myLoc.add(dir, dist);
     	if (rc.onTheMap(newLoc)) { 
@@ -1552,6 +1552,7 @@ public strictfp class RobotGlobal {
     			if (!willCollideWith(bulletsToAvoid, newLoc, myType.bodyRadius)) {
     				rc.move(dir, dist);
     				myLoc = newLoc;
+                    debug_print("tryMoveElseLeftRight() succeeds at center");
     				return true;
     			}
     		}
@@ -1571,6 +1572,7 @@ public strictfp class RobotGlobal {
                 if (!willCollideWith(bulletsToAvoid, newLoc, myType.bodyRadius)) {
                     rc.move(newDir, dist);
                     myLoc = newLoc;
+                    debug_print("tryMoveElseLeftRight() succeeds at left offset " + currentCheck);
                     return true;
                 }
             }
@@ -1583,6 +1585,7 @@ public strictfp class RobotGlobal {
                 if (!willCollideWith(bulletsToAvoid, newLoc, myType.bodyRadius)) {
                     rc.move(newDir, dist);
                     myLoc = newLoc;
+                    debug_print("tryMoveElseLeftRight() succeeds at right offset " + currentCheck);
                     return true;
                 }
             }
@@ -1592,6 +1595,7 @@ public strictfp class RobotGlobal {
         }
 
         // A move never happened, so return false.
+        debug_print("tryMoveElseLeftRight() fails");
         return false;
     }
 
@@ -1786,7 +1790,7 @@ public strictfp class RobotGlobal {
         boolean success;
         if (myLoc.distanceTo(loc) - myType.strideRadius >= r) {
             // go towards
-            success = tryMoveElseLeftRight(myLoc.directionTo(loc));
+            success = tryMoveElseLeftRight(myLoc.directionTo(loc), 30, 5);
             if (success) {
                 return true;
             }
@@ -1796,7 +1800,7 @@ public strictfp class RobotGlobal {
             }
         } else if (myLoc.distanceTo(loc) + myType.strideRadius <= r) {
             // go away
-            success = tryMoveElseLeftRight(loc.directionTo(myLoc));
+            success = tryMoveElseLeftRight(loc.directionTo(myLoc), 30, 5);
             if (success) {
                 return true;
             }
@@ -1960,7 +1964,7 @@ public strictfp class RobotGlobal {
                 } else {
                     MapLocation[] intersections = Geometry.getCircleLineSegmentIntersections(itemLoc, itemR, start, target);
                     if (intersections.length > 0) {
-                        debug_line(myLoc, target, 255, 0, 0);
+                        //debug_line(myLoc, target, 255, 0, 0);
                         return false;
                     }
                 }
@@ -2011,8 +2015,8 @@ public strictfp class RobotGlobal {
     	// Start with the line from tank to target
     	MapLocation[] intersections = Geometry.getCircleLineSegmentIntersections(center, radius, myLoc, target);
     	if (intersections.length >= 1) {
-    		debug_dot(intersections[0], 88, 88, 88);
-    		debug_print("Intersection detected!");
+    		//debug_dot(intersections[0], 88, 88, 88);
+    		//debug_print("Intersection detected!");
     		return true;
     	}
     	
@@ -2026,14 +2030,14 @@ public strictfp class RobotGlobal {
     	//getCircleLineSegmentIntersections(MapLocation center, float r, MapLocation lineA, MapLocation lineB)
     	intersections = Geometry.getCircleLineSegmentIntersections(center, radius, myLoc, offsetLocA);
     	if (intersections.length >= 1) {
-    		debug_dot(intersections[0], 88, 88, 88);
-    		debug_print("Intersection detected!");
+    		//debug_dot(intersections[0], 88, 88, 88);
+    		//debug_print("Intersection detected!");
     		return true;
     	}
     	intersections = Geometry.getCircleLineSegmentIntersections(center, radius, myLoc, offsetLocB);
     	if (intersections.length >= 1) {
-    		debug_dot(intersections[0], 88, 88, 88);
-    		debug_print("Intersection detected!");
+    		//debug_dot(intersections[0], 88, 88, 88);
+    		//debug_print("Intersection detected!");
     		return true;
     	}
     	
@@ -2112,7 +2116,7 @@ public strictfp class RobotGlobal {
         }
 
         //Debug
-        
+        /*
         MapLocation knownNE = bounds.getInnerCornerLoc(MapBounds.NORTH, MapBounds.EAST);
         MapLocation knownSE = bounds.getInnerCornerLoc(MapBounds.SOUTH, MapBounds.EAST);
         MapLocation knownNW = bounds.getInnerCornerLoc(MapBounds.NORTH, MapBounds.WEST);
@@ -2126,7 +2130,7 @@ public strictfp class RobotGlobal {
         debug_line(knownNE, knownSE, r, g, b);
         debug_line(knownSW, knownSE, r, g, b);
         debug_line(knownSW, knownNW, r, g, b);
-        
+        */
 
         return bounds;
 
@@ -2287,15 +2291,15 @@ public strictfp class RobotGlobal {
             if (!e.isReady() && !e.hasLumberjackStored()) { // If farm is not ready, and does not have a lumberjack
                 // Farm needs lumberjack
                 lumberjackJobsQueue.add(new int[]{activeFarmIndex});
-                debug_print("Request lumberjack");
+                //debug_print("Request lumberjack");
             } else if (e.isReady() && !e.hasGardenerStored()) { // If the farm is ready, and does not have a gardener
                 // Farm needs gardener
                 gardenerJobsQueue.add(new int[]{activeFarmIndex});
-                debug_print("Request gardener");
+                //debug_print("Request gardener");
             } else if (e.hasGardenerStored() && !e.isClear() && !e.hasLumberjackStored()) { // If the farm has a gardener but is not clear and has no lumberjack
                 // Farm needs lumberjack
                 lumberjackJobsQueue.add(new int[]{activeFarmIndex});
-                debug_print("Request lumberjack");
+                //debug_print("Request lumberjack");
             }
         }
     }

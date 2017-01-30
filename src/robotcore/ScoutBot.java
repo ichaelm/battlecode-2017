@@ -72,13 +72,13 @@ public class ScoutBot extends RobotGlobal {
         		//Move towards nearest tree if not already shaken
         		if (nearestTree.getContainedBullets() > 0) {
         			Direction treeDirection = myLoc.directionTo(nearestTree.location);
-        			tryMoveElseLeftRight(treeDirection);
+        			tryMoveElseLeftRight(treeDirection, 30, 5);
         		} else {
         			//Move in the chosen direction
-    	        	if (!tryMoveElseLeftRight(currentDirection)) {
+    	        	if (!tryMoveElseLeftRight(currentDirection, 30, 5)) {
     	        		//If it fails, choose a new direction
     	        		currentDirection = randomDirection();
-    	        		tryMoveElseLeftRight(currentDirection);
+    	        		tryMoveElseLeftRight(currentDirection, 30, 5);
     	        	}
         		}
         	} else {
@@ -175,7 +175,7 @@ public class ScoutBot extends RobotGlobal {
 							moveToLoc.add(targetShooter.location.directionTo(myLoc), GameConstants.BULLET_SPAWN_OFFSET / 2f);
 						}
 						if (myLoc.distanceTo(moveToLoc) > myType.strideRadius) {
-							boolean moved = tryMoveElseLeftRight(myLoc.directionTo(moveToLoc));
+							boolean moved = tryMoveElseLeftRight(myLoc.directionTo(moveToLoc), 30, 5);
 							if (!moved) {
 								tryMoveElseBack(myLoc.directionTo(moveToLoc));
 							}
@@ -184,7 +184,7 @@ public class ScoutBot extends RobotGlobal {
 						}
 					} else {
 						// Move next to the gardener
-						boolean moved = tryMoveElseLeftRight(myLoc.directionTo(selectedGardenerLoc));
+						boolean moved = tryMoveElseLeftRight(myLoc.directionTo(selectedGardenerLoc), 30, 5);
 						if (!moved) {
 							tryMoveElseBack(myLoc.directionTo(selectedGardenerLoc));
 						}
@@ -207,7 +207,7 @@ public class ScoutBot extends RobotGlobal {
 					MapLocation attackLoc = peekAttackLocation();
 					if (attackLoc != null) { // If there is a target location:
 						// Move towards the target location
-						boolean moved = tryMoveElseLeftRight(myLoc.directionTo(attackLoc));
+						boolean moved = tryMoveElseLeftRight(myLoc.directionTo(attackLoc), 30, 5);
 						if (myLoc.distanceTo(attackLoc) < 4) { // If I am at the target location:
 							// We already know there are no gardeners here
 							// Pop this one and add it to the end, to cycle

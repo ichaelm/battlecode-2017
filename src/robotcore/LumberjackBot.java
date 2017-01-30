@@ -161,7 +161,7 @@ public class LumberjackBot extends RobotGlobal {
                     }
                 }
                 if (prioritizeRobotTrees && nearestRobotTree != null) {
-                    moved = tryMoveElseLeftRight(myLoc.directionTo(nearestRobotTree.location));
+                    moved = tryMoveElseLeftRight(myLoc.directionTo(nearestRobotTree.location), 30, 5);
                     if (!moved) {
                         moved = tryMoveElseBack(myLoc.directionTo(nearestRobotTree.location));
                     }
@@ -170,14 +170,14 @@ public class LumberjackBot extends RobotGlobal {
                     MapLocation invadeLoc = peekAttackLocation();
                     if (defendLoc != null) {
                         Direction defendDir = myLoc.directionTo(defendLoc);
-                        moved = tryMoveElseLeftRight(defendDir);
+                        moved = tryMoveElseLeftRight(defendDir, 30, 5);
                         // If I'm close to the defend target, I already know there's no hostile, so pop it
                         if (myLoc.distanceTo(defendLoc) < myType.bodyRadius * 2) {
                             popDefendLocation();
                         }
                     } else if (invadeLoc != null) {
                         Direction invadeDir = myLoc.directionTo(invadeLoc);
-                        moved = tryMoveElseLeftRight(invadeDir);
+                        moved = tryMoveElseLeftRight(invadeDir, 30, 5);
                         // If I'm close to the attack target, I already know there's no non-hostile, so pop it
                         if (myLoc.distanceTo(invadeLoc) < myType.bodyRadius * 2) {
                             popAttackLocation();

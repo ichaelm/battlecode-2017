@@ -40,7 +40,7 @@ public class GardenerBot extends RobotGlobal {
     
     // quick and easy method to check if a tree or build location is occupied
     public static boolean spotBlocked(int treeNum) throws GameActionException {
-        debug_dot(farmGeo.getTreeLocs()[treeNum], 0, 55, 255);
+        //debug_dot(farmGeo.getTreeLocs()[treeNum], 0, 55, 255);
         boolean occupied = !rc.onTheMap(farmGeo.getTreeLocs()[treeNum], 1) || rc.isCircleOccupiedExceptByThisRobot(farmGeo.getTreeLocs()[treeNum], 1);
     	return occupied;
     }
@@ -59,7 +59,7 @@ public class GardenerBot extends RobotGlobal {
 			// treeNotExists is correct
 			if (treeNotExists) {
 				//debug_print("Tree #" + t + " was killed...");
-				debug_dot(l, 255, 0, 0);
+				//debug_dot(l, 255, 0, 0);
 				isTreeBlocked[t] = spotBlocked(t);
 				isTreeAlive[t] = false;
 			} else {
@@ -78,7 +78,7 @@ public class GardenerBot extends RobotGlobal {
 	}
 
 	private static boolean proposedFarmBuildClear(ProposedFarm farm) throws GameActionException {
-		debug_dot(farm.getConstructionZone(), 255, 255, 255);
+		//debug_dot(farm.getConstructionZone(), 255, 255, 255);
     	return !rc.isCircleOccupiedExceptByThisRobot(farm.getConstructionZone(), 1);
 	}
 
@@ -251,7 +251,7 @@ public class GardenerBot extends RobotGlobal {
 				countTrees();
 				// Plant a plant if needed
 
-				farmGeo.debug_drawFarm(rc);
+				//farmGeo.debug_drawFarm(rc);
 
 				boolean builtTree = false;
 				boolean couldBuildTree = false;
@@ -304,7 +304,7 @@ public class GardenerBot extends RobotGlobal {
 
 				// Build a unit if possible
 				float so = GameConstants.GENERAL_SPAWN_OFFSET;
-				debug_dot(farmGeo.getConstructionZone(), 55, 55, 55);
+				//debug_dot(farmGeo.getConstructionZone(), 55, 55, 55);
 
 				if (currentBuildOrder != null && teamBullets > skippedCost + currentBuildOrder.bulletCost) {
 					if (rc.hasRobotBuildRequirements(currentBuildOrder) && !rc.isCircleOccupiedExceptByThisRobot(farmGeo.getConstructionZone(), 1)) {
