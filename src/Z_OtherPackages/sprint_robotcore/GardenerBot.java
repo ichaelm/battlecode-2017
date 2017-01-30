@@ -310,7 +310,7 @@ public class GardenerBot extends RobotGlobal {
         			rc.water(lowestFriendlyTree.ID);
         		}
         	}
-        	//drawFarm();
+        	//debug_drawFarm();
 
         	// Build a unit if possible
         	float so = GameConstants.GENERAL_SPAWN_OFFSET;

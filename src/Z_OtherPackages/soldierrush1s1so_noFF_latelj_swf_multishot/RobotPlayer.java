@@ -21,8 +21,7 @@ public strictfp class RobotPlayer {
             RobotGlobal.useTriad = true;
             RobotGlobal.usePentad = true;
         } catch (Exception e) {
-            System.out.println("Exception during global init");
-            e.printStackTrace();
+            RobotGlobal.debug_exception(e, "init");
         }
 
         switch (RobotGlobal.myType) {

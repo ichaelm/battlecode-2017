@@ -19,8 +19,7 @@ public strictfp class RobotPlayer {
             RobotGlobal.usePentad = true;
             RobotGlobal.kite = false;
         } catch (Exception e) {
-            System.out.println("Exception during global init");
-            e.printStackTrace();
+            RobotGlobal.debug_exception(e, "init");
         }
 
         switch (RobotGlobal.myType) {

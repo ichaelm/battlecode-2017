@@ -253,7 +253,7 @@ public strictfp class RobotGlobal {
             int begin = rc.readBroadcast(startChannel);
             int count = rc.readBroadcast(countChannel);
             if (count >= numElements) {
-                System.out.println("Array queue overflow!");
+                debug_print("Array queue overflow!");
                 return;
             }
             int itemIndex = (begin + count) % numElements;
@@ -288,7 +288,7 @@ public strictfp class RobotGlobal {
                 count = count - 1;
                 rc.broadcast(countChannel, count);
             } else {
-                System.out.println("Array queue removed with no elements!");
+                debug_print("Array queue removed with no elements!");
             }
         }
 
@@ -609,6 +609,8 @@ public strictfp class RobotGlobal {
     private static int toScoutCoordBufferStart = 0;
     private static int toScoutCoordBufferCount = 0;
     private static boolean useFarmGrid = false;
+    public static boolean debugExceptions = true;
+    public static boolean debug = false;
 
     // Configuration for Offensive Units
     public static boolean useTriad = false;
@@ -654,9 +656,9 @@ public strictfp class RobotGlobal {
         robotCount = rc.getRobotCount();
         int newRoundNum = rc.getRoundNum();
         if (!neverUpdated && newRoundNum == roundNum) {
-            System.out.println("Restarted the same turn!");
+            debug_print("Restarted the same turn!");
         } else if (!neverUpdated && newRoundNum - roundNum != 1) {
-            System.out.println("Skipped a turn!");
+            debug_print("Skipped a turn!");
         }
         roundNum = newRoundNum;
         if (birthTurn == -1) {
@@ -778,13 +780,13 @@ public strictfp class RobotGlobal {
         boolean[] buildDirsBlocked = new boolean[16];
         if (explore) {
             farmNum = queryCurrentFarmNum();
-            System.out.println("current farm num = " + farmNum);
+            debug_print("current farm num = " + farmNum);
             farmToExplore = null;
             if (canExploreFarm(farmNum)) {
                 farmToExplore = farmNumToLoc(farmNum);
-                System.out.println("can explore at " + farmToExplore);
+                debug_print("can explore at " + farmToExplore);
             } else {
-                System.out.println("can't explore");
+                debug_print("can't explore");
             }
         }
         float minDist = Float.POSITIVE_INFINITY;
@@ -854,7 +856,7 @@ public strictfp class RobotGlobal {
     	int len = nearbyFriendly.length;
     	
     	if (len < 1) {
-    		System.out.println("No nearby friendlies!");
+    		debug_print("No nearby friendlies!");
     		return null;
     	}
     	
@@ -867,7 +869,7 @@ public strictfp class RobotGlobal {
     			fgI ++;
     		}
     		
-    		//System.out.println("FGs: " + fgI);
+    		//debug_print("FGs: " + fgI);
     	}
     	
     	if (fgArray.length < 1) return null;
@@ -894,9 +896,9 @@ public strictfp class RobotGlobal {
             isLeader = false;
         } else if (roundNum > lastExecRound) {
             isLeader = true;
-            System.out.print("I am the leader!");
+            debug_print("I am the leader!");
         } else {
-            System.out.print("Elections error");
+            debug_print("Elections error");
         }
         rc.broadcast(EXEC_ROUND_CHANNEL, roundNum);
     }
@@ -1086,7 +1088,7 @@ public strictfp class RobotGlobal {
     public static boolean farmLocsExhausted() throws GameActionException {
         boolean retval = queryCurrentFarmNum() < 0;
         if (retval) {
-            System.out.println("Farm locs exhausted");
+            debug_print("Farm locs exhausted");
         }
         return retval;
     }
@@ -1114,7 +1116,7 @@ public strictfp class RobotGlobal {
         int y = rc.readBroadcast(CURRENT_FARM_NUM_Y_CHANNEL);
         int farmNum = farmOffsetToNum(x, y);
         if (farmNum < 0 || farmNum >= 64) {
-            System.out.println("Farmnum error: x = " + x + ", y = " + y);
+            debug_print("Farmnum error: x = " + x + ", y = " + y);
             return -1;
         }
         return farmNum;
@@ -1181,21 +1183,21 @@ public strictfp class RobotGlobal {
                         if (rc.onTheMap(loc)) {
                             Cell c = CommMap.queryCell(a, b);
                             if (c.isExplored()) {
-                                rc.setIndicatorDot(loc, 0, 0, 255);
+                                debug_dot(loc, 0, 0, 255);
                             } else {
                                 c.setExplored(true);
                                 if (rc.senseTreeAtLocation(loc) == null) {
-                                    rc.setIndicatorDot(loc, 0, 255, 0);
+                                    debug_dot(loc, 0, 255, 0);
                                     c.setClear(true);
                                 } else {
-                                    rc.setIndicatorDot(loc, 255, 0, 0);
+                                    debug_dot(loc, 255, 0, 0);
                                     c.setClear(false);
                                 }
                                 CommMap.sendCell(c);
                             }
                         }
                     } else {
-                        rc.setIndicatorDot(loc, 255, 255, 255);
+                        debug_dot(loc, 255, 255, 255);
                     }
                 }
             }
@@ -1209,21 +1211,21 @@ public strictfp class RobotGlobal {
                     if (rc.onTheMap(loc)) {
                         Cell c = CommMap.queryCell(hc.a, hc.b);
                         if (c.isExplored()) {
-                            rc.setIndicatorDot(loc, 0, 0, 255);
+                            debug_dot(loc, 0, 0, 255);
                         } else {
                             c.setExplored(true);
                             if (rc.senseTreeAtLocation(loc) == null) {
-                                rc.setIndicatorDot(loc, 0, 255, 0);
+                                debug_dot(loc, 0, 255, 0);
                                 c.setClear(true);
                             } else {
-                                rc.setIndicatorDot(loc, 255, 0, 0);
+                                debug_dot(loc, 255, 0, 0);
                                 c.setClear(false);
                             }
                             CommMap.sendCell(c);
                         }
                     }
                 } else {
-                    rc.setIndicatorDot(loc, 255, 255, 255);
+                    debug_dot(loc, 255, 255, 255);
                     toScoutCoordBuffer_add(hc);
                 }
             }
@@ -1236,21 +1238,21 @@ public strictfp class RobotGlobal {
                 if (rc.onTheMap(loc)) {
                     Cell c = CommMap.queryCell(leftoverCoord.a, leftoverCoord.b);
                     if (c.isExplored()) {
-                        rc.setIndicatorDot(loc, 0, 0, 255);
+                        debug_dot(loc, 0, 0, 255);
                     } else {
                         c.setExplored(true);
                         if (rc.senseTreeAtLocation(loc) == null) {
-                            rc.setIndicatorDot(loc, 0, 255, 0);
+                            debug_dot(loc, 0, 255, 0);
                             c.setClear(true);
                         } else {
-                            rc.setIndicatorDot(loc, 255, 0, 0);
+                            debug_dot(loc, 255, 0, 0);
                             c.setClear(false);
                         }
                         CommMap.sendCell(c);
                     }
                 }
             } else {
-                rc.setIndicatorDot(loc, 255, 255, 255);
+                debug_dot(loc, 255, 255, 255);
                 toScoutCoordBuffer_add(leftoverCoord);
             }
         }
@@ -1271,10 +1273,10 @@ public strictfp class RobotGlobal {
     }
     
     public static boolean kiteEnemy(RobotInfo enemy, float strafeDist) throws GameActionException {
-    	debugTick(1);
+    	debug_tick(1);
     	boolean moved = rc.hasMoved();
     	if (moved) {
-    		System.out.println("Already moved!");
+    		debug_print("Already moved!");
     		return moved;
     	} 
     	if (enemy.type == RobotType.LUMBERJACK){ // ensure we avoid lumberjack strikes
@@ -1292,7 +1294,7 @@ public strictfp class RobotGlobal {
     	if (enemy.type == RobotType.ARCHON || enemy.type == RobotType.GARDENER){ // dont kite gardeners or archons
     		return false; 
     	}
-    	debugTick(2);
+    	debug_tick(2);
     	float exclude = strafeDist + myType.bodyRadius + enemy.type.bodyRadius;
     	float curDist = myLoc.distanceTo(enemy.location);
     	Direction toEnemy = myLoc.directionTo(enemy.location);
@@ -1302,7 +1304,7 @@ public strictfp class RobotGlobal {
 
     	if (stride < difference) { // if I cannot move beyond the border line...
     		if (curDist > exclude) { // if already outside exclusion zone, strafe to the side
-    			debugTick(3);
+    			debug_tick(3);
     			if (rc.canMove(toEnemy.rotateLeftDegrees(90), stride)) { // try Left
     				moved = tryMoveElseLeftRight(toEnemy.rotateLeftDegrees(90), stride);
     			}
@@ -1315,14 +1317,14 @@ public strictfp class RobotGlobal {
 
     		}
     		else { // if inside exclusion zone
-    			debugTick(4);
+    			debug_tick(4);
     			// simply move out.
     			moved = tryMoveElseLeftRight(toEnemy.opposite(), stride);
     		}
     	}
     	else { // if I can reach beyond the border line...
     		if (curDist > exclude) { // if already outside exclusion zone
-    			debugTick(5);
+    			debug_tick(5);
     			if (rc.canMove(toEnemy.rotateLeftDegrees(90), stride)) { // try Left
     				moved = tryMoveElseLeftRight(toEnemy.rotateLeftDegrees(90), stride);
     			}
@@ -1334,7 +1336,7 @@ public strictfp class RobotGlobal {
     			}
     		}
     		else { // if inside exclusion zone
-    			debugTick(6);
+    			debug_tick(6);
     			moved = tryMoveElseLeftRight(toEnemy.opposite(), exclude - curDist);
     			if (!moved) {
     				moved = tryMoveElseLeftRight(toEnemy.opposite(), stride);
@@ -1342,14 +1344,14 @@ public strictfp class RobotGlobal {
     		}
     	}
     	
-    	debugTick(7);
+    	debug_tick(7);
     	return moved;
     }
 
     public static MapLocation[] getMyArchonLocations() throws GameActionException {
         int numArchons = rc.readBroadcast(NUM_ARCHONS_CHANNEL);
         if (numArchons > ARCHON_LOCATION_TABLE_NUM_ENTRIES) {
-            System.out.println("More than 3 archons detected!!!");
+            debug_print("More than 3 archons detected!!!");
             numArchons = ARCHON_LOCATION_TABLE_NUM_ENTRIES;
         }
         MapLocation[] archonLocations = new MapLocation[numArchons];
@@ -1450,7 +1452,7 @@ public strictfp class RobotGlobal {
                             myLoc = fudge;
                             return true;
                         } else {
-                            System.out.println("Failed to move");
+                            debug_print("Failed to move");
                             return false;
                         }
                     }
@@ -1958,7 +1960,7 @@ public strictfp class RobotGlobal {
                 } else {
                     MapLocation[] intersections = Geometry.getCircleLineSegmentIntersections(itemLoc, itemR, start, target);
                     if (intersections.length > 0) {
-                        rc.setIndicatorLine(myLoc, target, 255, 0, 0);
+                        debug_line(myLoc, target, 255, 0, 0);
                         return false;
                     }
                 }
@@ -2009,8 +2011,8 @@ public strictfp class RobotGlobal {
     	// Start with the line from tank to target
     	MapLocation[] intersections = Geometry.getCircleLineSegmentIntersections(center, radius, myLoc, target);
     	if (intersections.length >= 1) {
-    		rc.setIndicatorDot(intersections[0], 88, 88, 88);
-    		System.out.println("Intersection detected!");
+    		debug_dot(intersections[0], 88, 88, 88);
+    		debug_print("Intersection detected!");
     		return true;
     	}
     	
@@ -2024,14 +2026,14 @@ public strictfp class RobotGlobal {
     	//getCircleLineSegmentIntersections(MapLocation center, float r, MapLocation lineA, MapLocation lineB)
     	intersections = Geometry.getCircleLineSegmentIntersections(center, radius, myLoc, offsetLocA);
     	if (intersections.length >= 1) {
-    		rc.setIndicatorDot(intersections[0], 88, 88, 88);
-    		System.out.println("Intersection detected!");
+    		debug_dot(intersections[0], 88, 88, 88);
+    		debug_print("Intersection detected!");
     		return true;
     	}
     	intersections = Geometry.getCircleLineSegmentIntersections(center, radius, myLoc, offsetLocB);
     	if (intersections.length >= 1) {
-    		rc.setIndicatorDot(intersections[0], 88, 88, 88);
-    		System.out.println("Intersection detected!");
+    		debug_dot(intersections[0], 88, 88, 88);
+    		debug_print("Intersection detected!");
     		return true;
     	}
     	
@@ -2114,10 +2116,10 @@ public strictfp class RobotGlobal {
         if (myTeam == Team.A) r = 255;
         if (myTeam == Team.B) b = 255;
         
-        rc.setIndicatorLine(knownNE, knownNW, r, g, b);
-        rc.setIndicatorLine(knownNE, knownSE, r, g, b);
-        rc.setIndicatorLine(knownSW, knownSE, r, g, b);
-        rc.setIndicatorLine(knownSW, knownNW, r, g, b);
+        debug_line(knownNE, knownNW, r, g, b);
+        debug_line(knownNE, knownSE, r, g, b);
+        debug_line(knownSW, knownSE, r, g, b);
+        debug_line(knownSW, knownNW, r, g, b);
         
 
         return bounds;
@@ -2146,7 +2148,7 @@ public strictfp class RobotGlobal {
             }
 
             if (c > 15) {
-                System.out.println("narrowBounds timed out");
+                debug_print("narrowBounds timed out");
                 break;
             }
 
@@ -2165,7 +2167,7 @@ public strictfp class RobotGlobal {
         for (int dirOrd = 0; dirOrd < 4; dirOrd++) {
             MapLocation senseLoc = senseLocs[dirOrd];
             if (!bounds.bounds[dirOrd].valid()) {
-                System.out.println("Detected invalid bounds! " + bounds.bounds[dirOrd].toString());
+                debug_print("Detected invalid bounds! " + bounds.bounds[dirOrd].toString());
             }
             if(!rc.onTheMap(senseLoc)) {
                 bounds.updateInnerBound(dirOrd, myLoc.add(MapBounds.dirFromOrd(dirOrd), myType.bodyRadius));
@@ -2177,7 +2179,7 @@ public strictfp class RobotGlobal {
                 bounds.updateInnerBound(dirOrd, senseLoc);
             }
             if (!bounds.bounds[dirOrd].valid()) {
-                System.out.println("Created invalid bounds! " + bounds.bounds[dirOrd].toString());
+                debug_print("Created invalid bounds! " + bounds.bounds[dirOrd].toString());
             }
         }
 
@@ -2279,15 +2281,15 @@ public strictfp class RobotGlobal {
             if (!e.isReady() && !e.hasLumberjackStored()) { // If farm is not ready, and does not have a lumberjack
                 // Farm needs lumberjack
                 lumberjackJobsQueue.add(new int[]{activeFarmIndex});
-                System.out.println("Request lumberjack");
+                debug_print("Request lumberjack");
             } else if (e.isReady() && !e.hasGardenerStored()) { // If the farm is ready, and does not have a gardener
                 // Farm needs gardener
                 gardenerJobsQueue.add(new int[]{activeFarmIndex});
-                System.out.println("Request gardener");
+                debug_print("Request gardener");
             } else if (e.hasGardenerStored() && !e.isClear() && !e.hasLumberjackStored()) { // If the farm has a gardener but is not clear and has no lumberjack
                 // Farm needs lumberjack
                 lumberjackJobsQueue.add(new int[]{activeFarmIndex});
-                System.out.println("Request lumberjack");
+                debug_print("Request lumberjack");
             }
         }
     }
@@ -2300,7 +2302,7 @@ public strictfp class RobotGlobal {
 		for (int i = 0; i < fCount; i++) {
 		    int fNum = activeFarmsQueue.peek(i)[0];
 			farmLocs[fNum] = farmNumToLoc(fNum);
-			//System.out.println("Farm # " + fNum + " is at " + farmLocs[fNum]);
+			//debug_print("Farm # " + fNum + " is at " + farmLocs[fNum]);
 		}
 		
 		return farmLocs;
@@ -2332,7 +2334,7 @@ public strictfp class RobotGlobal {
         int begin = rc.readBroadcast(BUILD_QUEUE_1_BEGIN_CHANNEL);
         int count = rc.readBroadcast(BUILD_QUEUE_1_COUNT_CHANNEL);
         if (count >= BUILD_QUEUE_1_LENGTH) {
-            System.out.println("Build queue 1 overflow!");
+            debug_print("Build queue 1 overflow!");
             return;
         }
         int entryIndex = (begin + count) % BUILD_QUEUE_1_LENGTH;
@@ -2346,7 +2348,7 @@ public strictfp class RobotGlobal {
         int begin = rc.readBroadcast(BUILD_QUEUE_2_BEGIN_CHANNEL);
         int count = rc.readBroadcast(BUILD_QUEUE_2_COUNT_CHANNEL);
         if (count >= BUILD_QUEUE_2_LENGTH) {
-            System.out.println("Build queue 2 overflow!");
+            debug_print("Build queue 2 overflow!");
             return;
         }
         int entryIndex = (begin + count) % BUILD_QUEUE_2_LENGTH;
@@ -2411,23 +2413,62 @@ public strictfp class RobotGlobal {
         }
     }
 
-    public static void debugTick(int id) {
-        int currentRoundNum = rc.getRoundNum();
-        int bytecodes = Clock.getBytecodeNum();
-        debugBytecodesList[id] = bytecodes;
-        numDebugBytecodes = Math.max(numDebugBytecodes, id+1);
-        if (currentRoundNum != roundNum) {
-            if (!debugTripped) {
-                debugTripped = true;
-                System.out.println("Detected over-bytecodes!!!");
-                System.out.println("Round changed before tick " + id);
-                for (int i = 0; i < numDebugBytecodes - 1; i++) {
-                    System.out.println(i + ": " + debugBytecodesList[i]);
+    public static void debug_tick(int id) {
+        if (debug) {
+            int currentRoundNum = rc.getRoundNum();
+            int bytecodes = Clock.getBytecodeNum();
+            debugBytecodesList[id] = bytecodes;
+            numDebugBytecodes = Math.max(numDebugBytecodes, id+1);
+            if (currentRoundNum != roundNum) {
+                if (!debugTripped) {
+                    debugTripped = true;
+                    debug_print("Detected over-bytecodes!!!");
+                    debug_print("Round changed before tick " + id);
+                    for (int i = 0; i < numDebugBytecodes - 1; i++) {
+                        debug_print(i + ": " + debugBytecodesList[i]);
+                    }
+                    debug_print((numDebugBytecodes - 1) + ": " + debugBytecodesList[numDebugBytecodes - 1] + " + " + (currentRoundNum - roundNum) + " rounds");
+                } else {
+                    debug_print(id + ": " + bytecodes + " + " + (currentRoundNum - roundNum) + " rounds");
                 }
-                System.out.println((numDebugBytecodes - 1) + ": " + debugBytecodesList[numDebugBytecodes - 1] + " + " + (currentRoundNum - roundNum) + " rounds");
-            } else {
-                System.out.println(id + ": " + bytecodes + " + " + (currentRoundNum - roundNum) + " rounds");
             }
+        }
+    }
+
+    public static void debug_print(String s) {
+        if (debug) {
+            System.out.println(s);
+        }
+    }
+
+    public static void debug_print(Object o) {
+        if (debug) {
+            System.out.println(o);
+        }
+    }
+
+    public static void debug_exception(Exception e) {
+        if (debugExceptions) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void debug_exception(Exception e, String ctx) {
+        if (debugExceptions) {
+            System.out.println("Exception context: " + ctx);
+            e.printStackTrace();
+        }
+    }
+
+    public static void debug_dot(MapLocation loc, int r, int g, int b) throws GameActionException {
+        if (debug) {
+            rc.setIndicatorDot(loc, r, g, b);
+        }
+    }
+
+    public static void debug_line(MapLocation start, MapLocation end, int r, int g, int b) throws GameActionException {
+        if (debug) {
+            rc.setIndicatorLine(start, end, r, g, b);
         }
     }
 
@@ -2435,7 +2476,7 @@ public strictfp class RobotGlobal {
         int begin = rc.readBroadcast(ATTACK_LOCATION_QUEUE_BEGIN_CHANNEL);
         int count = rc.readBroadcast(ATTACK_LOCATION_QUEUE_COUNT_CHANNEL);
         if (count >= ATTACK_LOCATION_QUEUE_NUM_ENTRIES) {
-            System.out.println("Attack location queue overflow!");
+            debug_print("Attack location queue overflow!");
             return;
         }
         int entryIndex = (begin + count) % ATTACK_LOCATION_QUEUE_NUM_ENTRIES;
@@ -2452,7 +2493,7 @@ public strictfp class RobotGlobal {
         int begin = rc.readBroadcast(ATTACK_LOCATION_QUEUE_BEGIN_CHANNEL);
         int count = rc.readBroadcast(ATTACK_LOCATION_QUEUE_COUNT_CHANNEL);
         if (count >= ATTACK_LOCATION_QUEUE_NUM_ENTRIES) {
-            System.out.println("Attack location queue overflow!");
+            debug_print("Attack location queue overflow!");
             return;
         }
         begin = ((begin - 1) + ATTACK_LOCATION_QUEUE_NUM_ENTRIES) % ATTACK_LOCATION_QUEUE_NUM_ENTRIES;
@@ -2490,7 +2531,7 @@ public strictfp class RobotGlobal {
         int begin = rc.readBroadcast(ATTACK_LOCATION_QUEUE_BEGIN_CHANNEL);
         int count = rc.readBroadcast(ATTACK_LOCATION_QUEUE_COUNT_CHANNEL);
         if (count <= which) {
-            System.out.println("Tried to update nonexistant attack location!");
+            debug_print("Tried to update nonexistant attack location!");
             return;
         }
         int entryIndex = (begin + which) % ATTACK_LOCATION_QUEUE_NUM_ENTRIES;;
@@ -2542,7 +2583,7 @@ public strictfp class RobotGlobal {
         int begin = rc.readBroadcast(DEFEND_LOCATION_QUEUE_BEGIN_CHANNEL);
         int count = rc.readBroadcast(DEFEND_LOCATION_QUEUE_COUNT_CHANNEL);
         if (count >= DEFEND_LOCATION_QUEUE_NUM_ENTRIES) {
-            System.out.println("Defend location queue overflow!");
+            debug_print("Defend location queue overflow!");
             return;
         }
         int entryIndex = (begin + count) % DEFEND_LOCATION_QUEUE_NUM_ENTRIES;
@@ -2559,7 +2600,7 @@ public strictfp class RobotGlobal {
         int begin = rc.readBroadcast(DEFEND_LOCATION_QUEUE_BEGIN_CHANNEL);
         int count = rc.readBroadcast(DEFEND_LOCATION_QUEUE_COUNT_CHANNEL);
         if (count >= DEFEND_LOCATION_QUEUE_NUM_ENTRIES) {
-            System.out.println("Defend location queue overflow!");
+            debug_print("Defend location queue overflow!");
             return;
         }
         begin = ((begin - 1) + DEFEND_LOCATION_QUEUE_NUM_ENTRIES) % DEFEND_LOCATION_QUEUE_NUM_ENTRIES;
@@ -2597,7 +2638,7 @@ public strictfp class RobotGlobal {
         int begin = rc.readBroadcast(DEFEND_LOCATION_QUEUE_BEGIN_CHANNEL);
         int count = rc.readBroadcast(DEFEND_LOCATION_QUEUE_COUNT_CHANNEL);
         if (count <= which) {
-            System.out.println("Tried to update nonexistant defend location!");
+            debug_print("Tried to update nonexistant defend location!");
             return;
         }
         int entryIndex = (begin + which) % DEFEND_LOCATION_QUEUE_NUM_ENTRIES;;
@@ -2783,15 +2824,15 @@ public strictfp class RobotGlobal {
                         float[][] polyIntersectionPairs = Geometry.getCirclePolygonIntersectionPairs(myLoc, myType.strideRadius * strideNum, poly);
                         if (startRadiusIntersections.length == 2) {
                             exclude.add(startRadiusIntersections[0], startRadiusIntersections[1]);
-                            //System.out.println("A Happened");
+                            //debug_print("A Happened");
                         }
                         if (endRadiusIntersections.length == 2) {
                             exclude.add(endRadiusIntersections[0], endRadiusIntersections[1]);
-                            //System.out.println("B Happened");
+                            //debug_print("B Happened");
                         }
                         for (float[] polyIntersectionPair : polyIntersectionPairs) {
                             exclude.add(polyIntersectionPair[0], polyIntersectionPair[1]);
-                            //System.out.println("C Happened");
+                            //debug_print("C Happened");
                         }
                     }
                     float closest = exclude.closest(attackDir.radians);
@@ -2820,7 +2861,7 @@ public strictfp class RobotGlobal {
                         } else {
                             swept += next + 2*(float)Math.PI - running;
                         }
-                        rc.setIndicatorLine(myLoc.add(new Direction(running), myType.strideRadius), myLoc.add(new Direction(next), myType.strideRadius), 255,0,0);
+                        debug_line(myLoc.add(new Direction(running), myType.strideRadius), myLoc.add(new Direction(next), myType.strideRadius), 255,0,0);
                         running = next;
                     }
 
@@ -2830,13 +2871,13 @@ public strictfp class RobotGlobal {
                     }
                 }
 
-                System.out.println(swept);
+                debug_print(swept);
                 if (swept > 6) {
-                    System.out.println("High sweep");
-                    System.out.println(exclude);
+                    debug_print("High sweep");
+                    debug_print(exclude);
                 }
 
-                rc.setIndicatorDot(myLoc.add(attackDir, myType.strideRadius), 0, 255, 0);
+                debug_dot(myLoc.add(attackDir, myType.strideRadius), 0, 255, 0);
 
                 Direction farthestDir = null;
                 float farthestDist = -1;
@@ -2850,18 +2891,18 @@ public strictfp class RobotGlobal {
                     }
                 }
 
-                rc.setIndicatorDot(myLoc.add(farthestDir, myType.strideRadius), 0, 0, 255);
+                debug_dot(myLoc.add(farthestDir, myType.strideRadius), 0, 0, 255);
 
                 // Move
                 if (farthestDir != null) {
                     boolean success = tryMove(myLoc.add(farthestDir, myType.strideRadius));
                     if (!success) {
-                        System.out.println("Exclude: " + exclude);
-                        System.out.println("Move: " + exclude.closest(attackDir.radians));
+                        debug_print("Exclude: " + exclude);
+                        debug_print("Move: " + exclude.closest(attackDir.radians));
                     }
                 } else {
-                    System.out.println("Null move");
-                    System.out.println("Exclude: " + exclude);
+                    debug_print("Null move");
+                    debug_print("Exclude: " + exclude);
                 }
 
      */

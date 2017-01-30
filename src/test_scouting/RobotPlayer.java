@@ -30,8 +30,7 @@ public strictfp class RobotPlayer {
             }
 
         } catch (Exception e) {
-            System.out.println("Exception!");
-            e.printStackTrace();
+            RobotGlobal.debug_exception(e);
         }
 	}
 

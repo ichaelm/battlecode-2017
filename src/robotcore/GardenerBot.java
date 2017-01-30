@@ -25,14 +25,14 @@ public class GardenerBot extends RobotGlobal {
             try {
                 update();
             } catch (Exception e) {
-                System.out.println("Gardener: exception during update");
+                debug_print("Gardener: exception during update");
                 e.printStackTrace();
             }
             try {
                 turn();
                 Clock.yield();
             } catch (Exception e) {
-                System.out.println("Gardener: exception during turn");
+                debug_print("Gardener: exception during turn");
                 e.printStackTrace();
             }
         }
@@ -40,7 +40,7 @@ public class GardenerBot extends RobotGlobal {
     
     // quick and easy method to check if a tree or build location is occupied
     public static boolean spotBlocked(int treeNum) throws GameActionException {
-        rc.setIndicatorDot(farmGeo.getTreeLocs()[treeNum], 0, 55, 255);
+        debug_dot(farmGeo.getTreeLocs()[treeNum], 0, 55, 255);
         boolean occupied = !rc.onTheMap(farmGeo.getTreeLocs()[treeNum], 1) || rc.isCircleOccupiedExceptByThisRobot(farmGeo.getTreeLocs()[treeNum], 1);
     	return occupied;
     }
@@ -53,13 +53,13 @@ public class GardenerBot extends RobotGlobal {
 			if (info == null) {
 				treeNotExists = true;
 			} else if (info.team != rc.getTeam()) {
-				//System.out.println("Wait... that's not our tree!!! WTF!!!");
+				//debug_print("Wait... that's not our tree!!! WTF!!!");
 				treeNotExists = true;
 			}
 			// treeNotExists is correct
 			if (treeNotExists) {
-				//System.out.println("Tree #" + t + " was killed...");
-				rc.setIndicatorDot(l, 255, 0, 0);
+				//debug_print("Tree #" + t + " was killed...");
+				debug_dot(l, 255, 0, 0);
 				isTreeBlocked[t] = spotBlocked(t);
 				isTreeAlive[t] = false;
 			} else {
@@ -78,7 +78,7 @@ public class GardenerBot extends RobotGlobal {
 	}
 
 	private static boolean proposedFarmBuildClear(ProposedFarm farm) throws GameActionException {
-		rc.setIndicatorDot(farm.getConstructionZone(), 255, 255, 255);
+		debug_dot(farm.getConstructionZone(), 255, 255, 255);
     	return !rc.isCircleOccupiedExceptByThisRobot(farm.getConstructionZone(), 1);
 	}
 
@@ -121,7 +121,7 @@ public class GardenerBot extends RobotGlobal {
 		processNearbyBullets();
 		if (!queryFirstFarmExists()) { // must happen before processing trees
 			sendFirstFarm(myLoc);
-			System.out.println("Sent first farm");
+			debug_print("Sent first farm");
 		}
 		processNearbyTrees();
 		tryToShake();
@@ -200,14 +200,14 @@ public class GardenerBot extends RobotGlobal {
 				if (farmLoc != null) {
 					moved = tryMoveElseLeftRight(myLoc.directionTo(farmLoc), 20, 5);
 					if (!moved) {
-						System.out.println("Can't move to explore farms");
+						debug_print("Can't move to explore farms");
 					}
 				}
 			}
         }
         if (mode == FarmingMode.FARMING) {
 			if (goingToFarm) {
-				System.out.println("Going to farm");
+				debug_print("Going to farm");
 				MapLocation farmLoc = farmNumToLoc(myFarmNum);
 				if (myLoc.distanceTo(farmLoc) < myType.strideRadius) {
 
@@ -218,16 +218,16 @@ public class GardenerBot extends RobotGlobal {
 						writeFarmTableEntry(myFarmNum, e);
 						goingToFarm = false;
 
-						System.out.println("Got there");
+						debug_print("Got there");
 					} else {
-						System.out.println("This should never happen!!!");
+						debug_print("This should never happen!!!");
 					}
 					// transition to planting
 
 				} else {
 					moved = tryMoveElseLeftRight(myLoc.directionTo(farmLoc), 20, 5);
 					if (!moved) {
-						System.out.println("Can't move to my farm");
+						debug_print("Can't move to my farm");
 					}
 				}
 			}
@@ -244,14 +244,14 @@ public class GardenerBot extends RobotGlobal {
 				if(farm != null) {
 					farmGeo = farm;
 				} else {
-					System.out.println("Failed to build farm");
+					debug_print("Failed to build farm");
 				}
 			}
 			if (farmGeo != null) {
 				countTrees();
 				// Plant a plant if needed
 
-				farmGeo.drawFarm(rc);
+				farmGeo.debug_drawFarm(rc);
 
 				boolean builtTree = false;
 				boolean couldBuildTree = false;
@@ -266,28 +266,28 @@ public class GardenerBot extends RobotGlobal {
 
 						if (haveBullets && rc.onTheMap(pLoc, 1) && rc.isBuildReady()){ // check location, cooldown, & bullets
 							Direction tDir = farmGeo.getTreeDirections()[t];
-							System.out.println("Attempting to plant Tree #" + t);
+							debug_print("Attempting to plant Tree #" + t);
 
 							if (rc.canPlantTree(tDir)) {						// check if can plant
 								rc.plantTree(myLoc.directionTo(farmGeo.getTreeLocs()[t])); 	// Success! now account for the new tree
-								System.out.println("Tree #" + t + " is planted.");
+								debug_print("Tree #" + t + " is planted.");
 								isTreeAlive[t] = true;
 								builtTree = true;
 							} else {
-								System.out.println("Couldn't plant tree # " + t + " in treeDir specified.");
+								debug_print("Couldn't plant tree # " + t + " in treeDir specified.");
 							}
 
 						} else {
-							System.out.println("Waiting for cooldown...");
+							debug_print("Waiting for cooldown...");
 							break;
 						}
 					} else {
-						System.out.println("Tree " + t + " is alive or blocked");
+						debug_print("Tree " + t + " is alive or blocked");
 					}
 				}
 				if (!builtTree) {
 					skippedCost += GameConstants.BULLET_TREE_COST;
-					System.out.println("no tree built");
+					debug_print("no tree built");
 				}
 				if (!couldBuildTree) {
 					rc.broadcast(CAN_PLANT_COUNTER_CHANNEL, rc.readBroadcast(CAN_PLANT_COUNTER_CHANNEL) + 1);
@@ -300,11 +300,11 @@ public class GardenerBot extends RobotGlobal {
 						rc.water(lowestFriendlyTree.ID);
 					}
 				}
-				//drawFarm();
+				//debug_drawFarm();
 
 				// Build a unit if possible
 				float so = GameConstants.GENERAL_SPAWN_OFFSET;
-				rc.setIndicatorDot(farmGeo.getConstructionZone(), 55, 55, 55);
+				debug_dot(farmGeo.getConstructionZone(), 55, 55, 55);
 
 				if (currentBuildOrder != null && teamBullets > skippedCost + currentBuildOrder.bulletCost) {
 					if (rc.hasRobotBuildRequirements(currentBuildOrder) && !rc.isCircleOccupiedExceptByThisRobot(farmGeo.getConstructionZone(), 1)) {
@@ -314,9 +314,9 @@ public class GardenerBot extends RobotGlobal {
 						}
 					}
 				}
-				//System.out.println("watering");
+				//debug_print("watering");
 			} else {
-				System.out.println("farmGeo is null");
+				debug_print("farmGeo is null");
 			}
 
 		}
@@ -330,7 +330,7 @@ public class GardenerBot extends RobotGlobal {
 				if (!isTreeAlive[i] && !isTreeBlocked[i]) {
 					isFull = false;
 				} else {
-					rc.setIndicatorDot(farmGeo.getTreeLocs()[i], 0, 0, 0);
+					debug_dot(farmGeo.getTreeLocs()[i], 0, 0, 0);
 				}
 			}
 		} else {
@@ -366,7 +366,7 @@ public class GardenerBot extends RobotGlobal {
 			}
 		}
 
-        debugTick(7);
+        debug_tick(7);
     }
 
 	

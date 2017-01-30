@@ -13,14 +13,14 @@ public class LumberjackBot extends RobotGlobal {
             try {
                 update();
             } catch (Exception e) {
-                System.out.println("Lumberjack: exception during update");
+                debug_print("Lumberjack: exception during update");
                 e.printStackTrace();
             }
             try {
                 turn();
                 Clock.yield();
             } catch (Exception e) {
-                System.out.println("Lumberjack: exception during turn");
+                debug_print("Lumberjack: exception during turn");
                 e.printStackTrace();
             }
         }
@@ -101,7 +101,7 @@ public class LumberjackBot extends RobotGlobal {
             }
             if (farmNum >= 0) {
                 // do farm job
-                System.out.println("my farm num = " + farmNum);
+                debug_print("my farm num = " + farmNum);
                 MapLocation farmLoc = farmNumToLoc(farmNum);
                 FarmTableEntry e = readFarmTableEntry(farmNum);
                 e.registerLumberjack();
@@ -130,9 +130,9 @@ public class LumberjackBot extends RobotGlobal {
                     moved = tryMoveElseBack(robotTreeDir);
                 } else if (treeSeen && nearestTree.location.distanceTo(farmLoc) - nearestTree.radius < 5.05f) {
                     moved = tryMoveElseBack(treeDir);
-                    rc.setIndicatorDot(nearestTree.location, 255, 0, 0);
+                    debug_dot(nearestTree.location, 255, 0, 0);
                 } else {
-                    rc.setIndicatorDot(farmLoc, 255, 255, 0);
+                    debug_dot(farmLoc, 255, 255, 0);
                     moved = tryMoveDistFrom(farmLoc, 4.05f);
                     if (!moved) {
                         moved = tryMoveDistFrom(farmLoc, 4.05f);

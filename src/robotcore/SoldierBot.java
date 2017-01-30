@@ -14,14 +14,14 @@ public class SoldierBot extends RobotGlobal {
             try {
                 update();
             } catch (Exception e) {
-                System.out.println("Soldier: exception during update");
+                debug_print("Soldier: exception during update");
                 e.printStackTrace();
             }
             try {
                 turn();
                 Clock.yield();
             } catch (Exception e) {
-                System.out.println("Soldier: exception during turn");
+                debug_print("Soldier: exception during turn");
                 e.printStackTrace();
             }
         }
@@ -61,7 +61,7 @@ public class SoldierBot extends RobotGlobal {
         RobotInfo nearestNonHostile = getNearestEnemyNonHostile();
         boolean moved = false;
         boolean shoot = true;
-        debugTick(0);
+        debug_tick(0);
         
         MapLocation selectedGardenerLoc = null;
         RobotInfo selectedGardenerInfo = getNearestEnemyGardener();
@@ -151,7 +151,7 @@ public class SoldierBot extends RobotGlobal {
         	}
         	
         	if (attackRound > 200 && shoot) {
-        		System.out.println("Attacking non-hostiles!");
+        		debug_print("Attacking non-hostiles!");
         		Direction atThing = myLoc.directionTo(nearestNonHostile.location);
         		float dist = myLoc.distanceTo(nearestNonHostile.location);
         		if (usePentad && rc.canFirePentadShot() && dist < pentadDist) { // if soldier shoots, canFire becomes false

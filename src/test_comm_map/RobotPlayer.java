@@ -110,7 +110,7 @@ public strictfp class RobotPlayer {
                         //if ((a + b >= minSum) && (a + b <= maxSum)) {
                         MapLocation loc = RobotGlobal.CommMap.hexCoordToLoc(a, b);
                         if (loc.distanceTo(RobotGlobal.myLoc) <= 10) {
-                            rc.setIndicatorDot(loc, 255, 0, 0);
+                            RobotGlobal.debug_dot(loc, 255, 0, 0);
                             totalInside++;
                         }
                         total++;
@@ -128,7 +128,7 @@ public strictfp class RobotPlayer {
                     HexCoord hc = it.next();
                     MapLocation loc = RobotGlobal.CommMap.hexCoordToLoc(hc.a, hc.b);
                     if (loc.distanceTo(RobotGlobal.myLoc) <= 10) {
-                        rc.setIndicatorDot(loc, 255, 0, 0);
+                        RobotGlobal.debug_dot(loc, 255, 0, 0);
                     }
                 }
 
@@ -149,7 +149,7 @@ public strictfp class RobotPlayer {
                         //if ((a + b >= minSum) && (a + b <= maxSum)) {
                         MapLocation loc = RobotGlobal.CommMap.hexCoordToLoc(a, b);
                         if (loc.distanceTo(RobotGlobal.myLoc) <= 10) {
-                            rc.setIndicatorDot(loc, 255, 0, 0);
+                            RobotGlobal.debug_dot(loc, 255, 0, 0);
                             totalInside++;
                         }
                         total++;
@@ -167,8 +167,7 @@ public strictfp class RobotPlayer {
             }
 
         } catch (Exception e) {
-            System.out.println("Exception!");
-            e.printStackTrace();
+            RobotGlobal.debug_exception(e);
         }
 	}
 

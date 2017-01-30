@@ -30,14 +30,14 @@ public class ArchonBot extends RobotGlobal {
             try {
                 update();
             } catch (Exception e) {
-                System.out.println("Archon: exception during update");
+                debug_print("Archon: exception during update");
                 e.printStackTrace();
             }
             try {
                 turn();
                 Clock.yield();
             } catch (Exception e) {
-                System.out.println("Archon: exception during turn");
+                debug_print("Archon: exception during turn");
                 e.printStackTrace();
             }
         }
@@ -62,7 +62,7 @@ public class ArchonBot extends RobotGlobal {
         // Broadcast location
         int locChannel = ARCHON_LOCATION_TABLE_CHANNEL + (archonOrder*ARCHON_LOCATION_TABLE_ENTRY_SIZE);
         if (archonOrder >= ARCHON_LOCATION_TABLE_NUM_ENTRIES) {
-            System.out.println("More than 3 archons detected!!!");
+            debug_print("More than 3 archons detected!!!");
         } else {
             rc.broadcast(locChannel, Float.floatToIntBits(myLoc.x));
             rc.broadcast(locChannel + 1, Float.floatToIntBits(myLoc.y));
@@ -113,9 +113,9 @@ public class ArchonBot extends RobotGlobal {
             }
 
             /*
-            System.out.println(exploredFarmsQueue.count());
+            debug_print(exploredFarmsQueue.count());
             if (exploredFarmsQueue.count() > 0) {
-                System.out.println(farmNumToLoc(exploredFarmsQueue.peek()[0]));
+                debug_print(farmNumToLoc(exploredFarmsQueue.peek()[0]));
             }
             */
         }
@@ -147,7 +147,7 @@ public class ArchonBot extends RobotGlobal {
                 // Found an explored farm to go to
                 boolean moved = tryMoveElseLeftRight(myLoc.directionTo(farmLoc), 20, 5);
                 if (!moved) {
-                    System.out.println("Can't move to farm i should explore");
+                    debug_print("Can't move to farm i should explore");
                 }
             }
         }

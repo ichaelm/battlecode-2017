@@ -59,10 +59,14 @@ public class ProposedFarm {
         return treeDirections;
     }
 
-    public void drawFarm(RobotController rc) throws GameActionException { 
-    	// draws all tree locations in green
-        for (MapLocation t: treeLocs) {
-            if (t != null && rc.onTheMap(t)) rc.setIndicatorDot(t, 0, 200, 0);
+    public void debug_drawFarm(RobotController rc) throws GameActionException {
+        if (RobotGlobal.debug) {
+            // draws all tree locations in green
+            for (MapLocation t: treeLocs) {
+                if (t != null && rc.onTheMap(t)) {
+                    RobotGlobal.debug_dot(t, 0, 200, 0);
+                }
+            }
         }
     }
 }

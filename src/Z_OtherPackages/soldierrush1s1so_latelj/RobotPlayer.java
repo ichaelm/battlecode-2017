@@ -17,8 +17,7 @@ public strictfp class RobotPlayer {
             RobotGlobal.setGardenerSchedule(RobotGlobal.GardenerSchedule.WHEN_FULL);
             RobotGlobal.setLateLumberjacks(true);
         } catch (Exception e) {
-            System.out.println("Exception during global init");
-            e.printStackTrace();
+            RobotGlobal.debug_exception(e, "init");
         }
 
         switch (RobotGlobal.myType) {

@@ -58,11 +58,11 @@ public class MapBounds {
     
     public MapLocation getInnerCornerLoc(int NSdir, int EWdir) { // returns a corner location like "NE" or "SW"
     	if (NSdir != NORTH && NSdir != SOUTH) { // check NS
-    		System.out.println("Invalid North-South Direction!");
+    		RobotGlobal.debug_print("Invalid North-South Direction!");
     		return null;
     	}
     	if (EWdir != EAST && EWdir != WEST) { // check EW
-    		System.out.println("Invalid East-West Direction!");
+            RobotGlobal.debug_print("Invalid East-West Direction!");
     		return null;
     	}
     	
@@ -144,7 +144,7 @@ public class MapBounds {
                 isInside = (val >= getOuterBound(dirOrd));
             }
             if (!isInside) {
-                System.out.println(loc + " is not inside " + this);
+                RobotGlobal.debug_print(loc + " is not inside " + this);
                 return false;
             }
         }

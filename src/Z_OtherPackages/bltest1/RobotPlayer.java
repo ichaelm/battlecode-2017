@@ -9,13 +9,12 @@ public strictfp class RobotPlayer {
             while (true) {
                 MapLocation[] locs = rc.senseBroadcastingRobotLocations();
                 for (MapLocation loc : locs) {
-                    rc.setIndicatorDot(loc, 255, 0, 0);
+                    RobotGlobal.debug_dot(loc, 255, 0, 0);
                 }
                 Clock.yield();
             }
         } catch (Exception e) {
-            System.out.println("Exception!");
-            e.printStackTrace();
+            RobotGlobal.debug_exception(e);
         }
 	}
 

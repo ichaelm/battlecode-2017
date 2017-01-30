@@ -14,8 +14,7 @@ public strictfp class RobotPlayer {
             RobotGlobal.setGardenerScheduleN(150);
             RobotGlobal.prioritizeRobotTrees = true;
         } catch (Exception e) {
-            System.out.println("Exception during global init");
-            e.printStackTrace();
+            RobotGlobal.debug_exception(e, "init");
         }
 
         switch (RobotGlobal.myType) {

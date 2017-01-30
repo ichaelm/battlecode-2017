@@ -49,12 +49,12 @@ public class TankBot extends RobotGlobal {
 
 				
 			} catch (Exception e) {
-				System.out.println("blah: " + e.getMessage());
+				debug_print("blah: " + e.getMessage());
 				e.getMessage();
 			}
 
 		}
-		rc.setIndicatorDot(newTarget, 225, 100, 0);
+		debug_dot(newTarget, 225, 100, 0);
 		return myLoc.directionTo(newTarget);
 	}
 	
@@ -146,14 +146,14 @@ public class TankBot extends RobotGlobal {
             try {
                 update();
             } catch (Exception e) {
-                System.out.println("Tank: exception during update");
+                debug_print("Tank: exception during update");
                 e.printStackTrace();
             }
             try {
                 turn();
                 Clock.yield();
             } catch (Exception e) {
-                System.out.println("Tank: exception during turn");
+                debug_print("Tank: exception during turn");
                 e.printStackTrace();
             }
         }
@@ -173,7 +173,7 @@ public class TankBot extends RobotGlobal {
 		
 		for (MapLocation f: farmLocs) {
 			if (f == null) continue;
-			rc.setIndicatorLine(myLoc, f, 55, 255, 55);
+			debug_line(myLoc, f, 55, 255, 55);
 		}
 		
         if (firstTurn) {
@@ -218,26 +218,26 @@ public class TankBot extends RobotGlobal {
             float distToRobotTree = myLoc.distanceTo(nearestRobotTree.location);
             robotTreeDir = myLoc.directionTo(nearestRobotTree.location);
             robotTreeInRange = distToRobotTree <= myType.bodyRadius + myType.strideRadius + nearestRobotTree.radius;
-        }
+		}
 
-        if (nearestEnemy != null) {
-        	goDir = myLoc.directionTo(nearestEnemy.location);
-        	if (!friendlyFireOn) {
-        		shoot = hasLineOfSightFF(nearestEnemy.location); // if this tank is to avoid FriendlyFire
-        	}
-        } else if (attackLoc != null) { // firing line code
-        	System.out.println("attRound: " + attackRound);
-        	float attackRadius = attackCircleStart - (attackRound * attackCircleChange); // Radius for the firing line
-        	
-        	//MapLocation firingLineSpot = attackLoc.add(attackLoc.directionTo(myLoc), attackRadius); // Location on the line 
-        	
-        	if (barrageLoc == null) barrageLoc = parseMap();
-        	rc.setIndicatorDot(barrageLoc, 0, 0, 0);
+		if (nearestEnemy != null) {
+			goDir = myLoc.directionTo(nearestEnemy.location);
+			if (!friendlyFireOn) {
+				shoot = hasLineOfSightFF(nearestEnemy.location); // if this tank is to avoid FriendlyFire
+			}
+		} else if (attackLoc != null) { // firing line code
+			debug_print("attRound: " + attackRound);
+			float attackRadius = attackCircleStart - (attackRound * attackCircleChange); // Radius for the firing line
 
-        	//rc.setIndicatorDot(firingLineSpot, 222, 222, 222);
-        	goDir = myLoc.directionTo(barrageLoc);
+			//MapLocation firingLineSpot = attackLoc.add(attackLoc.directionTo(myLoc), attackRadius); // Location on the line
 
-        	rc.setIndicatorDot(attackLoc, 255, 0, 0);
+			if (barrageLoc == null) barrageLoc = parseMap();
+			debug_dot(barrageLoc, 0, 0, 0);
+
+			//debug_dot(firingLineSpot, 222, 222, 222);
+			goDir = myLoc.directionTo(barrageLoc);
+
+        	debug_dot(attackLoc, 255, 0, 0);
 
         	if (attackRound > 150 && ceaseFire) { // if bombardment has been long enough, switch targets
         		//newAttackLocation();
@@ -269,7 +269,7 @@ public class TankBot extends RobotGlobal {
 
         if (nearestEnemy == null && attackLoc == null) {
         	if (treeInRange) { 			// Body-attack the nearest tree
-        		rc.setIndicatorDot(nearestTree.location, 100, 100, 100);
+        		debug_dot(nearestTree.location, 100, 100, 100);
         		
         		if (!moved && rc.canMove(treeDir)) rc.move(treeDir);
         		else moved = false;

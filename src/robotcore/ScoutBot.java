@@ -14,14 +14,14 @@ public class ScoutBot extends RobotGlobal {
             try {
                 update();
             } catch (Exception e) {
-                System.out.println("Scout: exception during update");
+                debug_print("Scout: exception during update");
                 e.printStackTrace();
             }
             try {
                 turn();
 				Clock.yield();
             } catch (Exception e) {
-                System.out.println("Scout: exception during turn");
+                debug_print("Scout: exception during turn");
                 e.printStackTrace();
             }
         }
