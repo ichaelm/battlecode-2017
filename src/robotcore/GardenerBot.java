@@ -69,8 +69,8 @@ public class GardenerBot extends RobotGlobal {
 		}
     }
 
-    private static ProposedFarm proposeRandomFarmHere() {
-    	return new ProposedFarm(myLoc, usefulRandomDir());
+    private static ProposedFarm proposeFarmHere(Direction buildDir) {
+    	return new ProposedFarm(myLoc, buildDir);
 	}
 
 	private static boolean proposedFarmIsOnMap(ProposedFarm farm) throws GameActionException {
@@ -103,7 +103,11 @@ public class GardenerBot extends RobotGlobal {
 	}
 
 	private static ProposedFarm tryProposeFarm() throws GameActionException {
-    	ProposedFarm farm = proposeRandomFarmHere();
+    	return tryProposeFarm(usefulRandomDir());
+	}
+
+	private static ProposedFarm tryProposeFarm(Direction buildDir) throws GameActionException {
+    	ProposedFarm farm = proposeFarmHere(buildDir);
     	boolean buildClear = proposedFarmBuildClear(farm);
     	if (buildClear) {
     		return farm;
@@ -228,44 +232,10 @@ public class GardenerBot extends RobotGlobal {
 				}
 			}
 
-		}
-		/*
-		RobotType priorityBuild = peekBuildQueue1();
-		RobotType secondaryBuild = peekBuildQueue2();
-		float skippedCost = 0;
-
-		if (priorityBuild != null) {
-			// Build a unit if possible
-			boolean builtPriority = false;
-			float so = GameConstants.GENERAL_SPAWN_OFFSET;
-			if (farmGeo != null) {
-				rc.setIndicatorDot(farmGeo.getBuildLoc(), 55, 55, 55);
-				if (rc.hasRobotBuildRequirements(priorityBuild) && !rc.isCircleOccupiedExceptByThisRobot(farmGeo.getConstructionZone(), 1)) {
-					if (rc.canBuildRobot(priorityBuild, farmGeo.getBuildDirection())) {
-						rc.buildRobot(priorityBuild, farmGeo.getBuildDirection());
-						popBuildQueue1();
-						builtPriority = true;
-					}
-				}
-			} else {
-				if (rc.hasRobotBuildRequirements(priorityBuild)) {
-					boolean success = tryBuildRobot(priorityBuild, randomDirection());
-					if (success) {
-						popBuildQueue1();
-						builtPriority = true;
-					}
-				}
-			}
-
-			if (!builtPriority) {
-				skippedCost += priorityBuild.bulletCost;
-			}
-		}
-		*/
-
-		if (mode == FarmingMode.FARMING) {
 			if (!goingToFarm && farmGeo == null) {
-				ProposedFarm farm = null;
+				FarmTableEntry e = readFarmTableEntry(myFarmNum);
+				ProposedFarm farm = tryProposeFarm(usefulDirections[e.getBuildDir()]);
+
 				int i = 0;
 				while (farm == null && i < 10) {
 					farm = tryProposeFarm();

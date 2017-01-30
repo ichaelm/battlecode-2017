@@ -308,7 +308,8 @@ public strictfp class RobotGlobal {
         private static final int CLEAR_MASK = 0x80;
         private static final int ACTIVE_MASK = 0x100;
         private static final int ARRIVED_MASK = 0x200;
-
+        private static final int BUILD_DIR_MASK = 0x3C00;
+        private static final int BUILD_DIR_OFFSET = 10;
 
         private int flags;
 
@@ -390,6 +391,15 @@ public strictfp class RobotGlobal {
 
         public boolean isArrived() {
             return (flags & ARRIVED_MASK) != 0;
+        }
+
+        public void setBuildDir(int buildDir) {
+            flags &= ~BUILD_DIR_MASK;
+            flags |= (buildDir << BUILD_DIR_OFFSET) & BUILD_DIR_MASK;
+        }
+
+        public int getBuildDir() {
+            return (flags & BUILD_DIR_MASK) >> BUILD_DIR_OFFSET;
         }
 
         public boolean hasGardenerRegistered() {
@@ -765,6 +775,7 @@ public strictfp class RobotGlobal {
         MapLocation farmToExplore = null;
         boolean farmReady = true;
         boolean farmClear = true;
+        boolean[] buildDirsBlocked = new boolean[16];
         if (explore) {
             farmNum = queryCurrentFarmNum();
             System.out.println("current farm num = " + farmNum);
@@ -815,16 +826,24 @@ public strictfp class RobotGlobal {
             }
             if (farmToExplore != null) {
                 float farmTreeDist = farmToExplore.distanceTo(tree.getLocation()) - tree.radius;
-                if (farmTreeDist < ProposedFarm.hexFarmRadius) {
-                    farmClear = false;
-                    if (farmTreeDist < RobotType.GARDENER.bodyRadius) {
-                        farmReady = false;
+                if (farmTreeDist < ProposedFarm.hexFarmRadius + 2.05f) {
+                    for (int iDir = 0; iDir < 16; iDir++) {
+                        MapLocation checkLoc = farmToExplore.add(usefulDirections[iDir], 4);
+                        if (rc.isCircleOccupiedExceptByThisRobot(checkLoc, 1)) {
+                            buildDirsBlocked[iDir] = true;
+                        }
+                    }
+                    if (farmTreeDist < ProposedFarm.hexFarmRadius) {
+                        farmClear = false;
+                        if (farmTreeDist < RobotType.GARDENER.bodyRadius) {
+                            farmReady = false;
+                        }
                     }
                 }
             }
         }
         if (farmToExplore != null) {
-            sendFarmExploredInfo(farmNum, farmReady, farmClear);
+            sendFarmExploredInfo(farmNum, farmReady, farmClear, buildDirsBlocked);
             incrementCurrentFarmLoc();
             exploredFarmsQueue.add(new int[]{farmNum});
         }
@@ -1019,7 +1038,7 @@ public strictfp class RobotGlobal {
 
 
     public static boolean canExploreFarm(int farmNum) throws GameActionException {
-        return myLoc.distanceTo(farmNumToLoc(farmNum)) + ProposedFarm.hexFarmRadius <= myType.sensorRadius;
+        return myLoc.distanceTo(farmNumToLoc(farmNum)) + ProposedFarm.hexFarmRadius + 2.05 <= myType.sensorRadius;
     }
 
     public static boolean queryFirstFarmExists() throws GameActionException {
@@ -2191,15 +2210,54 @@ public strictfp class RobotGlobal {
         clearBuildQueue2();
     }
 
-    public static void sendFarmExploredInfo(int farmNum, boolean ready, boolean clear) throws GameActionException {
+    public static void sendFarmExploredInfo(int farmNum, boolean ready, boolean clear, boolean[] buildDirsBlocked) throws GameActionException {
         FarmTableEntry e = readFarmTableEntry(farmNum);
         e.setExplored();
+        int longestRangeStart = -1;
+        int longestRangeLength = 0;
+        int rangeStart = -1;
+        int rangeLength = 0;
+        boolean inRange = false;
+        int firstBlocked = -1;
+        for (int i = 0; i < 32 && i <= (firstBlocked + 16); i++) {
+            int iWrap = i % 16;
+            if (inRange) {
+                if (buildDirsBlocked[iWrap]) {
+                    if (firstBlocked == -1) {
+                        firstBlocked = iWrap;
+                    }
+                    if (rangeLength > longestRangeLength) {
+                        longestRangeStart = rangeStart;
+                        longestRangeLength = rangeLength;
+                    }
+                } else {
+                    rangeLength++;
+                }
+            } else {
+                if (buildDirsBlocked[iWrap]) {
+                    if (firstBlocked == -1) {
+                        firstBlocked = iWrap;
+                    }
+                    // move along
+                } else {
+                    rangeStart = iWrap;
+                    rangeLength = 1;
+                }
+            }
+        }
+        int idealDirection = 8;
+        if (longestRangeLength == 0) {
+            clear = false;
+        } else {
+            idealDirection = longestRangeStart + (longestRangeLength / 2);
+        }
         if (ready) {
             e.setReady();
         }
         if (clear) {
             e.setClear();
         }
+        e.setBuildDir(idealDirection);
         writeFarmTableEntry(farmNum, e);
     }
 
