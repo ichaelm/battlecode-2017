@@ -539,6 +539,8 @@ public strictfp class RobotGlobal {
     public static final int DESIRED_TREES = 20;
     public static final int DESIRED_BULLETS = 20;
     public static final float FARM_DIST = 8f;
+    public static final float DEG_PER_WIND = 10f;
+    public static final float MAX_NUM_WINDS = 24;
     
     // Scout variables
     public static Direction currentDirection;
@@ -611,6 +613,10 @@ public strictfp class RobotGlobal {
     private static boolean useFarmGrid = false;
     public static boolean debugExceptions = true;
     public static boolean debug = true;
+    private static MapLocation navTargetLoc = null;
+    private static int bugNavWinding = 0; // Positive when wound to the right
+    private static float navClosestDist = -1;
+    private static boolean leftHanded; // True when winding to the left
 
     // Configuration for Offensive Units
     public static boolean useTriad = false;
@@ -647,6 +653,7 @@ public strictfp class RobotGlobal {
         nearbyRobotRadius = myType.sensorRadius;
         nearbyTreeRadius = myType.sensorRadius;
         nearbyBulletRadius = myType.bulletSightRadius;
+        leftHanded = myID % 2 == 0; // random
         neverUpdated = true;
     }
 
@@ -1673,6 +1680,154 @@ public strictfp class RobotGlobal {
 
         // A move never happened, so return false.
         return false;
+    }
+
+    /*
+     * This method is run when all the bugnav variables are set, but bugNavWinding == 0 and we know we can't more straight
+     */
+    private static Direction bugNavDirectionInitial() throws GameActionException {
+
+        Direction targetDir = myLoc.directionTo(navTargetLoc);
+
+        int currentWinding = 1;
+
+        while(currentWinding <= MAX_NUM_WINDS) {
+
+            // Try the offset of the right side
+            Direction currentDir = targetDir.rotateRightDegrees(currentWinding * DEG_PER_WIND);
+            if(rc.canMove(currentDir)) {
+                bugNavWinding = currentWinding;
+                leftHanded = false;
+                debug_print("bugnav initial winding = " + currentWinding);
+                return currentDir;
+            } else {
+                debug_print("bugnav initial winding can't be " + currentWinding);
+                debug_line(myLoc, myLoc.add(currentDir), 255, 0, 0);
+            }
+
+            currentWinding = -currentWinding;
+
+            // Try the offset on the left side
+            currentDir = targetDir.rotateRightDegrees(currentWinding * DEG_PER_WIND);
+            if(rc.canMove(currentDir)) {
+                bugNavWinding = currentWinding;
+                leftHanded = true;
+                debug_print("bugnav initial winding = " + currentWinding);
+                return currentDir;
+            } else {
+                debug_print("bugnav initial winding can't be " + currentWinding);
+                debug_line(myLoc, myLoc.add(currentDir), 255, 0, 0);
+            }
+
+            // No move performed, try slightly further
+            currentWinding = (-currentWinding) + 1;
+        }
+
+        debug_print("bugnav initial winding failed");
+        return null;
+    }
+
+    private static Direction bugNavDirection(MapLocation targetLoc) throws GameActionException {
+        if (!targetLoc.equals(navTargetLoc)) {
+            // new bugnav session
+            navTargetLoc = targetLoc;
+            bugNavWinding = 0;
+            navClosestDist = myLoc.distanceTo(targetLoc);
+        }
+        debug_print("Bugnav winding = " + bugNavWinding);
+
+        Direction targetDir = myLoc.directionTo(targetLoc);
+        Direction currentDir = targetDir.rotateRightDegrees(bugNavWinding * DEG_PER_WIND);
+
+        if (bugNavWinding == 0) {
+            if (rc.canMove(currentDir)) {
+                return currentDir;
+            } else {
+                return bugNavDirectionInitial();
+            }
+        }
+
+        int countWinds = 0;
+        // invariant: currentDir = directions[currentDirNum]
+        // invariant: currentDirNum - targetDirNum = bugNavWinding in mod 8
+        if (leftHanded) {
+            // move condition for left handed: (bugNavWinding == 0 && rc.canMove(currentDir)) || (!rc.canMove(currentDir.rotateRight()) && rc.canMove(currentDir))
+            while (!((bugNavWinding == 0 && rc.canMove(currentDir)) || (!rc.canMove(currentDir.rotateRightDegrees(DEG_PER_WIND)) && rc.canMove(currentDir)))) { // loop if the move condition is false
+                // known: bugNavWinding != 0 || !rc.canMove(currentDir)
+                // known: rc.canMove(currentDir.rotateRightDegrees(DEG_PER_WIND)) || !rc.canMove(currentDir)
+                if (rc.canMove(currentDir.rotateRightDegrees(DEG_PER_WIND)) && bugNavWinding != 0) {
+                    bugNavWinding++;
+                    debug_print("Bugnav unwind");
+                } else {
+                    // known: !rc.canMove(currentDir)
+                    bugNavWinding--;
+                    countWinds++;
+                    debug_print("Bugnav wind");
+                }
+                debug_line(myLoc, myLoc.add(currentDir), 255, 0, 0);
+                // update invariants
+                currentDir = targetDir.rotateRightDegrees(bugNavWinding * DEG_PER_WIND);
+                // watchdog for totally blocked
+                if (countWinds >= MAX_NUM_WINDS) {
+                    bugNavWinding += MAX_NUM_WINDS;
+                    debug_print("Bugnav watchdog fail");
+                    return null;
+                }
+            }
+        } else {
+            // move condition for right handed: (bugNavWinding == 0 && rc.canMove(currentDir)) || (!rc.canMove(currentDir.rotateLeft()) && rc.canMove(currentDir))
+            while (!((bugNavWinding == 0 && rc.canMove(currentDir)) || (!rc.canMove(currentDir.rotateLeftDegrees(DEG_PER_WIND)) && rc.canMove(currentDir)))) { // loop if the move condition is false
+                // known: bugNavWinding != 0 || !rc.canMove(currentDir)
+                // known: rc.canMove(currentDir.rotateLeftDegrees(DEG_PER_WIND)) || !rc.canMove(currentDir)
+                if (rc.canMove(currentDir.rotateLeftDegrees(DEG_PER_WIND)) && bugNavWinding != 0) {
+                    bugNavWinding--;
+                    debug_print("Bugnav unwind");
+                } else {
+                    // known: !rc.canMove(currentDir)
+                    bugNavWinding++;
+                    countWinds++;
+                    debug_print("Bugnav wind");
+                }
+                debug_line(myLoc, myLoc.add(currentDir), 255, 0, 0);
+                // update invariants
+                currentDir = targetDir.rotateRightDegrees(bugNavWinding * DEG_PER_WIND);
+                // watchdog for totally blocked
+                if (countWinds >= MAX_NUM_WINDS) {
+                    bugNavWinding -= MAX_NUM_WINDS;
+                    debug_print("Bugnav watchdog fail");
+                    return null;
+                }
+            }
+        }
+        float currentDist = myLoc.distanceTo(targetLoc);
+        if (currentDist < navClosestDist) {
+            navClosestDist = currentDist;
+        } /* else if (currentDist > navClosestDist*(Math.pow(2, bugNavFallTimes+1)) + 10) {
+            leftHanded = !leftHanded;
+            bugNavWinding = 0;
+            navClosestDist = currentDist;
+            bugNavFallTimes++;
+        } */
+        return currentDir;
+    }
+
+    public static boolean tryNavigateTo(MapLocation targetLoc) throws GameActionException {
+        debug_dot(targetLoc, 0, 255, 0);
+        Direction navDir = bugNavDirection(targetLoc);
+        if (navDir == null) {
+            debug_print("tryNavigateTo() failed");
+            return false;
+        } else {
+            debug_line(myLoc, myLoc.add(navDir, 1), 0, 255, 0);
+            if (rc.canMove(navDir)) {
+                rc.move(navDir);
+                debug_print("tryNavigateTo() succeeded");
+                return true;
+            } else {
+                debug_print("Navigation should never tell me to go someplace I can't!");
+                return false;
+            }
+        }
     }
 
     public static boolean tryMoveElseBackExcludeCircle(MapLocation loc, MapLocation excludeLoc, float excludeR) throws GameActionException {

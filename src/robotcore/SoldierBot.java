@@ -98,8 +98,7 @@ public class SoldierBot extends RobotGlobal {
 
         } else if (defendLoc != null) { // Otherwise, if there is a location to defend
             // Move towards it
-            Direction defendDir = myLoc.directionTo(defendLoc);
-            moved = tryMoveElseLeftRight(defendDir, 15, 4);
+            moved = tryNavigateTo(defendLoc);
 
             // If I'm close to the defend target, I already know there's no hostile, so pop it
             if (myLoc.distanceTo(defendLoc) < myType.bodyRadius * 2) {
@@ -107,8 +106,7 @@ public class SoldierBot extends RobotGlobal {
             }
         } else if (attackLoc != null) { // Otherwise, if there is a location to attack
             // Move towards it
-            Direction attackDir = myLoc.directionTo(attackLoc);
-            moved = tryMoveElseLeftRight(attackDir, 15, 4);
+            moved = tryNavigateTo(attackLoc);
 
             // If I'm close to the attack target, I already know there's no non-hostile, so pop it
             if (myLoc.distanceTo(attackLoc) < myType.bodyRadius * 2) {
