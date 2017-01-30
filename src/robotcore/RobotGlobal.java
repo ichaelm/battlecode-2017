@@ -669,7 +669,7 @@ public strictfp class RobotGlobal {
         victoryPoints = rc.getTeamVictoryPoints();
         treeCount = rc.getTreeCount();
         teamBullets = rc.getTeamBullets();
-        vpCost = 7.5f + rc.getRoundNum() * (12.5f / 3000.0f);
+        vpCost = rc.getVictoryPointCost();
 
         updateNearbyRobots();
         updateNearbyTrees();
@@ -2044,23 +2044,29 @@ public strictfp class RobotGlobal {
     	int VPtoWin = GameConstants.VICTORY_POINTS_TO_WIN - victoryPoints;
     	
     	if(teamBullets >= vpCost * VPtoWin) {
-    	    rc.donate(vpCost * VPtoWin);
+    	    rc.donate(teamBullets);
+            teamBullets = 0f;
+            return true;
         }
         if(rc.getRoundLimit() - rc.getRoundNum() < 2) {
         	rc.donate(teamBullets);
+        	teamBullets = 0f;
         	return true;
         }
         
         // if not under attack
         if (peekDefendLocation() == null) {
         	 if (teamBullets > vpCost*5) {
-             	rc.donate((float) (vpCost * Math.floor(rc.getTreeCount()/15)));
-             	return true;
+        	     float toDonate = (float) (vpCost * Math.floor(rc.getTreeCount()/15));
+                 rc.donate(toDonate);
+        	     teamBullets -= toDonate;
+                 return true;
              }
         }
         
         if (teamBullets > 1500) {
         	rc.donate(vpCost);
+            teamBullets -= vpCost;
          	return true;
         }
        
