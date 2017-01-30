@@ -1421,6 +1421,30 @@ public strictfp class RobotGlobal {
     public static BulletInfo[] getBulletsToAvoid() {
         return bulletsToAvoid;
     }
+    
+    // Move as far as possible in moveDir
+    public static boolean tryMoveFurthest(Direction moveDir) throws GameActionException {
+    	boolean moved = false;
+    	if (rc.canMove(moveDir)) {
+    		moved = true;
+    		rc.move(moveDir);
+    		return true;
+    	}
+    	MapLocation canReach = moveBST(moveDir);
+    	if (canReach == null) return false;
+    	
+    	moved = true;
+    	rc.move(canReach);
+    	
+    	return moved;
+    }
+    
+    // Move as far as possible towards the target location
+    public static boolean tryMoveFurthest(MapLocation moveTarget) throws GameActionException {
+    	Direction moveDir = myLoc.directionTo(moveTarget);
+    	return tryMoveFurthest(moveDir);    
+    }
+
 
     public static boolean tryMoveExact(MapLocation loc) throws GameActionException {
         debug_dot(loc, 0, 255, 0);
@@ -2134,6 +2158,43 @@ public strictfp class RobotGlobal {
 
         return bounds;
 
+    }
+    
+    public static MapLocation moveBST (Direction moveDir) throws GameActionException {
+    	MapLocation inner = myLoc; 
+    	MapLocation outer = myLoc.add(moveDir, myType.strideRadius);
+        float i = outer.distanceTo(inner) / 2;
+        Direction away = outer.directionTo(inner);
+        MapLocation mid = outer.add(away, i);
+        
+        if (!rc.canMove(moveDir, 0.001f)) { // if I cannot move even a tiny bit in this direction...
+        	return null; // return null
+        }
+        
+        int c = 0;
+
+        // Here I simply shrink inner and outer to the max distance I can move
+        while (i >= 0.0005) { // this is the precision I choose to get
+            c+=1;
+            if (rc.canMove(mid)) {
+                inner = mid;
+                i = inner.distanceTo(outer) / 2;
+                mid = mid.subtract(away, i);
+            }
+            else {
+                outer = mid;
+                i = inner.distanceTo(outer) / 2;
+                mid = mid.add(away, i);
+            }
+
+            if (c > 15) {
+                debug_print("narrowBounds timed out");
+                break;
+            }
+
+        }
+
+        return inner;
     }
 
     public static MapLocation[] mapBST (MapLocation inner, MapLocation outer) throws GameActionException {
