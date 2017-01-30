@@ -2301,7 +2301,7 @@ public strictfp class RobotGlobal {
 
 		for (int i = 0; i < fCount; i++) {
 		    int fNum = activeFarmsQueue.peek(i)[0];
-			farmLocs[fNum] = farmNumToLoc(fNum);
+			farmLocs[i] = farmNumToLoc(fNum);
 			//debug_print("Farm # " + fNum + " is at " + farmLocs[fNum]);
 		}
 		
