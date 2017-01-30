@@ -19,8 +19,10 @@ public class ArchonBot extends RobotGlobal {
     		}
     	}
     	
-    	if (!canBuild) return true;
-    	if (!canMove) return true;
+    	if (!canBuild){
+    		if (!canMove) return true;
+    	}
+    	
     	
     	return false;
     }
@@ -49,6 +51,9 @@ public class ArchonBot extends RobotGlobal {
         processNearbyTrees();
         tryToShake();
         elections();
+        
+        int numArchons = rc.readBroadcast(NUM_ARCHONS_CHANNEL);
+        if (numArchons > 1 && Math.random() < 0.02956) { if (trapped()) rc.disintegrate(); }
 
         registerArchon();
         archonOrder = rc.readBroadcast(ARCHON_COUNTER_CHANNEL) - 1;
