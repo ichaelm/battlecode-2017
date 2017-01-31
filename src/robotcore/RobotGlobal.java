@@ -588,6 +588,11 @@ public strictfp class RobotGlobal {
     private static TreeInfo nearestFriendlyTree = null;
     private static TreeInfo nearestUnfriendlyTree = null;
     private static TreeInfo lowestFriendlyTree = null;
+    public static MapLocation[] allFarmLocs = null;
+    public static MapLocation nearestFarmLocation = null;
+    public static MapLocation furthestFarmLocation = null;
+    public static MapLocation averageFarmLocation = null;
+    public static boolean tooCloseToFarm = false;
     private static BulletInfo[] bulletsToAvoid = new BulletInfo[0];
     private static int numBulletsToAvoid = 0;
     public static boolean isLeader = false;
@@ -2526,6 +2531,7 @@ public strictfp class RobotGlobal {
         }
     }
 
+   
 	public static MapLocation[] getAllFarmLocs() throws GameActionException {
 		int fCount = activeFarmsQueue.count();
 		if (fCount < 1) return null;
@@ -2539,6 +2545,71 @@ public strictfp class RobotGlobal {
 		
 		return farmLocs;
 	}
+	
+	 public static void processFarms() throws GameActionException {
+	    	int numF = 0;
+			float Xsum = 0;
+			float Ysum = 0;
+			
+			
+			float nearDist = Float.POSITIVE_INFINITY;
+			float farDist = 0; 
+			MapLocation nearestFarm = null;
+			MapLocation furthestFarm = null;
+			
+			MapLocation[] farmLocs = getAllFarmLocs();
+			allFarmLocs = farmLocs;
+			//MapLocation[] onFarms = new MapLocation[farmLocs.length];
+			
+
+			boolean tooClose = false;
+			int closeNum = 0;
+			
+			
+			if (farmLocs.length < 1) {
+				debug_print("No farms are active!");
+				averageFarmLocation = null;
+				nearestFarmLocation = null;
+				furthestFarmLocation = null;
+				tooCloseToFarm = false;
+				return;
+			}
+			
+			nearestFarm = farmLocs[0];
+			furthestFarm = farmLocs[0];
+			
+			for (MapLocation f: farmLocs) {
+				if (f == null) continue;
+				float dist = f.distanceTo(myLoc);
+				if (dist < 3f + myType.bodyRadius) {
+					//onFarms[closeNum] = f;
+					closeNum++;
+					tooClose = true;
+					
+				}
+				
+				debug_dot(f, 55, 255, 55);
+				
+				// build sums for averaging
+				numF++;
+				Xsum += f.x;
+				Ysum += f.y;
+				
+				// update near and far
+				nearestFarm = (dist < nearDist) ? f : nearestFarm;
+				furthestFarm = (dist > farDist) ? f : furthestFarm;
+				nearDist = (dist < nearDist) ? dist : nearDist;
+				farDist = (dist > farDist) ? dist : farDist;
+
+			}
+			
+			MapLocation farmsMid = new MapLocation(Xsum/numF, Ysum/numF); 
+			averageFarmLocation = farmsMid;
+			nearestFarmLocation = nearestFarm;
+			furthestFarmLocation = furthestFarm;
+			tooCloseToFarm = tooClose;
+	    }
+
 
     public static RobotType peekBuildQueue1() throws GameActionException {
         int begin = rc.readBroadcast(BUILD_QUEUE_1_BEGIN_CHANNEL);

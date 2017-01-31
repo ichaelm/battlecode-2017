@@ -209,18 +209,14 @@ public class TankBot extends RobotGlobal {
 		processNearbyRobots();
 		processNearbyBullets();
 		processNearbyTrees();
+		processFarms();
 		tryToShake();
 		elections();
 		
 		registerTank();
 		leadIfLeader();
 		
-		farmLocs = getAllFarmLocs();
-		
-		for (MapLocation f: farmLocs) {
-			if (f == null) continue;
-			debug_dot(f, 55, 255, 55);
-		}
+		MapLocation[] farmLocs = allFarmLocs;
 		
         if (firstTurn) {
             goDir = randomDirection();
