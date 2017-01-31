@@ -14,7 +14,7 @@ public strictfp class RobotPlayer {
         // This is the RobotController object. You use it to perform actions from this robot,
         // and to get information on its current status.
         RobotPlayer.rc = rc;
-
+        
         // Here, we've separated the controls into a different method for each RobotType.
         // You can add the missing ones or rewrite this into your own control structure.
         switch (rc.getType()) {
@@ -41,10 +41,12 @@ public strictfp class RobotPlayer {
 
             // Try/catch blocks stop unhandled exceptions, which cause your robot to explode
             try {
-
+            	
                 // Generate a random direction
                 Direction dir = randomDirection();
-
+                if (rc.getTeamBullets() > 20 && Math.random() < 0.1) {
+            		rc.donate(rc.getVictoryPointCost());
+            	}
                 // Randomly attempt to build a gardener in this direction
                 if (rc.canHireGardener(dir) && Math.random() < .01) {
                     rc.hireGardener(dir);
@@ -77,6 +79,9 @@ public strictfp class RobotPlayer {
             // Try/catch blocks stop unhandled exceptions, which cause your robot to explode
             try {
 
+            	if (rc.getTeamBullets() > 20 && Math.random() < 0.3) {
+            		rc.donate(rc.getVictoryPointCost());
+            	}
                 // Listen for home archon's location
                 int xPos = rc.readBroadcast(0);
                 int yPos = rc.readBroadcast(1);

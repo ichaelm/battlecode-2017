@@ -37,6 +37,7 @@ public class SoldierBot extends RobotGlobal {
         elections();
 
         registerSoldier();
+        leadIfLeader();
 
         if (firstTurn) {
             goDir = randomDirection();

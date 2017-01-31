@@ -24,6 +24,23 @@ public class TankBot extends RobotGlobal {
 	static MapLocation barrageLoc = null;
 	static MapLocation[] farmLocs = null;
 	
+	public static boolean lastStand() throws GameActionException {
+	
+		int archons = rc.readBroadcast(ARCHON_NUM_CHANNEL);
+		int gardeners = rc.readBroadcast(GARDENER_NUM_CHANNEL);
+		int soldiers = rc.readBroadcast(SOLDIER_NUM_CHANNEL);
+		int lumberjacks = rc.readBroadcast(LUMBERJACK_NUM_CHANNEL);
+		int tanks = rc.readBroadcast(TANK_NUM_CHANNEL);
+		
+		if (archons < 1 && gardeners < 1 && soldiers < 1 && lumberjacks < 1) {
+			if (isLeader && tanks < 3) {
+				return true;
+			}
+		}
+		
+		return false;
+	}
+	
 	public static Direction offsetTarget(MapLocation target) throws GameActionException { // gives a random angle offset for shooting
 		float offsetDistMax = 2.5f;
 		MapLocation newTarget = null;
@@ -121,8 +138,36 @@ public class TankBot extends RobotGlobal {
         	maxDistToEnemy = Math.max(dE, maxDistToEnemy);
         }
         
+        if (goCloseToEnemy) {
+        	return nearestToEnemy;
+        }
+        
+        if (goCloseToMe) {
+        	return nearestToMe;
+        }
+        
+        if (goFarFromMe) {
+        	return furthestFromMe;
+        }
+        
+        if (goFarFromEnemy) {
+        	return furthestFromEnemy;
+        }
+        
+        
         int r = (int) (Math.random()*spots.length);
         return spots[r];
+	}
+	
+	public static MapLocation mapCenter() {
+        float knownHeight = knownMapBounds.getInnerBound(iNORTH) - knownMapBounds.getInnerBound(iSOUTH);
+        float knownWidth = knownMapBounds.getInnerBound(iEAST) - knownMapBounds.getInnerBound(iWEST);
+        float avgY = knownMapBounds.getInnerBound(iSOUTH) + knownHeight * 0.5f;
+        float avgX = knownMapBounds.getInnerBound(iWEST) + knownWidth * 0.5f;
+        
+        MapLocation centerMap = new MapLocation(avgX, avgY);
+        
+        return centerMap;
 	}
 	
 	
@@ -166,14 +211,15 @@ public class TankBot extends RobotGlobal {
 		processNearbyTrees();
 		tryToShake();
 		elections();
-
+		
 		registerTank();
-
+		leadIfLeader();
+		
 		farmLocs = getAllFarmLocs();
 		
 		for (MapLocation f: farmLocs) {
 			if (f == null) continue;
-			debug_line(myLoc, f, 55, 255, 55);
+			debug_dot(f, 55, 255, 55);
 		}
 		
         if (firstTurn) {
@@ -199,6 +245,10 @@ public class TankBot extends RobotGlobal {
         
         attackLoc = peekAttackLocation();
         nearestEnemy = getNearestEnemy();
+        
+        if (lastStand()) {
+        	attackLoc = null;
+        }
         
         boolean moved = false;
         boolean attacked = false;
@@ -265,27 +315,63 @@ public class TankBot extends RobotGlobal {
         		popAttackLocation();
         	}
 
-        }
+		}
 
-        if (nearestEnemy == null && attackLoc == null) {
-        	if (treeInRange) { 			// Body-attack the nearest tree
-        		debug_dot(nearestTree.location, 100, 100, 100);
-        		
-        		if (!moved && rc.canMove(treeDir)) rc.move(treeDir);
-        		else moved = false;
-        	}
-        	else {
-        		if (!moved) {
-        			moved = tryMoveElseLeftRight(goDir, 15, 2);
-        		}
-        	}
-        } else {
-        	if (!moved) {
-    			moved = tryMoveElseLeftRight(goDir, 15, 2);
-    		}
-        }
-        if (!moved) {
-        	moved = tryMoveElseBack(goDir);
+		if (nearestEnemy == null && attackLoc == null) {
+			if (lastStand()) {	// Enter last stand mode!!!
+				debug_print("This is my final stand!");
+				
+				for (Direction d: usefulDirections) {
+					MapLocation end = myLoc.add(d, 8);
+					debug_dot(end, 222, 222, 222);
+				}
+				moved = tryMoveExact(mapCenter()); // move to map center
+				
+				boolean shootNow = false;
+				
+				Direction shootDir = Direction.EAST.rotateRightDegrees(rc.getRoundNum()*15.27f); // spray in a circular pattern
+				for (BulletInfo b: nearbyBullets) { // check all nearby bullets
+					if (willCollideWithMe(b)) {
+						shootDir = b.dir.opposite(); // shoot back if a bullet will hit me
+						shootNow = true;
+						break;
+					}
+				}
+				
+				if(teamBullets > vpCost + 1f) { 
+					if (rc.getOpponentVictoryPoints() + 10 >= rc.getTeamVictoryPoints()) {
+						rc.donate(vpCost);
+					}
+					shootNow = true;
+				}
+				if (shootNow) {
+					if (rc.canFirePentadShot()) { rc.firePentadShot(shootDir); }
+					if (rc.canFireTriadShot()) 	{ rc.fireTriadShot(shootDir); }
+					if (rc.canFireSingleShot()) { rc.fireSingleShot(shootDir); }
+				}
+			}
+			else {
+
+				if (treeInRange) { 			// Body-attack the nearest tree
+					debug_dot(nearestTree.location, 100, 100, 100);
+
+					if (!moved && rc.canMove(treeDir)) rc.move(treeDir);
+					else moved = false;
+				}
+				else {
+					if (!moved) {
+						moved = tryMoveElseLeftRight(goDir, 15, 2);
+					}
+				}
+			}
+
+		} else {
+			if (!moved) {
+				moved = tryMoveElseLeftRight(goDir, 15, 2);
+			}
+		}
+		if (!moved) {
+			moved = tryMoveElseBack(goDir);
         	
         	if (!moved) {
         		goDir = randomDirection();

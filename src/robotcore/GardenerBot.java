@@ -126,8 +126,9 @@ public class GardenerBot extends RobotGlobal {
 		processNearbyTrees();
 		tryToShake();
 		elections();
-
+	
 		registerGardener();
+		leadIfLeader();
 
         RobotType currentBuildOrder = peekBuildQueue1();
 
