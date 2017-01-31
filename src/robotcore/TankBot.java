@@ -24,6 +24,9 @@ public class TankBot extends RobotGlobal {
 	static MapLocation barrageLoc = null;
 	static MapLocation[] farmLocs = null;
 	
+	static int ordinal = 0;
+	static int barrageLength = 150;
+	
 	public static boolean lastStand() throws GameActionException {
 	
 		int archons = rc.readBroadcast(ARCHON_NUM_CHANNEL);
@@ -104,7 +107,8 @@ public class TankBot extends RobotGlobal {
         		knownMidNorth.add(Direction.getSouth(), o),
         		knownMidWest.add(Direction.getEast(), o),
         		knownMidSouth.add(Direction.getNorth(), o),
-        		knownMidEast.add(Direction.getWest(), o)
+        		knownMidEast.add(Direction.getWest(), o),
+        		mapCenter()
         };
         
         
@@ -154,7 +158,6 @@ public class TankBot extends RobotGlobal {
         	return furthestFromEnemy;
         }
         
-        
         int r = (int) (Math.random()*spots.length);
         return spots[r];
 	}
@@ -162,6 +165,10 @@ public class TankBot extends RobotGlobal {
 	public static MapLocation mapCenter() {
         float knownHeight = knownMapBounds.getInnerBound(iNORTH) - knownMapBounds.getInnerBound(iSOUTH);
         float knownWidth = knownMapBounds.getInnerBound(iEAST) - knownMapBounds.getInnerBound(iWEST);
+        
+        attackCircleStart = Math.min(knownHeight, knownWidth) / 2.0f;
+        attackCircleStart = Math.max(15f, Math.min(30f, attackCircleStart)); // clamp within 15 and 30
+        
         float avgY = knownMapBounds.getInnerBound(iSOUTH) + knownHeight * 0.5f;
         float avgX = knownMapBounds.getInnerBound(iWEST) + knownWidth * 0.5f;
         
@@ -170,6 +177,159 @@ public class TankBot extends RobotGlobal {
         return centerMap;
 	}
 	
+	public static MapLocation barrageArcPoint() throws GameActionException {
+		if (attackLoc == null) return null;
+		MapLocation knownNE = knownMapBounds.getInnerCornerLoc(MapBounds.NORTH, MapBounds.EAST);
+        MapLocation knownSE = knownMapBounds.getInnerCornerLoc(MapBounds.SOUTH, MapBounds.EAST);
+        MapLocation knownNW = knownMapBounds.getInnerCornerLoc(MapBounds.NORTH, MapBounds.WEST);
+        MapLocation knownSW = knownMapBounds.getInnerCornerLoc(MapBounds.SOUTH, MapBounds.WEST);
+        
+        float distToTarget = myLoc.distanceTo(attackLoc);
+		
+        float knownHeight = knownMapBounds.getInnerBound(iNORTH) - knownMapBounds.getInnerBound(iSOUTH);
+        float knownWidth = knownMapBounds.getInnerBound(iEAST) - knownMapBounds.getInnerBound(iWEST);
+        float avgY = knownMapBounds.getInnerBound(iSOUTH) + knownHeight * 0.5f;
+        float avgX = knownMapBounds.getInnerBound(iWEST) + knownWidth * 0.5f;
+        
+        MapLocation knownMidNorth = new MapLocation(avgX, knownMapBounds.getInnerBound(iNORTH));
+        MapLocation knownMidSouth = new MapLocation(avgX, knownMapBounds.getInnerBound(iSOUTH));
+        MapLocation knownMidEast = new MapLocation(knownMapBounds.getInnerBound(iEAST), avgY);
+        MapLocation knownMidWest = new MapLocation(knownMapBounds.getInnerBound(iWEST), avgY);
+        
+        float o = 2.7f;
+        
+        MapLocation center = mapCenter();
+        MapLocation[] spots = new MapLocation[] {
+        		knownNE.add(Direction.getSouth(), o).add(Direction.getWest(), o),
+        		knownSE.add(Direction.getNorth(), o).add(Direction.getWest(), o),
+        		knownNW.add(Direction.getSouth(), o).add(Direction.getEast(), o),
+        		knownSW.add(Direction.getNorth(), o).add(Direction.getEast(), o),
+        		knownMidNorth.add(Direction.getSouth(), o),
+        		knownMidWest.add(Direction.getEast(), o),
+        		knownMidSouth.add(Direction.getNorth(), o),
+        		knownMidEast.add(Direction.getWest(), o),
+        		center
+        };
+        
+        
+        float minDistToMe = Float.POSITIVE_INFINITY;
+        float minDistToEnemy = Float.POSITIVE_INFINITY;
+        float maxDistToMe = 0;
+        float maxDistToEnemy = 0;
+        
+        for (MapLocation l: spots) {
+        	float dM = l.distanceTo(myLoc);
+        	float dE = l.distanceTo(attackLoc);
+        	
+        	if (dM < minDistToMe) {
+        		nearestToMe = l;
+        	}
+        	if (dE < minDistToEnemy) {
+        		nearestToEnemy = l;
+        	}
+        	
+        	minDistToMe = Math.min(dM, minDistToMe);
+        	minDistToEnemy = Math.min(dE, minDistToEnemy);
+        	
+        	if (dM > maxDistToMe) {
+        		furthestFromMe = l;
+        	}
+        	if (dE > maxDistToEnemy) {
+        		furthestFromEnemy = l;
+        	}
+        	
+        	maxDistToMe = Math.max(dM, maxDistToMe);
+        	maxDistToEnemy = Math.max(dE, maxDistToEnemy);
+        }
+        
+        MapLocation myPoint = center;
+        float attackRadius = attackCircleStart - (attackRound * attackCircleChange); // Radius for the firing line
+        
+        // nearestToEnemy is going to determine the start and end directions of the arc
+        if (nearestToEnemy == center) {
+        	myPoint = arcPlot(attackLoc, attackRadius, Direction.EAST, Direction.EAST)[ordinal];	// full circle
+        }
+        
+        
+        if (nearestToEnemy == knownNE) {
+        	myPoint = arcPlot(attackLoc, attackRadius, Direction.WEST, Direction.SOUTH)[ordinal];	// 180 - 270
+        }
+        if (nearestToEnemy == knownNW) {
+        	myPoint = arcPlot(attackLoc, attackRadius, Direction.SOUTH, Direction.EAST)[ordinal];	// 270 - 360
+        }
+        if (nearestToEnemy == knownSW) {
+        	myPoint = arcPlot(attackLoc, attackRadius, Direction.EAST, Direction.NORTH)[ordinal];	// 270 - 360
+        }
+        if (nearestToEnemy == knownSE) {
+        	myPoint = arcPlot(attackLoc, attackRadius, Direction.NORTH, Direction.WEST)[ordinal];	// 270 - 360
+        }
+        if (nearestToEnemy == knownMidEast) {
+        	myPoint = arcPlot(attackLoc, attackRadius, Direction.NORTH, Direction.SOUTH)[ordinal];	// 270 - 360
+        }
+        if (nearestToEnemy == knownMidNorth) {
+        	myPoint = arcPlot(attackLoc, attackRadius, Direction.WEST, Direction.EAST)[ordinal];	// 270 - 360
+        }
+        if (nearestToEnemy == knownMidWest) {
+        	myPoint = arcPlot(attackLoc, attackRadius, Direction.SOUTH, Direction.NORTH)[ordinal];	// 270 - 360
+        }
+        if (nearestToEnemy == knownMidSouth) {
+        	myPoint = arcPlot(attackLoc, attackRadius, Direction.EAST, Direction.WEST)[ordinal];	// 270 - 360
+        }
+        
+        
+        
+        return myPoint;
+	}
+	
+	public static MapLocation[] arcPlot(MapLocation center, float radius, Direction startDir, Direction endDir) throws GameActionException {
+		
+		int numTanks = rc.readBroadcast(TANK_NUM_CHANNEL);
+		if (numTanks < 1) {
+			numTanks = rc.readBroadcast(TANK_COUNTER_CHANNEL);
+			//debug_print("Error!!! No tanks alive!");
+			//return null;
+		}
+		int slices = numTanks + 1;
+		
+		if (doubleFiringLine && ordinal % 2 == 0) { radius = radius + myType.bodyRadius; }
+		
+		float endAng = (endDir.getAngleDegrees() == 0) ? 360 : endDir.getAngleDegrees(); // Must rotate left from start to end
+		float sweepAngle = Math.abs( endAng - startDir.getAngleDegrees() ); // should be 90 or 180 degrees, always positive
+		float angInc = sweepAngle / slices; // angle increment with sweep is 90, 45 for 1 or 30 for 2 etc.
+		
+		MapLocation startPos = center.add(startDir, radius);
+		MapLocation endPos = center.add(endDir, radius);
+		
+		MapLocation[] points = new MapLocation[numTanks]; // store all points on the arc
+		
+		for (int a = 0; a < slices; a++) { // iterate through angle slices
+			if (a >= points.length) break;
+			float shift = (a+1) * angInc;
+			Direction currDir = startDir.rotateLeftDegrees(shift);
+			points[a] = center.add(currDir, radius);
+		}
+		drawArc(startPos, endPos, points);
+		
+		return points;
+	}
+	
+	public static void drawArc(MapLocation start, MapLocation end, MapLocation[] arc) throws GameActionException { // debug all the things
+		int len = arc.length;
+		if (len < 1) {
+			debug_print("Arc is screwed up!!!");
+			return;
+		}
+		
+		int r = 120, g = 120, b = 120;
+		debug_line(start, arc[0], r, g, b);		// first seg
+		debug_line(arc[len-1], end, r, g, b);	// last seg
+		for (int s = 1; s < len; s++) {
+			debug_line(arc[s-1], arc[s], r, g, b);	// middle seg
+		}
+		
+		debug_print("Arc sucessfully drawn.");
+		
+	}
 	
 	
 	/**
@@ -215,6 +375,8 @@ public class TankBot extends RobotGlobal {
 		
 		registerTank();
 		leadIfLeader();
+		ordinal = getTankOrdinal();
+		
 		
 		MapLocation[] farmLocs = allFarmLocs;
 		
@@ -241,9 +403,11 @@ public class TankBot extends RobotGlobal {
         
         attackLoc = peekAttackLocation();
         nearestEnemy = getNearestEnemy();
+       
         
         if (lastStand()) {
-        	attackLoc = null;
+        	//attackLoc = null;
+        	barrageLength = 30;
         }
         
         boolean moved = false;
@@ -273,19 +437,19 @@ public class TankBot extends RobotGlobal {
 			}
 		} else if (attackLoc != null) { // firing line code
 			debug_print("attRound: " + attackRound);
-			float attackRadius = attackCircleStart - (attackRound * attackCircleChange); // Radius for the firing line
+			
+			MapLocation firingLineSpot = barrageArcPoint();
+			debug_line(myLoc, firingLineSpot, 22,22,22);
 
-			//MapLocation firingLineSpot = attackLoc.add(attackLoc.directionTo(myLoc), attackRadius); // Location on the line
+			//if (barrageLoc == null) barrageLoc = parseMap();
+			//debug_dot(barrageLoc, 0, 0, 0);
 
-			if (barrageLoc == null) barrageLoc = parseMap();
-			debug_dot(barrageLoc, 0, 0, 0);
-
-			//debug_dot(firingLineSpot, 222, 222, 222);
-			goDir = myLoc.directionTo(barrageLoc);
+			debug_dot(firingLineSpot, 222, 222, 222);
+			goDir = myLoc.directionTo(firingLineSpot);
 
         	debug_dot(attackLoc, 255, 0, 0);
 
-        	if (attackRound > 150 && ceaseFire) { // if bombardment has been long enough, switch targets
+        	if (attackRound > barrageLength && ceaseFire) { // if bombardment has been long enough, switch targets
         		//newAttackLocation();
         		//attackLoc = null;
         		shoot = false;
@@ -293,7 +457,7 @@ public class TankBot extends RobotGlobal {
         		goDir = myLoc.directionTo(attackLoc);
         	} 
         	else {
-        		if (!rc.hasMoved()) { moved = tryMoveElseLeftRight(myLoc.directionTo(barrageLoc), 30, 5); }
+        		if (!rc.hasMoved()) { moved = tryMoveElseLeftRight(myLoc.directionTo(firingLineSpot), 30, 5); }
         		Direction shootAt = offsetTarget(attackLoc);
 
         		if (!friendlyFireOn) {
@@ -307,7 +471,6 @@ public class TankBot extends RobotGlobal {
         		}
         	}
         	if (myLoc.distanceTo(attackLoc) < myType.sensorRadius) {
-        		//newAttackLocation();
         		popAttackLocation();
         	}
 

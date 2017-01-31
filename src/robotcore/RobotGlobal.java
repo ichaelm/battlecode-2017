@@ -645,6 +645,7 @@ public strictfp class RobotGlobal {
     public static boolean goCloseToMe = false;
     public static boolean goFarFromEnemy = false;
     public static boolean goFarFromMe = false;
+    public static boolean doubleFiringLine = false;
     
     // Configuration for Gardeners Units
     public static boolean earlyLumberjacks = false;
@@ -1391,6 +1392,8 @@ public strictfp class RobotGlobal {
         }
         return minDist;
     }
+    
+    
 
     public static RobotInfo getNearestEnemy() {
         return nearestEnemy;
@@ -1438,6 +1441,10 @@ public strictfp class RobotGlobal {
 
     public static BulletInfo[] getBulletsToAvoid() {
         return bulletsToAvoid;
+    }
+    
+    public static int getTankOrdinal() throws GameActionException {
+    	return rc.readBroadcast(TANK_COUNTER_CHANNEL);
     }
     
     // Move as far as possible in moveDir
