@@ -35,6 +35,7 @@ public class ScoutBot extends RobotGlobal {
 		elections();
 
 		registerScout();
+		leadIfLeader();
 
 		if (firstTurn) {
 			goDir = randomDirection();

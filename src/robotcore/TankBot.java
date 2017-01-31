@@ -166,9 +166,10 @@ public class TankBot extends RobotGlobal {
 		processNearbyTrees();
 		tryToShake();
 		elections();
-
+		
 		registerTank();
-
+		leadIfLeader();
+		
 		farmLocs = getAllFarmLocs();
 		
 		for (MapLocation f: farmLocs) {

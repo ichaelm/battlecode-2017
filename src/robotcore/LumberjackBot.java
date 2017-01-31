@@ -32,8 +32,9 @@ public class LumberjackBot extends RobotGlobal {
         processNearbyTrees();
         tryToShake();
         elections();
-
+		
         registerLumberjack();
+        leadIfLeader();
 
         if (firstTurn) {
             goDir = randomDirection();
