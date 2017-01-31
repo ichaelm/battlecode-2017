@@ -15,10 +15,11 @@ public class GardenerBot extends RobotGlobal {
 
 	// Farm geometry
 	static ProposedFarm farmGeo;
+	static int maxTrees = 5;
 
     // Farm state
-    static boolean[] isTreeAlive = new boolean[5];
-	static boolean[] isTreeBlocked = new boolean[5]; // A spot is marked as blocked if the block is not  due to one of our non-archon robots
+    static boolean[] isTreeAlive = new boolean[maxTrees];
+	static boolean[] isTreeBlocked = new boolean[maxTrees]; // A spot is marked as blocked if the block is not  due to one of our non-archon robots
 
     public static void loop() {
         while (true) {
@@ -46,7 +47,7 @@ public class GardenerBot extends RobotGlobal {
     }
 
     public static void countTrees() throws GameActionException {
-		for (int t = 0; t < 5; t++) {
+		for (int t = 0; t < maxTrees; t++) {
 			boolean treeNotExists = false;
 			MapLocation l = farmGeo.getTreeLocs()[t];
 			TreeInfo info = rc.senseTreeAtLocation(l);
@@ -257,7 +258,7 @@ public class GardenerBot extends RobotGlobal {
 				boolean builtTree = false;
 				boolean couldBuildTree = false;
 				boolean haveBullets = teamBullets > GameConstants.BULLET_TREE_COST + skippedCost;
-				for (int t = 0; t < 5; t++) {
+				for (int t = 0; t < maxTrees; t++) {
 					boolean isAlive = isTreeAlive[t];
 					boolean isBlocked = isTreeBlocked[t];
 					if (!isAlive && !isBlocked) {
@@ -327,7 +328,7 @@ public class GardenerBot extends RobotGlobal {
 		boolean isFull;
 		if (mode == FarmingMode.FARMING) {
 			isFull = true;
-			for (int i = 0; i < 5; i++) {
+			for (int i = 0; i < maxTrees; i++) {
 				if (!isTreeAlive[i] && !isTreeBlocked[i]) {
 					isFull = false;
 				} else {
