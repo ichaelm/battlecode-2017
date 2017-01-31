@@ -448,6 +448,7 @@ public strictfp class RobotGlobal {
     public static final int EXEC_ROUND_CHANNEL = 0;
     public static final int ARCHON_COUNTER_CHANNEL = EXEC_ROUND_CHANNEL + 1;
     public static final int NUM_ARCHONS_CHANNEL = ARCHON_COUNTER_CHANNEL + 1;
+    public static final int ARCHON_NUM_CHANNEL = NUM_ARCHONS_CHANNEL;
     public static final int ARCHON_LOCATION_TABLE_CHANNEL = NUM_ARCHONS_CHANNEL + 1;
     public static final int ARCHON_LOCATION_TABLE_ENTRY_SIZE = 2;
     public static final int ARCHON_LOCATION_TABLE_NUM_ENTRIES = 3;
@@ -533,6 +534,7 @@ public strictfp class RobotGlobal {
     public static final int TANK_BUILT_CHANNEL = SOLDIER_BUILT_CHANNEL + 1;
     public static final int CAN_PLANT_COUNTER_CHANNEL = TANK_BUILT_CHANNEL + 1;
     public static final int CAN_PLANT_NUM_CHANNEL = CAN_PLANT_COUNTER_CHANNEL + 1;
+    //public static final int LAST_STAND_CHANNEL = CAN_PLANT_NUM_CHANNEL + 1;
 
     // Performance constants
     public static final int DESIRED_ROBOTS = 20;
@@ -628,6 +630,10 @@ public strictfp class RobotGlobal {
     public static float attackCircleStart = 15f;
     public static float attackCircleChange = 0.125f;
     public static boolean ceaseFire = false;
+    public static boolean goCloseToEnemy = false;
+    public static boolean goCloseToMe = false;
+    public static boolean goFarFromEnemy = false;
+    public static boolean goFarFromMe = false;
     
     // Configuration for Gardeners Units
     public static boolean earlyLumberjacks = false;
@@ -780,13 +786,13 @@ public strictfp class RobotGlobal {
         boolean[] buildDirsBlocked = new boolean[16];
         if (explore) {
             farmNum = queryCurrentFarmNum();
-            debug_print("current farm num = " + farmNum);
+            //debug_print("current farm num = " + farmNum);
             farmToExplore = null;
             if (canExploreFarm(farmNum)) {
                 farmToExplore = farmNumToLoc(farmNum);
-                debug_print("can explore at " + farmToExplore);
+                //debug_print("can explore at " + farmToExplore);
             } else {
-                debug_print("can't explore");
+                //debug_print("can't explore");
             }
         }
         float minDist = Float.POSITIVE_INFINITY;
@@ -1501,22 +1507,22 @@ public strictfp class RobotGlobal {
     }
     
     static Direction[] usefulDirections = { // every 16th of a circle
-    		new Direction((float) 0.0),
-    		new Direction((float) 22.5),
-    		new Direction((float) 45.0),
-    		new Direction((float) 67.5),
-    		new Direction((float) 90.0),
-    		new Direction((float) 112.5),
-    		new Direction((float) 135.0),
-    		new Direction((float) 157.5),
-    		new Direction((float) 180.0),
-    		new Direction((float) 202.5),
-    		new Direction((float) 225.0),
-    		new Direction((float) 247.5),
-    		new Direction((float) 270.0),
-    		new Direction((float) 292.5),
-    		new Direction((float) 315.0),
-    		new Direction((float) 337.5)
+    		new Direction(0.0f),
+    		new Direction(0.39269908169872414f),
+    		new Direction(0.7853981633974483f),
+    		new Direction(1.1780972450961724f),
+    		new Direction(1.5707963267948966f),
+    		new Direction(1.9634954084936207f),
+    		new Direction(2.356194490192345f),
+    		new Direction(2.748893571891069f),
+    		new Direction(3.141592653589793f),
+    		new Direction(3.5342917352885173f),
+    		new Direction(3.9269908169872414f),
+    		new Direction(4.319689898685965f),
+    		new Direction(4.71238898038469f),
+    		new Direction(5.105088062083414f),
+    		new Direction(5.497787143782139f),
+    		new Direction(5.890486225480863f),
     };
     
     // replacement for RandomDirection that helps to get useful angles
@@ -2039,7 +2045,7 @@ public strictfp class RobotGlobal {
     	// Start with the line from tank to target
     	MapLocation[] intersections = Geometry.getCircleLineSegmentIntersections(center, radius, myLoc, target);
     	if (intersections.length >= 1) {
-    		//debug_dot(intersections[0], 88, 88, 88);
+    		debug_dot(intersections[0], 88, 88, 88);
     		//debug_print("Intersection detected!");
     		return true;
     	}
@@ -2051,16 +2057,16 @@ public strictfp class RobotGlobal {
     	Direction dirB = targetDir.rotateRightDegrees(90);
     	MapLocation offsetLocA = target.add(dirA, offsetDistMax); // cone base point 1
     	MapLocation offsetLocB = target.add(dirB, offsetDistMax); // cone base point 2
-    	//getCircleLineSegmentIntersections(MapLocation center, float r, MapLocation lineA, MapLocation lineB)
+    	
     	intersections = Geometry.getCircleLineSegmentIntersections(center, radius, myLoc, offsetLocA);
     	if (intersections.length >= 1) {
-    		//debug_dot(intersections[0], 88, 88, 88);
+    		debug_dot(intersections[0], 88, 88, 88);
     		//debug_print("Intersection detected!");
     		return true;
     	}
     	intersections = Geometry.getCircleLineSegmentIntersections(center, radius, myLoc, offsetLocB);
     	if (intersections.length >= 1) {
-    		//debug_dot(intersections[0], 88, 88, 88);
+    		debug_dot(intersections[0], 88, 88, 88);
     		//debug_print("Intersection detected!");
     		return true;
     	}

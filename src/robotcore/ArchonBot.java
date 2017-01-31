@@ -65,6 +65,9 @@ public class ArchonBot extends RobotGlobal {
         if (numArchons > 1 && Math.random() < 0.02956) { if (trapVal == NOBUILDORMOVE) rc.disintegrate(); }
         else if (trapped() == NOBUILD) {
         	tryMoveFurthest(usefulRandomDir());
+        	if (rc.getRoundNum() > 2) {
+        		
+        	}
         }
 
         registerArchon();
