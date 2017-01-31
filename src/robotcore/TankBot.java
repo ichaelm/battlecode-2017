@@ -320,6 +320,7 @@ public class TankBot extends RobotGlobal {
 		if (nearestEnemy == null && attackLoc == null) {
 			if (lastStand()) {	// Enter last stand mode!!!
 				debug_print("This is my final stand!");
+				
 				for (Direction d: usefulDirections) {
 					MapLocation end = myLoc.add(d, 8);
 					debug_dot(end, 222, 222, 222);
